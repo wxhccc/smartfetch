@@ -1,0 +1,41 @@
+{
+  "name": "smartapi",
+  "version": "0.0.1",
+  "description": "an easy use api plugin for vue and react",
+  "main": "dist/smartapi.common.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "rollup -w -c scripts/config.js --environment NODE_ENV:development",
+    "build": "rollup -c scripts/prod.config.js && rollup -c scripts/prod.config.js -f umd -o dist/anicanvas.min.js",
+    "start": "npm run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wxhccc/smartapi.git"
+  },
+  "keywords": [
+    "api",
+    "request",
+    "mvvm"
+  ],
+  "author": "gavinhe",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wxhccc/smartapi/issues"
+  },
+  "homepage": "https://github.com/wxhccc/smartapi#readme",
+  "devDependencies": {
+    "rollup": "^0.58.2",
+    "rollup-plugin-babel": "^3.0.4",
+    "rollup-plugin-commonjs": "^9.1.3",
+    "rollup-plugin-json": "^2.3.0",
+    "rollup-plugin-node-resolve": "^3.3.0",
+    "rollup-plugin-uglify": "^3.0.0",
+    "babel-core": "^6.26.3",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-stage-2": "^6.24.1"
+  },
+  "dependencies": {}
+}

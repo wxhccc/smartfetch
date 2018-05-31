@@ -1,0 +1,15 @@
+{
+  "presets": [
+    ["env", {
+    	"modules": false,
+    	"targets": {
+    		"browsers": [
+    			"last 2 versions"
+    		],
+    		"node": "current"
+    	}
+    }],
+    "stage-2"
+  ],
+  "plugins": ["transform-runtime"]
+}
