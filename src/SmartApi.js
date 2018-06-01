@@ -1,35 +1,53 @@
+import AxiosCore from './AxiosCore';
 const defOpts = {
   credentitals: 'same-origin',
   responseType: 'json'
 };
+const responseMixin = {
+  'json': 'json',
+}
+
 export default class SmartApi {
   _silence = false;
   _checkCode = true;
+  _codeCheckResult = false;
   _lockKey = '';
   _faileHandle = null;
   _successHandle = null;
+  _SAinfos = {};
   constructor (ajaxCore, context) {
     Object.assign(this, ajaxCore);
+    this._ajaxCoreMixin(ajaxCore)
     this._context = context;
     return this;
   }
-
-  _createRequest (url, data) {
-    let init = this._init = Object.assign({}, defOpts, data);
+  _ajaxCoreMixin (ajaxCore) {
+    !ajaxCore.hasFetch && AxiosCore.call(this);
+  }
+  _createRequest (config) {
     setTimeout(() => {
       if (!this._checkLock()) {
         this._lock();
-        this._request = this.core(url, init)
-          .then(this._resCheck)
-          .then(this._typeHandle)
+        this._reqPromise = this._request(config)
           .then(this._codeCheck)
           .catch(this._handleError);
-        this._successHandle && this._request.then(this._handleResData);
+        this._successHandle && this._reqPromise.then(this._handleResData);
       }
     }, 0);
   }
+  _request (config) {
+    this._init = Object.assign({}, defOpts, config)
+    return fetch(config.url, config)
+      .then(this._resCheck)
+      .then(this._typeHandle);
+  }
   _handleResData = (resjson) => {
-    resjson && resjson.success && this._successHandle(resjson.data);
+    if (this._codeCheck) {
+      this._codeCheckResult && this._successHandle(resjson.data);
+    }
+    else {
+      this._successHandle(resjson);
+    }
   }
   _lock () {
     this._stateLock();
@@ -42,8 +60,10 @@ export default class SmartApi {
   }
 
   _typeHandle = (response) => {
-    if (this._init.responseType === 'json') {
-      return response.json();
+    let {responseType} = this._init;
+    let mixFn = responseMixin[responseType];
+    if (response[mixFn]) {
+      return response[mixFn]();
     }
   }
   _resCheck (response) {
@@ -55,17 +75,26 @@ export default class SmartApi {
   _handleError = (error) => {
     this._unlock();
     if (this._silence) return;
-    let {errorHandle} = this.baseConfig;
+    let {errorHandle} = this.userConfig;
     errorHandle(error);
     this._faileHandle && this._faileHandle(error);
   }
+  _responseCheck = (resjson) => {
+    let {codeCheck} = this.userConfig;
+    if (typeof codeCheck === 'function') {
+      return codeCheck(resjson);
+    }
+    else if(typeof codeCheck === 'string'){
+      return resjson[codeCheck];
+    }
+  }
   _codeCheck = (resjson) => {
     this._unlock();
-    if (this._checkCode && resjson.success) {
+    if (this._checkCode && (this._codeCheckResult = this._responseCheck(resjson))) {
       return resjson;
     }
     if (this._silence) return;
-    let {codeError} = this.baseConfig;
+    let {codeError} = this.userConfig;
     codeError(resjson);
     this._faileHandle && this._faileHandle(null, resjson);
   }

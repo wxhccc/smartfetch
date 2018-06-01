@@ -7,11 +7,12 @@ const moduleMap = {
 };
 class SmartApiErector {
   constructor () {
-    this.resetOpts();
-    getAjaxCore(this);
-    this.init();
+    this._fetchSupportCheck();
   }
-  static ajaxCore = {baseConfig: Object.create(null)};
+  static SAinfos = {
+    hasFetch: true, 
+    userConfig: Object.create(null)
+  };
   static checkContext (context) {
     if (context.hasOwnProperty('_isVue')) {
       return 'vue';
@@ -20,43 +21,44 @@ class SmartApiErector {
       return 'react';
     }
   }
-  // init the core of ajax, set default config
-  init () {
-    const {module} = this;
-    if (module === 'axios') {
-
-    }
+  static request () {
+    console.log(this);
   }
+  _fetchSupportCheck () {
+    SmartApiErector.SAinfos.hasFetch = (typeof fetch === 'function');
+  }
+  // init the core of ajax, set default config
+
   // for vuejs
   install (Vue, options) {
-    this.resetOpts(options);
+    (typeof options === 'object') && this.resetOpts(options);
     Vue.prototype.$fetch = this.vueFetch;
     Vue.mixin({
       data: () => ({SAKEYS: {}})
     });
   }
-  vueFetch (url, init) {
-    return new SmartApiVue(SmartApiErector.ajaxCore, this, url, init);
+  vueFetch (config) {
+    return new SmartApiVue(SmartApiErector.SAinfos, this, config);
   }
-  fetch (url, init) {
+  fetch (config) {
     let module = SmartApiErector.checkContext(this);
-    return moduleMap[module] ? new moduleMap[module](SmartApiErector.ajaxCore, this, url, init) : null;
+    return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
   }
   resetOpts (options) {
-    Object.assign(SmartApiErector.ajaxCore.baseConfig, options);
+    Object.assign(SmartApiErector.SAinfos.userConfig, options);
   }
 }
-async function getAjaxCore (env) {
-  let {ajaxCore} = SmartApiErector;
-  ajaxCore.core = null; // fetch;
-  ajaxCore.core && (ajaxCore.module = 'fetch');
-  if (!ajaxCore.core) {
-    //ajaxCore.core = require('axios');
-    //console.log(ajaxCore.core)
-    ajaxCore.module = 'axios';
-  }
-}
-
 
 
 export default new SmartApiErector();
+
+
+export function request (url, data, method) {
+  let {coreModule} = this;
+
+};
+function checkUrl (url) {
+  if (url.indexOf('http')) return url;
+  let {baseUrl} = SmartApiErector.ajaxCore.baseConfig;
+  return baseUrl ? baseUrl + url : url;
+}

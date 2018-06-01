@@ -1,4 +1,4 @@
-import SmartApi from './baseapi';
+import SmartApi from './SmartApi';
 export default class SmartApiReact extends SmartApi {
   constructor (ajaxCore, context) {
     super(ajaxCore, context);

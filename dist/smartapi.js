@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.Smartapi = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.Smartapi = {})));
+}(this, (function (exports) { 'use strict';
 
 	function unwrapExports (x) {
 		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -382,6 +382,1083 @@
 	});
 
 	var _Object$create = unwrapExports(create$1);
+
+	var f$1 = Object.getOwnPropertySymbols;
+
+	var _objectGops = {
+		f: f$1
+	};
+
+	var f$2 = {}.propertyIsEnumerable;
+
+	var _objectPie = {
+		f: f$2
+	};
+
+	// 7.1.13 ToObject(argument)
+
+	var _toObject = function (it) {
+	  return Object(_defined(it));
+	};
+
+	// 19.1.2.1 Object.assign(target, source, ...)
+
+
+
+
+
+	var $assign = Object.assign;
+
+	// should work with symbols and should have deterministic property order (V8 bug)
+	var _objectAssign = !$assign || _fails(function () {
+	  var A = {};
+	  var B = {};
+	  // eslint-disable-next-line no-undef
+	  var S = Symbol();
+	  var K = 'abcdefghijklmnopqrst';
+	  A[S] = 7;
+	  K.split('').forEach(function (k) { B[k] = k; });
+	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
+	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
+	  var T = _toObject(target);
+	  var aLen = arguments.length;
+	  var index = 1;
+	  var getSymbols = _objectGops.f;
+	  var isEnum = _objectPie.f;
+	  while (aLen > index) {
+	    var S = _iobject(arguments[index++]);
+	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
+	    var length = keys.length;
+	    var j = 0;
+	    var key;
+	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
+	  } return T;
+	} : $assign;
+
+	// 19.1.3.1 Object.assign(target, source)
+
+
+	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
+
+	var assign = _core.Object.assign;
+
+	var assign$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": assign, __esModule: true };
+	});
+
+	var _Object$assign = unwrapExports(assign$1);
+
+	// true  -> String#at
+	// false -> String#codePointAt
+	var _stringAt = function (TO_STRING) {
+	  return function (that, pos) {
+	    var s = String(_defined(that));
+	    var i = _toInteger(pos);
+	    var l = s.length;
+	    var a, b;
+	    if (i < 0 || i >= l) return TO_STRING ? '' : undefined;
+	    a = s.charCodeAt(i);
+	    return a < 0xd800 || a > 0xdbff || i + 1 === l || (b = s.charCodeAt(i + 1)) < 0xdc00 || b > 0xdfff
+	      ? TO_STRING ? s.charAt(i) : a
+	      : TO_STRING ? s.slice(i, i + 2) : (a - 0xd800 << 10) + (b - 0xdc00) + 0x10000;
+	  };
+	};
+
+	var _library = true;
+
+	var _redefine = _hide;
+
+	var _iterators = {};
+
+	var _wks = createCommonjsModule(function (module) {
+	var store = _shared('wks');
+
+	var Symbol = _global.Symbol;
+	var USE_SYMBOL = typeof Symbol == 'function';
+
+	var $exports = module.exports = function (name) {
+	  return store[name] || (store[name] =
+	    USE_SYMBOL && Symbol[name] || (USE_SYMBOL ? Symbol : _uid)('Symbol.' + name));
+	};
+
+	$exports.store = store;
+	});
+
+	var def = _objectDp.f;
+
+	var TAG = _wks('toStringTag');
+
+	var _setToStringTag = function (it, tag, stat) {
+	  if (it && !_has(it = stat ? it : it.prototype, TAG)) def(it, TAG, { configurable: true, value: tag });
+	};
+
+	var IteratorPrototype = {};
+
+	// 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
+	_hide(IteratorPrototype, _wks('iterator'), function () { return this; });
+
+	var _iterCreate = function (Constructor, NAME, next) {
+	  Constructor.prototype = _objectCreate(IteratorPrototype, { next: _propertyDesc(1, next) });
+	  _setToStringTag(Constructor, NAME + ' Iterator');
+	};
+
+	// 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
+
+
+	var IE_PROTO$2 = _sharedKey('IE_PROTO');
+	var ObjectProto = Object.prototype;
+
+	var _objectGpo = Object.getPrototypeOf || function (O) {
+	  O = _toObject(O);
+	  if (_has(O, IE_PROTO$2)) return O[IE_PROTO$2];
+	  if (typeof O.constructor == 'function' && O instanceof O.constructor) {
+	    return O.constructor.prototype;
+	  } return O instanceof Object ? ObjectProto : null;
+	};
+
+	var ITERATOR = _wks('iterator');
+	var BUGGY = !([].keys && 'next' in [].keys()); // Safari has buggy iterators w/o `next`
+	var FF_ITERATOR = '@@iterator';
+	var KEYS = 'keys';
+	var VALUES = 'values';
+
+	var returnThis = function () { return this; };
+
+	var _iterDefine = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCED) {
+	  _iterCreate(Constructor, NAME, next);
+	  var getMethod = function (kind) {
+	    if (!BUGGY && kind in proto) return proto[kind];
+	    switch (kind) {
+	      case KEYS: return function keys() { return new Constructor(this, kind); };
+	      case VALUES: return function values() { return new Constructor(this, kind); };
+	    } return function entries() { return new Constructor(this, kind); };
+	  };
+	  var TAG = NAME + ' Iterator';
+	  var DEF_VALUES = DEFAULT == VALUES;
+	  var VALUES_BUG = false;
+	  var proto = Base.prototype;
+	  var $native = proto[ITERATOR] || proto[FF_ITERATOR] || DEFAULT && proto[DEFAULT];
+	  var $default = $native || getMethod(DEFAULT);
+	  var $entries = DEFAULT ? !DEF_VALUES ? $default : getMethod('entries') : undefined;
+	  var $anyNative = NAME == 'Array' ? proto.entries || $native : $native;
+	  var methods, key, IteratorPrototype;
+	  // Fix native
+	  if ($anyNative) {
+	    IteratorPrototype = _objectGpo($anyNative.call(new Base()));
+	    if (IteratorPrototype !== Object.prototype && IteratorPrototype.next) {
+	      // Set @@toStringTag to native iterators
+	      _setToStringTag(IteratorPrototype, TAG, true);
+	      // fix for some old engines
+	      if (!_library && typeof IteratorPrototype[ITERATOR] != 'function') _hide(IteratorPrototype, ITERATOR, returnThis);
+	    }
+	  }
+	  // fix Array#{values, @@iterator}.name in V8 / FF
+	  if (DEF_VALUES && $native && $native.name !== VALUES) {
+	    VALUES_BUG = true;
+	    $default = function values() { return $native.call(this); };
+	  }
+	  // Define iterator
+	  if ((!_library || FORCED) && (BUGGY || VALUES_BUG || !proto[ITERATOR])) {
+	    _hide(proto, ITERATOR, $default);
+	  }
+	  // Plug for library
+	  _iterators[NAME] = $default;
+	  _iterators[TAG] = returnThis;
+	  if (DEFAULT) {
+	    methods = {
+	      values: DEF_VALUES ? $default : getMethod(VALUES),
+	      keys: IS_SET ? $default : getMethod(KEYS),
+	      entries: $entries
+	    };
+	    if (FORCED) for (key in methods) {
+	      if (!(key in proto)) _redefine(proto, key, methods[key]);
+	    } else _export(_export.P + _export.F * (BUGGY || VALUES_BUG), NAME, methods);
+	  }
+	  return methods;
+	};
+
+	var $at = _stringAt(true);
+
+	// 21.1.3.27 String.prototype[@@iterator]()
+	_iterDefine(String, 'String', function (iterated) {
+	  this._t = String(iterated); // target
+	  this._i = 0;                // next index
+	// 21.1.5.2.1 %StringIteratorPrototype%.next()
+	}, function () {
+	  var O = this._t;
+	  var index = this._i;
+	  var point;
+	  if (index >= O.length) return { value: undefined, done: true };
+	  point = $at(O, index);
+	  this._i += point.length;
+	  return { value: point, done: false };
+	});
+
+	var _iterStep = function (done, value) {
+	  return { value: value, done: !!done };
+	};
+
+	// 22.1.3.4 Array.prototype.entries()
+	// 22.1.3.13 Array.prototype.keys()
+	// 22.1.3.29 Array.prototype.values()
+	// 22.1.3.30 Array.prototype[@@iterator]()
+	var es6_array_iterator = _iterDefine(Array, 'Array', function (iterated, kind) {
+	  this._t = _toIobject(iterated); // target
+	  this._i = 0;                   // next index
+	  this._k = kind;                // kind
+	// 22.1.5.2.1 %ArrayIteratorPrototype%.next()
+	}, function () {
+	  var O = this._t;
+	  var kind = this._k;
+	  var index = this._i++;
+	  if (!O || index >= O.length) {
+	    this._t = undefined;
+	    return _iterStep(1);
+	  }
+	  if (kind == 'keys') return _iterStep(0, index);
+	  if (kind == 'values') return _iterStep(0, O[index]);
+	  return _iterStep(0, [index, O[index]]);
+	}, 'values');
+
+	// argumentsList[@@iterator] is %ArrayProto_values% (9.4.4.6, 9.4.4.7)
+	_iterators.Arguments = _iterators.Array;
+
+	var TO_STRING_TAG = _wks('toStringTag');
+
+	var DOMIterables = ('CSSRuleList,CSSStyleDeclaration,CSSValueList,ClientRectList,DOMRectList,DOMStringList,' +
+	  'DOMTokenList,DataTransferItemList,FileList,HTMLAllCollection,HTMLCollection,HTMLFormElement,HTMLSelectElement,' +
+	  'MediaList,MimeTypeArray,NamedNodeMap,NodeList,PaintRequestList,Plugin,PluginArray,SVGLengthList,SVGNumberList,' +
+	  'SVGPathSegList,SVGPointList,SVGStringList,SVGTransformList,SourceBufferList,StyleSheetList,TextTrackCueList,' +
+	  'TextTrackList,TouchList').split(',');
+
+	for (var i = 0; i < DOMIterables.length; i++) {
+	  var NAME = DOMIterables[i];
+	  var Collection = _global[NAME];
+	  var proto = Collection && Collection.prototype;
+	  if (proto && !proto[TO_STRING_TAG]) _hide(proto, TO_STRING_TAG, NAME);
+	  _iterators[NAME] = _iterators.Array;
+	}
+
+	var f$3 = _wks;
+
+	var _wksExt = {
+		f: f$3
+	};
+
+	var iterator = _wksExt.f('iterator');
+
+	var iterator$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": iterator, __esModule: true };
+	});
+
+	unwrapExports(iterator$1);
+
+	var _meta = createCommonjsModule(function (module) {
+	var META = _uid('meta');
+
+
+	var setDesc = _objectDp.f;
+	var id = 0;
+	var isExtensible = Object.isExtensible || function () {
+	  return true;
+	};
+	var FREEZE = !_fails(function () {
+	  return isExtensible(Object.preventExtensions({}));
+	});
+	var setMeta = function (it) {
+	  setDesc(it, META, { value: {
+	    i: 'O' + ++id, // object ID
+	    w: {}          // weak collections IDs
+	  } });
+	};
+	var fastKey = function (it, create) {
+	  // return primitive with prefix
+	  if (!_isObject(it)) return typeof it == 'symbol' ? it : (typeof it == 'string' ? 'S' : 'P') + it;
+	  if (!_has(it, META)) {
+	    // can't set metadata to uncaught frozen object
+	    if (!isExtensible(it)) return 'F';
+	    // not necessary to add metadata
+	    if (!create) return 'E';
+	    // add missing metadata
+	    setMeta(it);
+	  // return object ID
+	  } return it[META].i;
+	};
+	var getWeak = function (it, create) {
+	  if (!_has(it, META)) {
+	    // can't set metadata to uncaught frozen object
+	    if (!isExtensible(it)) return true;
+	    // not necessary to add metadata
+	    if (!create) return false;
+	    // add missing metadata
+	    setMeta(it);
+	  // return hash weak collections IDs
+	  } return it[META].w;
+	};
+	// add metadata on freeze-family methods calling
+	var onFreeze = function (it) {
+	  if (FREEZE && meta.NEED && isExtensible(it) && !_has(it, META)) setMeta(it);
+	  return it;
+	};
+	var meta = module.exports = {
+	  KEY: META,
+	  NEED: false,
+	  fastKey: fastKey,
+	  getWeak: getWeak,
+	  onFreeze: onFreeze
+	};
+	});
+	var _meta_1 = _meta.KEY;
+	var _meta_2 = _meta.NEED;
+	var _meta_3 = _meta.fastKey;
+	var _meta_4 = _meta.getWeak;
+	var _meta_5 = _meta.onFreeze;
+
+	var defineProperty = _objectDp.f;
+	var _wksDefine = function (name) {
+	  var $Symbol = _core.Symbol || (_core.Symbol = _library ? {} : _global.Symbol || {});
+	  if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: _wksExt.f(name) });
+	};
+
+	// all enumerable object keys, includes symbols
+
+
+
+	var _enumKeys = function (it) {
+	  var result = _objectKeys(it);
+	  var getSymbols = _objectGops.f;
+	  if (getSymbols) {
+	    var symbols = getSymbols(it);
+	    var isEnum = _objectPie.f;
+	    var i = 0;
+	    var key;
+	    while (symbols.length > i) if (isEnum.call(it, key = symbols[i++])) result.push(key);
+	  } return result;
+	};
+
+	// 7.2.2 IsArray(argument)
+
+	var _isArray = Array.isArray || function isArray(arg) {
+	  return _cof(arg) == 'Array';
+	};
+
+	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
+
+	var hiddenKeys = _enumBugKeys.concat('length', 'prototype');
+
+	var f$4 = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
+	  return _objectKeysInternal(O, hiddenKeys);
+	};
+
+	var _objectGopn = {
+		f: f$4
+	};
+
+	// fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
+
+	var gOPN = _objectGopn.f;
+	var toString$1 = {}.toString;
+
+	var windowNames = typeof window == 'object' && window && Object.getOwnPropertyNames
+	  ? Object.getOwnPropertyNames(window) : [];
+
+	var getWindowNames = function (it) {
+	  try {
+	    return gOPN(it);
+	  } catch (e) {
+	    return windowNames.slice();
+	  }
+	};
+
+	var f$5 = function getOwnPropertyNames(it) {
+	  return windowNames && toString$1.call(it) == '[object Window]' ? getWindowNames(it) : gOPN(_toIobject(it));
+	};
+
+	var _objectGopnExt = {
+		f: f$5
+	};
+
+	var gOPD = Object.getOwnPropertyDescriptor;
+
+	var f$6 = _descriptors ? gOPD : function getOwnPropertyDescriptor(O, P) {
+	  O = _toIobject(O);
+	  P = _toPrimitive(P, true);
+	  if (_ie8DomDefine) try {
+	    return gOPD(O, P);
+	  } catch (e) { /* empty */ }
+	  if (_has(O, P)) return _propertyDesc(!_objectPie.f.call(O, P), O[P]);
+	};
+
+	var _objectGopd = {
+		f: f$6
+	};
+
+	// ECMAScript 6 symbols shim
+
+
+
+
+
+	var META = _meta.KEY;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	var gOPD$1 = _objectGopd.f;
+	var dP$1 = _objectDp.f;
+	var gOPN$1 = _objectGopnExt.f;
+	var $Symbol = _global.Symbol;
+	var $JSON = _global.JSON;
+	var _stringify = $JSON && $JSON.stringify;
+	var PROTOTYPE$2 = 'prototype';
+	var HIDDEN = _wks('_hidden');
+	var TO_PRIMITIVE = _wks('toPrimitive');
+	var isEnum = {}.propertyIsEnumerable;
+	var SymbolRegistry = _shared('symbol-registry');
+	var AllSymbols = _shared('symbols');
+	var OPSymbols = _shared('op-symbols');
+	var ObjectProto$1 = Object[PROTOTYPE$2];
+	var USE_NATIVE = typeof $Symbol == 'function';
+	var QObject = _global.QObject;
+	// Don't use setters in Qt Script, https://github.com/zloirock/core-js/issues/173
+	var setter = !QObject || !QObject[PROTOTYPE$2] || !QObject[PROTOTYPE$2].findChild;
+
+	// fallback for old Android, https://code.google.com/p/v8/issues/detail?id=687
+	var setSymbolDesc = _descriptors && _fails(function () {
+	  return _objectCreate(dP$1({}, 'a', {
+	    get: function () { return dP$1(this, 'a', { value: 7 }).a; }
+	  })).a != 7;
+	}) ? function (it, key, D) {
+	  var protoDesc = gOPD$1(ObjectProto$1, key);
+	  if (protoDesc) delete ObjectProto$1[key];
+	  dP$1(it, key, D);
+	  if (protoDesc && it !== ObjectProto$1) dP$1(ObjectProto$1, key, protoDesc);
+	} : dP$1;
+
+	var wrap = function (tag) {
+	  var sym = AllSymbols[tag] = _objectCreate($Symbol[PROTOTYPE$2]);
+	  sym._k = tag;
+	  return sym;
+	};
+
+	var isSymbol = USE_NATIVE && typeof $Symbol.iterator == 'symbol' ? function (it) {
+	  return typeof it == 'symbol';
+	} : function (it) {
+	  return it instanceof $Symbol;
+	};
+
+	var $defineProperty = function defineProperty(it, key, D) {
+	  if (it === ObjectProto$1) $defineProperty(OPSymbols, key, D);
+	  _anObject(it);
+	  key = _toPrimitive(key, true);
+	  _anObject(D);
+	  if (_has(AllSymbols, key)) {
+	    if (!D.enumerable) {
+	      if (!_has(it, HIDDEN)) dP$1(it, HIDDEN, _propertyDesc(1, {}));
+	      it[HIDDEN][key] = true;
+	    } else {
+	      if (_has(it, HIDDEN) && it[HIDDEN][key]) it[HIDDEN][key] = false;
+	      D = _objectCreate(D, { enumerable: _propertyDesc(0, false) });
+	    } return setSymbolDesc(it, key, D);
+	  } return dP$1(it, key, D);
+	};
+	var $defineProperties = function defineProperties(it, P) {
+	  _anObject(it);
+	  var keys = _enumKeys(P = _toIobject(P));
+	  var i = 0;
+	  var l = keys.length;
+	  var key;
+	  while (l > i) $defineProperty(it, key = keys[i++], P[key]);
+	  return it;
+	};
+	var $create = function create(it, P) {
+	  return P === undefined ? _objectCreate(it) : $defineProperties(_objectCreate(it), P);
+	};
+	var $propertyIsEnumerable = function propertyIsEnumerable(key) {
+	  var E = isEnum.call(this, key = _toPrimitive(key, true));
+	  if (this === ObjectProto$1 && _has(AllSymbols, key) && !_has(OPSymbols, key)) return false;
+	  return E || !_has(this, key) || !_has(AllSymbols, key) || _has(this, HIDDEN) && this[HIDDEN][key] ? E : true;
+	};
+	var $getOwnPropertyDescriptor = function getOwnPropertyDescriptor(it, key) {
+	  it = _toIobject(it);
+	  key = _toPrimitive(key, true);
+	  if (it === ObjectProto$1 && _has(AllSymbols, key) && !_has(OPSymbols, key)) return;
+	  var D = gOPD$1(it, key);
+	  if (D && _has(AllSymbols, key) && !(_has(it, HIDDEN) && it[HIDDEN][key])) D.enumerable = true;
+	  return D;
+	};
+	var $getOwnPropertyNames = function getOwnPropertyNames(it) {
+	  var names = gOPN$1(_toIobject(it));
+	  var result = [];
+	  var i = 0;
+	  var key;
+	  while (names.length > i) {
+	    if (!_has(AllSymbols, key = names[i++]) && key != HIDDEN && key != META) result.push(key);
+	  } return result;
+	};
+	var $getOwnPropertySymbols = function getOwnPropertySymbols(it) {
+	  var IS_OP = it === ObjectProto$1;
+	  var names = gOPN$1(IS_OP ? OPSymbols : _toIobject(it));
+	  var result = [];
+	  var i = 0;
+	  var key;
+	  while (names.length > i) {
+	    if (_has(AllSymbols, key = names[i++]) && (IS_OP ? _has(ObjectProto$1, key) : true)) result.push(AllSymbols[key]);
+	  } return result;
+	};
+
+	// 19.4.1.1 Symbol([description])
+	if (!USE_NATIVE) {
+	  $Symbol = function Symbol() {
+	    if (this instanceof $Symbol) throw TypeError('Symbol is not a constructor!');
+	    var tag = _uid(arguments.length > 0 ? arguments[0] : undefined);
+	    var $set = function (value) {
+	      if (this === ObjectProto$1) $set.call(OPSymbols, value);
+	      if (_has(this, HIDDEN) && _has(this[HIDDEN], tag)) this[HIDDEN][tag] = false;
+	      setSymbolDesc(this, tag, _propertyDesc(1, value));
+	    };
+	    if (_descriptors && setter) setSymbolDesc(ObjectProto$1, tag, { configurable: true, set: $set });
+	    return wrap(tag);
+	  };
+	  _redefine($Symbol[PROTOTYPE$2], 'toString', function toString() {
+	    return this._k;
+	  });
+
+	  _objectGopd.f = $getOwnPropertyDescriptor;
+	  _objectDp.f = $defineProperty;
+	  _objectGopn.f = _objectGopnExt.f = $getOwnPropertyNames;
+	  _objectPie.f = $propertyIsEnumerable;
+	  _objectGops.f = $getOwnPropertySymbols;
+
+	  if (_descriptors && !_library) {
+	    _redefine(ObjectProto$1, 'propertyIsEnumerable', $propertyIsEnumerable, true);
+	  }
+
+	  _wksExt.f = function (name) {
+	    return wrap(_wks(name));
+	  };
+	}
+
+	_export(_export.G + _export.W + _export.F * !USE_NATIVE, { Symbol: $Symbol });
+
+	for (var es6Symbols = (
+	  // 19.4.2.2, 19.4.2.3, 19.4.2.4, 19.4.2.6, 19.4.2.8, 19.4.2.9, 19.4.2.10, 19.4.2.11, 19.4.2.12, 19.4.2.13, 19.4.2.14
+	  'hasInstance,isConcatSpreadable,iterator,match,replace,search,species,split,toPrimitive,toStringTag,unscopables'
+	).split(','), j = 0; es6Symbols.length > j;)_wks(es6Symbols[j++]);
+
+	for (var wellKnownSymbols = _objectKeys(_wks.store), k = 0; wellKnownSymbols.length > k;) _wksDefine(wellKnownSymbols[k++]);
+
+	_export(_export.S + _export.F * !USE_NATIVE, 'Symbol', {
+	  // 19.4.2.1 Symbol.for(key)
+	  'for': function (key) {
+	    return _has(SymbolRegistry, key += '')
+	      ? SymbolRegistry[key]
+	      : SymbolRegistry[key] = $Symbol(key);
+	  },
+	  // 19.4.2.5 Symbol.keyFor(sym)
+	  keyFor: function keyFor(sym) {
+	    if (!isSymbol(sym)) throw TypeError(sym + ' is not a symbol!');
+	    for (var key in SymbolRegistry) if (SymbolRegistry[key] === sym) return key;
+	  },
+	  useSetter: function () { setter = true; },
+	  useSimple: function () { setter = false; }
+	});
+
+	_export(_export.S + _export.F * !USE_NATIVE, 'Object', {
+	  // 19.1.2.2 Object.create(O [, Properties])
+	  create: $create,
+	  // 19.1.2.4 Object.defineProperty(O, P, Attributes)
+	  defineProperty: $defineProperty,
+	  // 19.1.2.3 Object.defineProperties(O, Properties)
+	  defineProperties: $defineProperties,
+	  // 19.1.2.6 Object.getOwnPropertyDescriptor(O, P)
+	  getOwnPropertyDescriptor: $getOwnPropertyDescriptor,
+	  // 19.1.2.7 Object.getOwnPropertyNames(O)
+	  getOwnPropertyNames: $getOwnPropertyNames,
+	  // 19.1.2.8 Object.getOwnPropertySymbols(O)
+	  getOwnPropertySymbols: $getOwnPropertySymbols
+	});
+
+	// 24.3.2 JSON.stringify(value [, replacer [, space]])
+	$JSON && _export(_export.S + _export.F * (!USE_NATIVE || _fails(function () {
+	  var S = $Symbol();
+	  // MS Edge converts symbol values to JSON as {}
+	  // WebKit converts symbol values to JSON as null
+	  // V8 throws on boxed symbols
+	  return _stringify([S]) != '[null]' || _stringify({ a: S }) != '{}' || _stringify(Object(S)) != '{}';
+	})), 'JSON', {
+	  stringify: function stringify(it) {
+	    var args = [it];
+	    var i = 1;
+	    var replacer, $replacer;
+	    while (arguments.length > i) args.push(arguments[i++]);
+	    $replacer = replacer = args[1];
+	    if (!_isObject(replacer) && it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
+	    if (!_isArray(replacer)) replacer = function (key, value) {
+	      if (typeof $replacer == 'function') value = $replacer.call(this, key, value);
+	      if (!isSymbol(value)) return value;
+	    };
+	    args[1] = replacer;
+	    return _stringify.apply($JSON, args);
+	  }
+	});
+
+	// 19.4.3.4 Symbol.prototype[@@toPrimitive](hint)
+	$Symbol[PROTOTYPE$2][TO_PRIMITIVE] || _hide($Symbol[PROTOTYPE$2], TO_PRIMITIVE, $Symbol[PROTOTYPE$2].valueOf);
+	// 19.4.3.5 Symbol.prototype[@@toStringTag]
+	_setToStringTag($Symbol, 'Symbol');
+	// 20.2.1.9 Math[@@toStringTag]
+	_setToStringTag(Math, 'Math', true);
+	// 24.3.3 JSON[@@toStringTag]
+	_setToStringTag(_global.JSON, 'JSON', true);
+
+	_wksDefine('asyncIterator');
+
+	_wksDefine('observable');
+
+	var symbol = _core.Symbol;
+
+	var symbol$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": symbol, __esModule: true };
+	});
+
+	unwrapExports(symbol$1);
+
+	var _typeof_1 = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _iterator2 = _interopRequireDefault(iterator$1);
+
+
+
+	var _symbol2 = _interopRequireDefault(symbol$1);
+
+	var _typeof = typeof _symbol2.default === "function" && typeof _iterator2.default === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj; };
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.default) === "symbol" ? function (obj) {
+	  return typeof obj === "undefined" ? "undefined" : _typeof(obj);
+	} : function (obj) {
+	  return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
+	};
+	});
+
+	var _typeof = unwrapExports(_typeof_1);
+
+	var classCallCheck = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+	exports.default = function (instance, Constructor) {
+	  if (!(instance instanceof Constructor)) {
+	    throw new TypeError("Cannot call a class as a function");
+	  }
+	};
+	});
+
+	var _classCallCheck = unwrapExports(classCallCheck);
+
+	// 19.1.2.4 / 15.2.3.6 Object.defineProperty(O, P, Attributes)
+	_export(_export.S + _export.F * !_descriptors, 'Object', { defineProperty: _objectDp.f });
+
+	var $Object$1 = _core.Object;
+	var defineProperty$1 = function defineProperty(it, key, desc) {
+	  return $Object$1.defineProperty(it, key, desc);
+	};
+
+	var defineProperty$2 = createCommonjsModule(function (module) {
+	module.exports = { "default": defineProperty$1, __esModule: true };
+	});
+
+	unwrapExports(defineProperty$2);
+
+	var createClass = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _defineProperty2 = _interopRequireDefault(defineProperty$2);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = function () {
+	  function defineProperties(target, props) {
+	    for (var i = 0; i < props.length; i++) {
+	      var descriptor = props[i];
+	      descriptor.enumerable = descriptor.enumerable || false;
+	      descriptor.configurable = true;
+	      if ("value" in descriptor) descriptor.writable = true;
+	      (0, _defineProperty2.default)(target, descriptor.key, descriptor);
+	    }
+	  }
+
+	  return function (Constructor, protoProps, staticProps) {
+	    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+	    if (staticProps) defineProperties(Constructor, staticProps);
+	    return Constructor;
+	  };
+	}();
+	});
+
+	var _createClass = unwrapExports(createClass);
+
+	// most Object methods by ES6 should accept primitives
+
+
+
+	var _objectSap = function (KEY, exec) {
+	  var fn = (_core.Object || {})[KEY] || Object[KEY];
+	  var exp = {};
+	  exp[KEY] = exec(fn);
+	  _export(_export.S + _export.F * _fails(function () { fn(1); }), 'Object', exp);
+	};
+
+	// 19.1.2.9 Object.getPrototypeOf(O)
+
+
+
+	_objectSap('getPrototypeOf', function () {
+	  return function getPrototypeOf(it) {
+	    return _objectGpo(_toObject(it));
+	  };
+	});
+
+	var getPrototypeOf = _core.Object.getPrototypeOf;
+
+	var getPrototypeOf$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": getPrototypeOf, __esModule: true };
+	});
+
+	var _Object$getPrototypeOf = unwrapExports(getPrototypeOf$1);
+
+	var possibleConstructorReturn = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _typeof3 = _interopRequireDefault(_typeof_1);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = function (self, call) {
+	  if (!self) {
+	    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+	  }
+
+	  return call && ((typeof call === "undefined" ? "undefined" : (0, _typeof3.default)(call)) === "object" || typeof call === "function") ? call : self;
+	};
+	});
+
+	var _possibleConstructorReturn = unwrapExports(possibleConstructorReturn);
+
+	// Works with __proto__ only. Old v8 can't work with null proto objects.
+	/* eslint-disable no-proto */
+
+
+	var check = function (O, proto) {
+	  _anObject(O);
+	  if (!_isObject(proto) && proto !== null) throw TypeError(proto + ": can't set as prototype!");
+	};
+	var _setProto = {
+	  set: Object.setPrototypeOf || ('__proto__' in {} ? // eslint-disable-line
+	    function (test, buggy, set) {
+	      try {
+	        set = _ctx(Function.call, _objectGopd.f(Object.prototype, '__proto__').set, 2);
+	        set(test, []);
+	        buggy = !(test instanceof Array);
+	      } catch (e) { buggy = true; }
+	      return function setPrototypeOf(O, proto) {
+	        check(O, proto);
+	        if (buggy) O.__proto__ = proto;
+	        else set(O, proto);
+	        return O;
+	      };
+	    }({}, false) : undefined),
+	  check: check
+	};
+
+	// 19.1.3.19 Object.setPrototypeOf(O, proto)
+
+	_export(_export.S, 'Object', { setPrototypeOf: _setProto.set });
+
+	var setPrototypeOf = _core.Object.setPrototypeOf;
+
+	var setPrototypeOf$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": setPrototypeOf, __esModule: true };
+	});
+
+	unwrapExports(setPrototypeOf$1);
+
+	var inherits = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _setPrototypeOf2 = _interopRequireDefault(setPrototypeOf$1);
+
+
+
+	var _create2 = _interopRequireDefault(create$1);
+
+
+
+	var _typeof3 = _interopRequireDefault(_typeof_1);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = function (subClass, superClass) {
+	  if (typeof superClass !== "function" && superClass !== null) {
+	    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : (0, _typeof3.default)(superClass)));
+	  }
+
+	  subClass.prototype = (0, _create2.default)(superClass && superClass.prototype, {
+	    constructor: {
+	      value: subClass,
+	      enumerable: false,
+	      writable: true,
+	      configurable: true
+	    }
+	  });
+	  if (superClass) _setPrototypeOf2.default ? (0, _setPrototypeOf2.default)(subClass, superClass) : subClass.__proto__ = superClass;
+	};
+	});
+
+	var _inherits = unwrapExports(inherits);
+
+	//import axios from 'axios';
+	function AxiosCore () {}
+
+	var defOpts = {
+	  credentitals: 'same-origin',
+	  responseType: 'json'
+	};
+	var responseMixin = {
+	  'json': 'json'
+	};
+
+	var SmartApi = function () {
+	  function SmartApi(ajaxCore, context) {
+	    var _this = this;
+
+	    _classCallCheck(this, SmartApi);
+
+	    this._silence = false;
+	    this._checkCode = true;
+	    this._codeCheckResult = false;
+	    this._lockKey = '';
+	    this._faileHandle = null;
+	    this._successHandle = null;
+	    this._SAinfos = {};
+
+	    this._handleResData = function (resjson) {
+	      if (_this._codeCheck) {
+	        _this._codeCheckResult && _this._successHandle(resjson.data);
+	      } else {
+	        _this._successHandle(resjson);
+	      }
+	    };
+
+	    this._typeHandle = function (response) {
+	      var responseType = _this._init.responseType;
+
+	      var mixFn = responseMixin[responseType];
+	      if (response[mixFn]) {
+	        return response[mixFn]();
+	      }
+	    };
+
+	    this._handleError = function (error) {
+	      _this._unlock();
+	      if (_this._silence) return;
+	      var errorHandle = _this.userConfig.errorHandle;
+
+	      errorHandle(error);
+	      _this._faileHandle && _this._faileHandle(error);
+	    };
+
+	    this._responseCheck = function (resjson) {
+	      var codeCheck = _this.userConfig.codeCheck;
+
+	      if (typeof codeCheck === 'function') {
+	        return codeCheck(resjson);
+	      } else if (typeof codeCheck === 'string') {
+	        return resjson[codeCheck];
+	      }
+	    };
+
+	    this._codeCheck = function (resjson) {
+	      _this._unlock();
+	      if (_this._checkCode && (_this._codeCheckResult = _this._responseCheck(resjson))) {
+	        return resjson;
+	      }
+	      if (_this._silence) return;
+	      var codeError = _this.userConfig.codeError;
+
+	      codeError(resjson);
+	      _this._faileHandle && _this._faileHandle(null, resjson);
+	    };
+
+	    _Object$assign(this, ajaxCore);
+	    this._ajaxCoreMixin(ajaxCore);
+	    this._context = context;
+	    return this;
+	  }
+
+	  _createClass(SmartApi, [{
+	    key: '_ajaxCoreMixin',
+	    value: function _ajaxCoreMixin(ajaxCore) {
+	      !ajaxCore.hasFetch && AxiosCore.call(this);
+	    }
+	  }, {
+	    key: '_createRequest',
+	    value: function _createRequest(config) {
+	      var _this2 = this;
+
+	      setTimeout(function () {
+	        if (!_this2._checkLock()) {
+	          _this2._lock();
+	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).catch(_this2._handleError);
+	          _this2._successHandle && _this2._reqPromise.then(_this2._handleResData);
+	        }
+	      }, 0);
+	    }
+	  }, {
+	    key: '_request',
+	    value: function _request(config) {
+	      this._init = _Object$assign({}, defOpts, config);
+	      return fetch(config.url, config).then(this._resCheck).then(this._typeHandle);
+	    }
+	  }, {
+	    key: '_lock',
+	    value: function _lock() {
+	      this._stateLock();
+	    }
+	  }, {
+	    key: '_unlock',
+	    value: function _unlock() {
+	      this._stateLock(true);
+	    }
+	  }, {
+	    key: '_checkLock',
+	    value: function _checkLock() {
+	      return this._lockKey && this._getLockValue();
+	    }
+	  }, {
+	    key: '_resCheck',
+	    value: function _resCheck(response) {
+	      if (response.ok) {
+	        return response;
+	      }
+	      throw new Error(response.status);
+	    }
+	  }, {
+	    key: 'lock',
+
+	    // public apis
+	    value: function lock(key) {
+	      if (key && typeof key === 'string') {
+	        this._lockKey = key;
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'done',
+	    value: function done(successHandle) {
+	      typeof successHandle === 'function' && (this._successHandle = successHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'faile',
+	    value: function faile(faileHandle) {
+	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'silence',
+	    value: function silence() {
+	      this._silence = true;
+	      return this;
+	    }
+	  }, {
+	    key: 'notCheckJson',
+	    value: function notCheckJson() {
+	      this._checkCode = false;
+	      return this;
+	    }
+	  }]);
+
+	  return SmartApi;
+	}();
+
+	var SmartApiVue = function (_SmartApi) {
+	  _inherits(SmartApiVue, _SmartApi);
+
+	  function SmartApiVue(ajaxCore, context, config) {
+	    var _ret;
+
+	    _classCallCheck(this, SmartApiVue);
+
+	    var _this = _possibleConstructorReturn(this, (SmartApiVue.__proto__ || _Object$getPrototypeOf(SmartApiVue)).call(this, ajaxCore, context));
+
+	    _this._useSAkeys = false;
+
+	    _this._createRequest(config);
+	    return _ret = _this, _possibleConstructorReturn(_this, _ret);
+	  }
+
+	  _createClass(SmartApiVue, [{
+	    key: '_stateLock',
+	    value: function _stateLock(unlock) {
+	      var _lockKey = this._lockKey,
+	          _context = this._context,
+	          SAKEYS = this._context.SAKEYS;
+
+	      if (_context.hasOwnProperty(_lockKey)) {
+	        _context[_lockKey] = !unlock;
+	      } else {
+	        if (SAKEYS.hasOwnProperty(_lockKey)) {
+	          SAKEYS[_lockKey] = !unlock;
+	        } else {
+	          _context.$set(SAKEYS, _lockKey, true);
+	          this._useSAkeys = true;
+	        }
+	      }
+	    }
+	  }, {
+	    key: '_getLockValue',
+	    value: function _getLockValue() {
+	      var _context = this._context,
+	          _lockKey = this._lockKey,
+	          _useSAkeys = this._useSAkeys;
+
+	      return _useSAkeys ? _context.SAKEYS[_lockKey] : _context[_lockKey];
+	    }
+	  }]);
+
+	  return SmartApiVue;
+	}(SmartApi);
 
 	var runtime = createCommonjsModule(function (module) {
 	/**
@@ -1150,203 +2227,6 @@
 
 	var regenerator = runtimeModule;
 
-	// true  -> String#at
-	// false -> String#codePointAt
-	var _stringAt = function (TO_STRING) {
-	  return function (that, pos) {
-	    var s = String(_defined(that));
-	    var i = _toInteger(pos);
-	    var l = s.length;
-	    var a, b;
-	    if (i < 0 || i >= l) return TO_STRING ? '' : undefined;
-	    a = s.charCodeAt(i);
-	    return a < 0xd800 || a > 0xdbff || i + 1 === l || (b = s.charCodeAt(i + 1)) < 0xdc00 || b > 0xdfff
-	      ? TO_STRING ? s.charAt(i) : a
-	      : TO_STRING ? s.slice(i, i + 2) : (a - 0xd800 << 10) + (b - 0xdc00) + 0x10000;
-	  };
-	};
-
-	var _library = true;
-
-	var _redefine = _hide;
-
-	var _iterators = {};
-
-	var _wks = createCommonjsModule(function (module) {
-	var store = _shared('wks');
-
-	var Symbol = _global.Symbol;
-	var USE_SYMBOL = typeof Symbol == 'function';
-
-	var $exports = module.exports = function (name) {
-	  return store[name] || (store[name] =
-	    USE_SYMBOL && Symbol[name] || (USE_SYMBOL ? Symbol : _uid)('Symbol.' + name));
-	};
-
-	$exports.store = store;
-	});
-
-	var def = _objectDp.f;
-
-	var TAG = _wks('toStringTag');
-
-	var _setToStringTag = function (it, tag, stat) {
-	  if (it && !_has(it = stat ? it : it.prototype, TAG)) def(it, TAG, { configurable: true, value: tag });
-	};
-
-	var IteratorPrototype = {};
-
-	// 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
-	_hide(IteratorPrototype, _wks('iterator'), function () { return this; });
-
-	var _iterCreate = function (Constructor, NAME, next) {
-	  Constructor.prototype = _objectCreate(IteratorPrototype, { next: _propertyDesc(1, next) });
-	  _setToStringTag(Constructor, NAME + ' Iterator');
-	};
-
-	// 7.1.13 ToObject(argument)
-
-	var _toObject = function (it) {
-	  return Object(_defined(it));
-	};
-
-	// 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
-
-
-	var IE_PROTO$2 = _sharedKey('IE_PROTO');
-	var ObjectProto = Object.prototype;
-
-	var _objectGpo = Object.getPrototypeOf || function (O) {
-	  O = _toObject(O);
-	  if (_has(O, IE_PROTO$2)) return O[IE_PROTO$2];
-	  if (typeof O.constructor == 'function' && O instanceof O.constructor) {
-	    return O.constructor.prototype;
-	  } return O instanceof Object ? ObjectProto : null;
-	};
-
-	var ITERATOR = _wks('iterator');
-	var BUGGY = !([].keys && 'next' in [].keys()); // Safari has buggy iterators w/o `next`
-	var FF_ITERATOR = '@@iterator';
-	var KEYS = 'keys';
-	var VALUES = 'values';
-
-	var returnThis = function () { return this; };
-
-	var _iterDefine = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCED) {
-	  _iterCreate(Constructor, NAME, next);
-	  var getMethod = function (kind) {
-	    if (!BUGGY && kind in proto) return proto[kind];
-	    switch (kind) {
-	      case KEYS: return function keys() { return new Constructor(this, kind); };
-	      case VALUES: return function values() { return new Constructor(this, kind); };
-	    } return function entries() { return new Constructor(this, kind); };
-	  };
-	  var TAG = NAME + ' Iterator';
-	  var DEF_VALUES = DEFAULT == VALUES;
-	  var VALUES_BUG = false;
-	  var proto = Base.prototype;
-	  var $native = proto[ITERATOR] || proto[FF_ITERATOR] || DEFAULT && proto[DEFAULT];
-	  var $default = $native || getMethod(DEFAULT);
-	  var $entries = DEFAULT ? !DEF_VALUES ? $default : getMethod('entries') : undefined;
-	  var $anyNative = NAME == 'Array' ? proto.entries || $native : $native;
-	  var methods, key, IteratorPrototype;
-	  // Fix native
-	  if ($anyNative) {
-	    IteratorPrototype = _objectGpo($anyNative.call(new Base()));
-	    if (IteratorPrototype !== Object.prototype && IteratorPrototype.next) {
-	      // Set @@toStringTag to native iterators
-	      _setToStringTag(IteratorPrototype, TAG, true);
-	      // fix for some old engines
-	      if (!_library && typeof IteratorPrototype[ITERATOR] != 'function') _hide(IteratorPrototype, ITERATOR, returnThis);
-	    }
-	  }
-	  // fix Array#{values, @@iterator}.name in V8 / FF
-	  if (DEF_VALUES && $native && $native.name !== VALUES) {
-	    VALUES_BUG = true;
-	    $default = function values() { return $native.call(this); };
-	  }
-	  // Define iterator
-	  if ((!_library || FORCED) && (BUGGY || VALUES_BUG || !proto[ITERATOR])) {
-	    _hide(proto, ITERATOR, $default);
-	  }
-	  // Plug for library
-	  _iterators[NAME] = $default;
-	  _iterators[TAG] = returnThis;
-	  if (DEFAULT) {
-	    methods = {
-	      values: DEF_VALUES ? $default : getMethod(VALUES),
-	      keys: IS_SET ? $default : getMethod(KEYS),
-	      entries: $entries
-	    };
-	    if (FORCED) for (key in methods) {
-	      if (!(key in proto)) _redefine(proto, key, methods[key]);
-	    } else _export(_export.P + _export.F * (BUGGY || VALUES_BUG), NAME, methods);
-	  }
-	  return methods;
-	};
-
-	var $at = _stringAt(true);
-
-	// 21.1.3.27 String.prototype[@@iterator]()
-	_iterDefine(String, 'String', function (iterated) {
-	  this._t = String(iterated); // target
-	  this._i = 0;                // next index
-	// 21.1.5.2.1 %StringIteratorPrototype%.next()
-	}, function () {
-	  var O = this._t;
-	  var index = this._i;
-	  var point;
-	  if (index >= O.length) return { value: undefined, done: true };
-	  point = $at(O, index);
-	  this._i += point.length;
-	  return { value: point, done: false };
-	});
-
-	var _iterStep = function (done, value) {
-	  return { value: value, done: !!done };
-	};
-
-	// 22.1.3.4 Array.prototype.entries()
-	// 22.1.3.13 Array.prototype.keys()
-	// 22.1.3.29 Array.prototype.values()
-	// 22.1.3.30 Array.prototype[@@iterator]()
-	var es6_array_iterator = _iterDefine(Array, 'Array', function (iterated, kind) {
-	  this._t = _toIobject(iterated); // target
-	  this._i = 0;                   // next index
-	  this._k = kind;                // kind
-	// 22.1.5.2.1 %ArrayIteratorPrototype%.next()
-	}, function () {
-	  var O = this._t;
-	  var kind = this._k;
-	  var index = this._i++;
-	  if (!O || index >= O.length) {
-	    this._t = undefined;
-	    return _iterStep(1);
-	  }
-	  if (kind == 'keys') return _iterStep(0, index);
-	  if (kind == 'values') return _iterStep(0, O[index]);
-	  return _iterStep(0, [index, O[index]]);
-	}, 'values');
-
-	// argumentsList[@@iterator] is %ArrayProto_values% (9.4.4.6, 9.4.4.7)
-	_iterators.Arguments = _iterators.Array;
-
-	var TO_STRING_TAG = _wks('toStringTag');
-
-	var DOMIterables = ('CSSRuleList,CSSStyleDeclaration,CSSValueList,ClientRectList,DOMRectList,DOMStringList,' +
-	  'DOMTokenList,DataTransferItemList,FileList,HTMLAllCollection,HTMLCollection,HTMLFormElement,HTMLSelectElement,' +
-	  'MediaList,MimeTypeArray,NamedNodeMap,NodeList,PaintRequestList,Plugin,PluginArray,SVGLengthList,SVGNumberList,' +
-	  'SVGPathSegList,SVGPointList,SVGStringList,SVGTransformList,SourceBufferList,StyleSheetList,TextTrackCueList,' +
-	  'TextTrackList,TouchList').split(',');
-
-	for (var i = 0; i < DOMIterables.length; i++) {
-	  var NAME = DOMIterables[i];
-	  var Collection = _global[NAME];
-	  var proto = Collection && Collection.prototype;
-	  if (proto && !proto[TO_STRING_TAG]) _hide(proto, TO_STRING_TAG, NAME);
-	  _iterators[NAME] = _iterators.Array;
-	}
-
 	// getting tag from 19.1.3.6 Object.prototype.toString()
 
 	var TAG$1 = _wks('toStringTag');
@@ -1618,12 +2498,12 @@
 	  this.reject = _aFunction(reject);
 	}
 
-	var f$1 = function (C) {
+	var f$7 = function (C) {
 	  return new PromiseCapability(C);
 	};
 
 	var _newPromiseCapability = {
-		f: f$1
+		f: f$7
 	};
 
 	var _perform = function (exec) {
@@ -1695,7 +2575,7 @@
 	var Internal, newGenericPromiseCapability, OwnPromiseCapability, Wrapper;
 	var newPromiseCapability = newGenericPromiseCapability = _newPromiseCapability.f;
 
-	var USE_NATIVE = !!function () {
+	var USE_NATIVE$1 = !!function () {
 	  try {
 	    // correct subclassing with @@species support
 	    var promise = $Promise.resolve(1);
@@ -1830,7 +2710,7 @@
 	};
 
 	// constructor polyfill
-	if (!USE_NATIVE) {
+	if (!USE_NATIVE$1) {
 	  // 25.4.3.1 Promise(executor)
 	  $Promise = function Promise(executor) {
 	    _anInstance(this, $Promise, PROMISE, '_h');
@@ -1882,13 +2762,13 @@
 	  };
 	}
 
-	_export(_export.G + _export.W + _export.F * !USE_NATIVE, { Promise: $Promise });
+	_export(_export.G + _export.W + _export.F * !USE_NATIVE$1, { Promise: $Promise });
 	_setToStringTag($Promise, PROMISE);
 	_setSpecies(PROMISE);
 	Wrapper = _core[PROMISE];
 
 	// statics
-	_export(_export.S + _export.F * !USE_NATIVE, PROMISE, {
+	_export(_export.S + _export.F * !USE_NATIVE$1, PROMISE, {
 	  // 25.4.4.5 Promise.reject(r)
 	  reject: function reject(r) {
 	    var capability = newPromiseCapability(this);
@@ -1897,13 +2777,13 @@
 	    return capability.promise;
 	  }
 	});
-	_export(_export.S + _export.F * (_library || !USE_NATIVE), PROMISE, {
+	_export(_export.S + _export.F * (_library || !USE_NATIVE$1), PROMISE, {
 	  // 25.4.4.6 Promise.resolve(x)
 	  resolve: function resolve(x) {
 	    return _promiseResolve(_library && this === Wrapper ? $Promise : this, x);
 	  }
 	});
-	_export(_export.S + _export.F * !(USE_NATIVE && _iterDetect(function (iter) {
+	_export(_export.S + _export.F * !(USE_NATIVE$1 && _iterDetect(function (iter) {
 	  $Promise.all(iter)['catch'](empty);
 	})), PROMISE, {
 	  // 25.4.4.1 Promise.all(iterable)
@@ -2023,857 +2903,13 @@
 
 	var _asyncToGenerator = unwrapExports(asyncToGenerator);
 
-	var f$2 = Object.getOwnPropertySymbols;
-
-	var _objectGops = {
-		f: f$2
-	};
-
-	var f$3 = {}.propertyIsEnumerable;
-
-	var _objectPie = {
-		f: f$3
-	};
-
-	// 19.1.2.1 Object.assign(target, source, ...)
-
-
-
-
-
-	var $assign = Object.assign;
-
-	// should work with symbols and should have deterministic property order (V8 bug)
-	var _objectAssign = !$assign || _fails(function () {
-	  var A = {};
-	  var B = {};
-	  // eslint-disable-next-line no-undef
-	  var S = Symbol();
-	  var K = 'abcdefghijklmnopqrst';
-	  A[S] = 7;
-	  K.split('').forEach(function (k) { B[k] = k; });
-	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
-	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
-	  var T = _toObject(target);
-	  var aLen = arguments.length;
-	  var index = 1;
-	  var getSymbols = _objectGops.f;
-	  var isEnum = _objectPie.f;
-	  while (aLen > index) {
-	    var S = _iobject(arguments[index++]);
-	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
-	    var length = keys.length;
-	    var j = 0;
-	    var key;
-	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
-	  } return T;
-	} : $assign;
-
-	// 19.1.3.1 Object.assign(target, source)
-
-
-	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
-
-	var assign = _core.Object.assign;
-
-	var assign$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": assign, __esModule: true };
-	});
-
-	var _Object$assign = unwrapExports(assign$1);
-
-	var classCallCheck = createCommonjsModule(function (module, exports) {
-
-	exports.__esModule = true;
-
-	exports.default = function (instance, Constructor) {
-	  if (!(instance instanceof Constructor)) {
-	    throw new TypeError("Cannot call a class as a function");
-	  }
-	};
-	});
-
-	var _classCallCheck = unwrapExports(classCallCheck);
-
-	// 19.1.2.4 / 15.2.3.6 Object.defineProperty(O, P, Attributes)
-	_export(_export.S + _export.F * !_descriptors, 'Object', { defineProperty: _objectDp.f });
-
-	var $Object$1 = _core.Object;
-	var defineProperty = function defineProperty(it, key, desc) {
-	  return $Object$1.defineProperty(it, key, desc);
-	};
-
-	var defineProperty$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": defineProperty, __esModule: true };
-	});
-
-	unwrapExports(defineProperty$1);
-
-	var createClass = createCommonjsModule(function (module, exports) {
-
-	exports.__esModule = true;
-
-
-
-	var _defineProperty2 = _interopRequireDefault(defineProperty$1);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = function () {
-	  function defineProperties(target, props) {
-	    for (var i = 0; i < props.length; i++) {
-	      var descriptor = props[i];
-	      descriptor.enumerable = descriptor.enumerable || false;
-	      descriptor.configurable = true;
-	      if ("value" in descriptor) descriptor.writable = true;
-	      (0, _defineProperty2.default)(target, descriptor.key, descriptor);
-	    }
-	  }
-
-	  return function (Constructor, protoProps, staticProps) {
-	    if (protoProps) defineProperties(Constructor.prototype, protoProps);
-	    if (staticProps) defineProperties(Constructor, staticProps);
-	    return Constructor;
-	  };
-	}();
-	});
-
-	var _createClass = unwrapExports(createClass);
-
-	// most Object methods by ES6 should accept primitives
-
-
-
-	var _objectSap = function (KEY, exec) {
-	  var fn = (_core.Object || {})[KEY] || Object[KEY];
-	  var exp = {};
-	  exp[KEY] = exec(fn);
-	  _export(_export.S + _export.F * _fails(function () { fn(1); }), 'Object', exp);
-	};
-
-	// 19.1.2.9 Object.getPrototypeOf(O)
-
-
-
-	_objectSap('getPrototypeOf', function () {
-	  return function getPrototypeOf(it) {
-	    return _objectGpo(_toObject(it));
-	  };
-	});
-
-	var getPrototypeOf = _core.Object.getPrototypeOf;
-
-	var getPrototypeOf$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": getPrototypeOf, __esModule: true };
-	});
-
-	var _Object$getPrototypeOf = unwrapExports(getPrototypeOf$1);
-
-	var f$4 = _wks;
-
-	var _wksExt = {
-		f: f$4
-	};
-
-	var iterator = _wksExt.f('iterator');
-
-	var iterator$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": iterator, __esModule: true };
-	});
-
-	unwrapExports(iterator$1);
-
-	var _meta = createCommonjsModule(function (module) {
-	var META = _uid('meta');
-
-
-	var setDesc = _objectDp.f;
-	var id = 0;
-	var isExtensible = Object.isExtensible || function () {
-	  return true;
-	};
-	var FREEZE = !_fails(function () {
-	  return isExtensible(Object.preventExtensions({}));
-	});
-	var setMeta = function (it) {
-	  setDesc(it, META, { value: {
-	    i: 'O' + ++id, // object ID
-	    w: {}          // weak collections IDs
-	  } });
-	};
-	var fastKey = function (it, create) {
-	  // return primitive with prefix
-	  if (!_isObject(it)) return typeof it == 'symbol' ? it : (typeof it == 'string' ? 'S' : 'P') + it;
-	  if (!_has(it, META)) {
-	    // can't set metadata to uncaught frozen object
-	    if (!isExtensible(it)) return 'F';
-	    // not necessary to add metadata
-	    if (!create) return 'E';
-	    // add missing metadata
-	    setMeta(it);
-	  // return object ID
-	  } return it[META].i;
-	};
-	var getWeak = function (it, create) {
-	  if (!_has(it, META)) {
-	    // can't set metadata to uncaught frozen object
-	    if (!isExtensible(it)) return true;
-	    // not necessary to add metadata
-	    if (!create) return false;
-	    // add missing metadata
-	    setMeta(it);
-	  // return hash weak collections IDs
-	  } return it[META].w;
-	};
-	// add metadata on freeze-family methods calling
-	var onFreeze = function (it) {
-	  if (FREEZE && meta.NEED && isExtensible(it) && !_has(it, META)) setMeta(it);
-	  return it;
-	};
-	var meta = module.exports = {
-	  KEY: META,
-	  NEED: false,
-	  fastKey: fastKey,
-	  getWeak: getWeak,
-	  onFreeze: onFreeze
-	};
-	});
-	var _meta_1 = _meta.KEY;
-	var _meta_2 = _meta.NEED;
-	var _meta_3 = _meta.fastKey;
-	var _meta_4 = _meta.getWeak;
-	var _meta_5 = _meta.onFreeze;
-
-	var defineProperty$3 = _objectDp.f;
-	var _wksDefine = function (name) {
-	  var $Symbol = _core.Symbol || (_core.Symbol = _library ? {} : _global.Symbol || {});
-	  if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty$3($Symbol, name, { value: _wksExt.f(name) });
-	};
-
-	// all enumerable object keys, includes symbols
-
-
-
-	var _enumKeys = function (it) {
-	  var result = _objectKeys(it);
-	  var getSymbols = _objectGops.f;
-	  if (getSymbols) {
-	    var symbols = getSymbols(it);
-	    var isEnum = _objectPie.f;
-	    var i = 0;
-	    var key;
-	    while (symbols.length > i) if (isEnum.call(it, key = symbols[i++])) result.push(key);
-	  } return result;
-	};
-
-	// 7.2.2 IsArray(argument)
-
-	var _isArray = Array.isArray || function isArray(arg) {
-	  return _cof(arg) == 'Array';
-	};
-
-	// 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-
-	var hiddenKeys = _enumBugKeys.concat('length', 'prototype');
-
-	var f$5 = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
-	  return _objectKeysInternal(O, hiddenKeys);
-	};
-
-	var _objectGopn = {
-		f: f$5
-	};
-
-	// fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
-
-	var gOPN = _objectGopn.f;
-	var toString$1 = {}.toString;
-
-	var windowNames = typeof window == 'object' && window && Object.getOwnPropertyNames
-	  ? Object.getOwnPropertyNames(window) : [];
-
-	var getWindowNames = function (it) {
-	  try {
-	    return gOPN(it);
-	  } catch (e) {
-	    return windowNames.slice();
-	  }
-	};
-
-	var f$6 = function getOwnPropertyNames(it) {
-	  return windowNames && toString$1.call(it) == '[object Window]' ? getWindowNames(it) : gOPN(_toIobject(it));
-	};
-
-	var _objectGopnExt = {
-		f: f$6
-	};
-
-	var gOPD = Object.getOwnPropertyDescriptor;
-
-	var f$7 = _descriptors ? gOPD : function getOwnPropertyDescriptor(O, P) {
-	  O = _toIobject(O);
-	  P = _toPrimitive(P, true);
-	  if (_ie8DomDefine) try {
-	    return gOPD(O, P);
-	  } catch (e) { /* empty */ }
-	  if (_has(O, P)) return _propertyDesc(!_objectPie.f.call(O, P), O[P]);
-	};
-
-	var _objectGopd = {
-		f: f$7
-	};
-
-	// ECMAScript 6 symbols shim
-
-
-
-
-
-	var META = _meta.KEY;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	var gOPD$1 = _objectGopd.f;
-	var dP$1 = _objectDp.f;
-	var gOPN$1 = _objectGopnExt.f;
-	var $Symbol = _global.Symbol;
-	var $JSON = _global.JSON;
-	var _stringify = $JSON && $JSON.stringify;
-	var PROTOTYPE$2 = 'prototype';
-	var HIDDEN = _wks('_hidden');
-	var TO_PRIMITIVE = _wks('toPrimitive');
-	var isEnum = {}.propertyIsEnumerable;
-	var SymbolRegistry = _shared('symbol-registry');
-	var AllSymbols = _shared('symbols');
-	var OPSymbols = _shared('op-symbols');
-	var ObjectProto$1 = Object[PROTOTYPE$2];
-	var USE_NATIVE$1 = typeof $Symbol == 'function';
-	var QObject = _global.QObject;
-	// Don't use setters in Qt Script, https://github.com/zloirock/core-js/issues/173
-	var setter = !QObject || !QObject[PROTOTYPE$2] || !QObject[PROTOTYPE$2].findChild;
-
-	// fallback for old Android, https://code.google.com/p/v8/issues/detail?id=687
-	var setSymbolDesc = _descriptors && _fails(function () {
-	  return _objectCreate(dP$1({}, 'a', {
-	    get: function () { return dP$1(this, 'a', { value: 7 }).a; }
-	  })).a != 7;
-	}) ? function (it, key, D) {
-	  var protoDesc = gOPD$1(ObjectProto$1, key);
-	  if (protoDesc) delete ObjectProto$1[key];
-	  dP$1(it, key, D);
-	  if (protoDesc && it !== ObjectProto$1) dP$1(ObjectProto$1, key, protoDesc);
-	} : dP$1;
-
-	var wrap = function (tag) {
-	  var sym = AllSymbols[tag] = _objectCreate($Symbol[PROTOTYPE$2]);
-	  sym._k = tag;
-	  return sym;
-	};
-
-	var isSymbol = USE_NATIVE$1 && typeof $Symbol.iterator == 'symbol' ? function (it) {
-	  return typeof it == 'symbol';
-	} : function (it) {
-	  return it instanceof $Symbol;
-	};
-
-	var $defineProperty = function defineProperty(it, key, D) {
-	  if (it === ObjectProto$1) $defineProperty(OPSymbols, key, D);
-	  _anObject(it);
-	  key = _toPrimitive(key, true);
-	  _anObject(D);
-	  if (_has(AllSymbols, key)) {
-	    if (!D.enumerable) {
-	      if (!_has(it, HIDDEN)) dP$1(it, HIDDEN, _propertyDesc(1, {}));
-	      it[HIDDEN][key] = true;
-	    } else {
-	      if (_has(it, HIDDEN) && it[HIDDEN][key]) it[HIDDEN][key] = false;
-	      D = _objectCreate(D, { enumerable: _propertyDesc(0, false) });
-	    } return setSymbolDesc(it, key, D);
-	  } return dP$1(it, key, D);
-	};
-	var $defineProperties = function defineProperties(it, P) {
-	  _anObject(it);
-	  var keys = _enumKeys(P = _toIobject(P));
-	  var i = 0;
-	  var l = keys.length;
-	  var key;
-	  while (l > i) $defineProperty(it, key = keys[i++], P[key]);
-	  return it;
-	};
-	var $create = function create(it, P) {
-	  return P === undefined ? _objectCreate(it) : $defineProperties(_objectCreate(it), P);
-	};
-	var $propertyIsEnumerable = function propertyIsEnumerable(key) {
-	  var E = isEnum.call(this, key = _toPrimitive(key, true));
-	  if (this === ObjectProto$1 && _has(AllSymbols, key) && !_has(OPSymbols, key)) return false;
-	  return E || !_has(this, key) || !_has(AllSymbols, key) || _has(this, HIDDEN) && this[HIDDEN][key] ? E : true;
-	};
-	var $getOwnPropertyDescriptor = function getOwnPropertyDescriptor(it, key) {
-	  it = _toIobject(it);
-	  key = _toPrimitive(key, true);
-	  if (it === ObjectProto$1 && _has(AllSymbols, key) && !_has(OPSymbols, key)) return;
-	  var D = gOPD$1(it, key);
-	  if (D && _has(AllSymbols, key) && !(_has(it, HIDDEN) && it[HIDDEN][key])) D.enumerable = true;
-	  return D;
-	};
-	var $getOwnPropertyNames = function getOwnPropertyNames(it) {
-	  var names = gOPN$1(_toIobject(it));
-	  var result = [];
-	  var i = 0;
-	  var key;
-	  while (names.length > i) {
-	    if (!_has(AllSymbols, key = names[i++]) && key != HIDDEN && key != META) result.push(key);
-	  } return result;
-	};
-	var $getOwnPropertySymbols = function getOwnPropertySymbols(it) {
-	  var IS_OP = it === ObjectProto$1;
-	  var names = gOPN$1(IS_OP ? OPSymbols : _toIobject(it));
-	  var result = [];
-	  var i = 0;
-	  var key;
-	  while (names.length > i) {
-	    if (_has(AllSymbols, key = names[i++]) && (IS_OP ? _has(ObjectProto$1, key) : true)) result.push(AllSymbols[key]);
-	  } return result;
-	};
-
-	// 19.4.1.1 Symbol([description])
-	if (!USE_NATIVE$1) {
-	  $Symbol = function Symbol() {
-	    if (this instanceof $Symbol) throw TypeError('Symbol is not a constructor!');
-	    var tag = _uid(arguments.length > 0 ? arguments[0] : undefined);
-	    var $set = function (value) {
-	      if (this === ObjectProto$1) $set.call(OPSymbols, value);
-	      if (_has(this, HIDDEN) && _has(this[HIDDEN], tag)) this[HIDDEN][tag] = false;
-	      setSymbolDesc(this, tag, _propertyDesc(1, value));
-	    };
-	    if (_descriptors && setter) setSymbolDesc(ObjectProto$1, tag, { configurable: true, set: $set });
-	    return wrap(tag);
-	  };
-	  _redefine($Symbol[PROTOTYPE$2], 'toString', function toString() {
-	    return this._k;
-	  });
-
-	  _objectGopd.f = $getOwnPropertyDescriptor;
-	  _objectDp.f = $defineProperty;
-	  _objectGopn.f = _objectGopnExt.f = $getOwnPropertyNames;
-	  _objectPie.f = $propertyIsEnumerable;
-	  _objectGops.f = $getOwnPropertySymbols;
-
-	  if (_descriptors && !_library) {
-	    _redefine(ObjectProto$1, 'propertyIsEnumerable', $propertyIsEnumerable, true);
-	  }
-
-	  _wksExt.f = function (name) {
-	    return wrap(_wks(name));
-	  };
-	}
-
-	_export(_export.G + _export.W + _export.F * !USE_NATIVE$1, { Symbol: $Symbol });
-
-	for (var es6Symbols = (
-	  // 19.4.2.2, 19.4.2.3, 19.4.2.4, 19.4.2.6, 19.4.2.8, 19.4.2.9, 19.4.2.10, 19.4.2.11, 19.4.2.12, 19.4.2.13, 19.4.2.14
-	  'hasInstance,isConcatSpreadable,iterator,match,replace,search,species,split,toPrimitive,toStringTag,unscopables'
-	).split(','), j = 0; es6Symbols.length > j;)_wks(es6Symbols[j++]);
-
-	for (var wellKnownSymbols = _objectKeys(_wks.store), k = 0; wellKnownSymbols.length > k;) _wksDefine(wellKnownSymbols[k++]);
-
-	_export(_export.S + _export.F * !USE_NATIVE$1, 'Symbol', {
-	  // 19.4.2.1 Symbol.for(key)
-	  'for': function (key) {
-	    return _has(SymbolRegistry, key += '')
-	      ? SymbolRegistry[key]
-	      : SymbolRegistry[key] = $Symbol(key);
-	  },
-	  // 19.4.2.5 Symbol.keyFor(sym)
-	  keyFor: function keyFor(sym) {
-	    if (!isSymbol(sym)) throw TypeError(sym + ' is not a symbol!');
-	    for (var key in SymbolRegistry) if (SymbolRegistry[key] === sym) return key;
-	  },
-	  useSetter: function () { setter = true; },
-	  useSimple: function () { setter = false; }
-	});
-
-	_export(_export.S + _export.F * !USE_NATIVE$1, 'Object', {
-	  // 19.1.2.2 Object.create(O [, Properties])
-	  create: $create,
-	  // 19.1.2.4 Object.defineProperty(O, P, Attributes)
-	  defineProperty: $defineProperty,
-	  // 19.1.2.3 Object.defineProperties(O, Properties)
-	  defineProperties: $defineProperties,
-	  // 19.1.2.6 Object.getOwnPropertyDescriptor(O, P)
-	  getOwnPropertyDescriptor: $getOwnPropertyDescriptor,
-	  // 19.1.2.7 Object.getOwnPropertyNames(O)
-	  getOwnPropertyNames: $getOwnPropertyNames,
-	  // 19.1.2.8 Object.getOwnPropertySymbols(O)
-	  getOwnPropertySymbols: $getOwnPropertySymbols
-	});
-
-	// 24.3.2 JSON.stringify(value [, replacer [, space]])
-	$JSON && _export(_export.S + _export.F * (!USE_NATIVE$1 || _fails(function () {
-	  var S = $Symbol();
-	  // MS Edge converts symbol values to JSON as {}
-	  // WebKit converts symbol values to JSON as null
-	  // V8 throws on boxed symbols
-	  return _stringify([S]) != '[null]' || _stringify({ a: S }) != '{}' || _stringify(Object(S)) != '{}';
-	})), 'JSON', {
-	  stringify: function stringify(it) {
-	    var args = [it];
-	    var i = 1;
-	    var replacer, $replacer;
-	    while (arguments.length > i) args.push(arguments[i++]);
-	    $replacer = replacer = args[1];
-	    if (!_isObject(replacer) && it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
-	    if (!_isArray(replacer)) replacer = function (key, value) {
-	      if (typeof $replacer == 'function') value = $replacer.call(this, key, value);
-	      if (!isSymbol(value)) return value;
-	    };
-	    args[1] = replacer;
-	    return _stringify.apply($JSON, args);
-	  }
-	});
-
-	// 19.4.3.4 Symbol.prototype[@@toPrimitive](hint)
-	$Symbol[PROTOTYPE$2][TO_PRIMITIVE] || _hide($Symbol[PROTOTYPE$2], TO_PRIMITIVE, $Symbol[PROTOTYPE$2].valueOf);
-	// 19.4.3.5 Symbol.prototype[@@toStringTag]
-	_setToStringTag($Symbol, 'Symbol');
-	// 20.2.1.9 Math[@@toStringTag]
-	_setToStringTag(Math, 'Math', true);
-	// 24.3.3 JSON[@@toStringTag]
-	_setToStringTag(_global.JSON, 'JSON', true);
-
-	_wksDefine('asyncIterator');
-
-	_wksDefine('observable');
-
-	var symbol = _core.Symbol;
-
-	var symbol$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": symbol, __esModule: true };
-	});
-
-	unwrapExports(symbol$1);
-
-	var _typeof_1 = createCommonjsModule(function (module, exports) {
-
-	exports.__esModule = true;
-
-
-
-	var _iterator2 = _interopRequireDefault(iterator$1);
-
-
-
-	var _symbol2 = _interopRequireDefault(symbol$1);
-
-	var _typeof = typeof _symbol2.default === "function" && typeof _iterator2.default === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj; };
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.default) === "symbol" ? function (obj) {
-	  return typeof obj === "undefined" ? "undefined" : _typeof(obj);
-	} : function (obj) {
-	  return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
-	};
-	});
-
-	unwrapExports(_typeof_1);
-
-	var possibleConstructorReturn = createCommonjsModule(function (module, exports) {
-
-	exports.__esModule = true;
-
-
-
-	var _typeof3 = _interopRequireDefault(_typeof_1);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = function (self, call) {
-	  if (!self) {
-	    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-	  }
-
-	  return call && ((typeof call === "undefined" ? "undefined" : (0, _typeof3.default)(call)) === "object" || typeof call === "function") ? call : self;
-	};
-	});
-
-	var _possibleConstructorReturn = unwrapExports(possibleConstructorReturn);
-
-	// Works with __proto__ only. Old v8 can't work with null proto objects.
-	/* eslint-disable no-proto */
-
-
-	var check = function (O, proto) {
-	  _anObject(O);
-	  if (!_isObject(proto) && proto !== null) throw TypeError(proto + ": can't set as prototype!");
-	};
-	var _setProto = {
-	  set: Object.setPrototypeOf || ('__proto__' in {} ? // eslint-disable-line
-	    function (test, buggy, set) {
-	      try {
-	        set = _ctx(Function.call, _objectGopd.f(Object.prototype, '__proto__').set, 2);
-	        set(test, []);
-	        buggy = !(test instanceof Array);
-	      } catch (e) { buggy = true; }
-	      return function setPrototypeOf(O, proto) {
-	        check(O, proto);
-	        if (buggy) O.__proto__ = proto;
-	        else set(O, proto);
-	        return O;
-	      };
-	    }({}, false) : undefined),
-	  check: check
-	};
-
-	// 19.1.3.19 Object.setPrototypeOf(O, proto)
-
-	_export(_export.S, 'Object', { setPrototypeOf: _setProto.set });
-
-	var setPrototypeOf = _core.Object.setPrototypeOf;
-
-	var setPrototypeOf$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": setPrototypeOf, __esModule: true };
-	});
-
-	unwrapExports(setPrototypeOf$1);
-
-	var inherits = createCommonjsModule(function (module, exports) {
-
-	exports.__esModule = true;
-
-
-
-	var _setPrototypeOf2 = _interopRequireDefault(setPrototypeOf$1);
-
-
-
-	var _create2 = _interopRequireDefault(create$1);
-
-
-
-	var _typeof3 = _interopRequireDefault(_typeof_1);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.default = function (subClass, superClass) {
-	  if (typeof superClass !== "function" && superClass !== null) {
-	    throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === "undefined" ? "undefined" : (0, _typeof3.default)(superClass)));
-	  }
-
-	  subClass.prototype = (0, _create2.default)(superClass && superClass.prototype, {
-	    constructor: {
-	      value: subClass,
-	      enumerable: false,
-	      writable: true,
-	      configurable: true
-	    }
-	  });
-	  if (superClass) _setPrototypeOf2.default ? (0, _setPrototypeOf2.default)(subClass, superClass) : subClass.__proto__ = superClass;
-	};
-	});
-
-	var _inherits = unwrapExports(inherits);
-
-	var defOpts = {
-	  credentitals: 'same-origin',
-	  responseType: 'json'
-	};
-
-	var SmartApi = function () {
-	  function SmartApi(ajaxCore, context) {
-	    var _this = this;
-
-	    _classCallCheck(this, SmartApi);
-
-	    this._silence = false;
-	    this._checkCode = true;
-	    this._lockKey = '';
-	    this._faileHandle = null;
-	    this._successHandle = null;
-
-	    this._handleResData = function (resjson) {
-	      resjson && resjson.success && _this._successHandle(resjson.data);
-	    };
-
-	    this._typeHandle = function (response) {
-	      if (_this._init.responseType === 'json') {
-	        return response.json();
-	      }
-	    };
-
-	    this._handleError = function (error) {
-	      _this._unlock();
-	      if (_this._silence) return;
-	      var errorHandle = _this.baseConfig.errorHandle;
-
-	      errorHandle(error);
-	      _this._faileHandle && _this._faileHandle(error);
-	    };
-
-	    this._codeCheck = function (resjson) {
-	      _this._unlock();
-	      if (_this._checkCode && resjson.success) {
-	        return resjson;
-	      }
-	      if (_this._silence) return;
-	      var codeError = _this.baseConfig.codeError;
-
-	      codeError(resjson);
-	      _this._faileHandle && _this._faileHandle(null, resjson);
-	    };
-
-	    _Object$assign(this, ajaxCore);
-	    this._context = context;
-	    return this;
-	  }
-
-	  _createClass(SmartApi, [{
-	    key: '_createRequest',
-	    value: function _createRequest(url, data) {
-	      var _this2 = this;
-
-	      var init = this._init = _Object$assign({}, defOpts, data);
-	      setTimeout(function () {
-	        if (!_this2._checkLock()) {
-	          _this2._lock();
-	          _this2._request = _this2.core(url, init).then(_this2._resCheck).then(_this2._typeHandle).then(_this2._codeCheck).catch(_this2._handleError);
-	          _this2._successHandle && _this2._request.then(_this2._handleResData);
-	        }
-	      }, 0);
-	    }
-	  }, {
-	    key: '_lock',
-	    value: function _lock() {
-	      this._stateLock();
-	    }
-	  }, {
-	    key: '_unlock',
-	    value: function _unlock() {
-	      this._stateLock(true);
-	    }
-	  }, {
-	    key: '_checkLock',
-	    value: function _checkLock() {
-	      return this._lockKey && this._getLockValue();
-	    }
-	  }, {
-	    key: '_resCheck',
-	    value: function _resCheck(response) {
-	      if (response.ok) {
-	        return response;
-	      }
-	      throw new Error(response.status);
-	    }
-	  }, {
-	    key: 'lock',
-
-	    // public apis
-	    value: function lock(key) {
-	      if (key && typeof key === 'string') {
-	        this._lockKey = key;
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: 'done',
-	    value: function done(successHandle) {
-	      typeof successHandle === 'function' && (this._successHandle = successHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'faile',
-	    value: function faile(faileHandle) {
-	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'silence',
-	    value: function silence() {
-	      this._silence = true;
-	      return this;
-	    }
-	  }, {
-	    key: 'notCheckJson',
-	    value: function notCheckJson() {
-	      this._checkCode = false;
-	      return this;
-	    }
-	  }]);
-
-	  return SmartApi;
-	}();
-
-	var SmartApiVue = function (_SmartApi) {
-	  _inherits(SmartApiVue, _SmartApi);
-
-	  function SmartApiVue(ajaxCore, context, url, data) {
-	    var _ret;
-
-	    _classCallCheck(this, SmartApiVue);
-
-	    var _this = _possibleConstructorReturn(this, (SmartApiVue.__proto__ || _Object$getPrototypeOf(SmartApiVue)).call(this, ajaxCore, context));
-
-	    _this._useSAkeys = false;
-
-	    _this._createRequest(url, data);
-	    return _ret = _this, _possibleConstructorReturn(_this, _ret);
-	  }
-
-	  _createClass(SmartApiVue, [{
-	    key: '_stateLock',
-	    value: function _stateLock(unlock) {
-	      var _lockKey = this._lockKey,
-	          _context = this._context,
-	          SAKEYS = this._context.SAKEYS;
-
-	      if (_context.hasOwnProperty(_lockKey)) {
-	        _context[_lockKey] = !unlock;
-	      } else {
-	        if (SAKEYS.hasOwnProperty(_lockKey)) {
-	          SAKEYS[_lockKey] = !unlock;
-	        } else {
-	          _context.$set(SAKEYS, _lockKey, true);
-	          this._useSAkeys = true;
-	        }
-	      }
-	    }
-	  }, {
-	    key: '_getLockValue',
-	    value: function _getLockValue() {
-	      var _context = this._context,
-	          _lockKey = this._lockKey,
-	          _useSAkeys = this._useSAkeys;
-
-	      return _useSAkeys ? _context.SAKEYS[_lockKey] : _context[_lockKey];
-	    }
-	  }]);
-
-	  return SmartApiVue;
-	}(SmartApi);
-
 	var defineProperty$4 = createCommonjsModule(function (module, exports) {
 
 	exports.__esModule = true;
 
 
 
-	var _defineProperty2 = _interopRequireDefault(defineProperty$1);
+	var _defineProperty2 = _interopRequireDefault(defineProperty$2);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -2961,36 +2997,6 @@
 	  return SmartApiReact;
 	}(SmartApi);
 
-	var getAjaxCore = function () {
-	  var _ref = _asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(env) {
-	    var ajaxCore;
-	    return regenerator.wrap(function _callee$(_context) {
-	      while (1) {
-	        switch (_context.prev = _context.next) {
-	          case 0:
-	            ajaxCore = SmartApiErector.ajaxCore;
-
-	            ajaxCore.core = null; // fetch;
-	            ajaxCore.core && (ajaxCore.module = 'fetch');
-	            if (!ajaxCore.core) {
-	              //ajaxCore.core = require('axios');
-	              //console.log(ajaxCore.core)
-	              ajaxCore.module = 'axios';
-	            }
-
-	          case 4:
-	          case 'end':
-	            return _context.stop();
-	        }
-	      }
-	    }, _callee, this);
-	  }));
-
-	  return function getAjaxCore(_x) {
-	    return _ref.apply(this, arguments);
-	  };
-	}();
-
 	var moduleMap = {
 	  'vue': SmartApiVue,
 	  'react': SmartApiReact
@@ -3000,24 +3006,22 @@
 	  function SmartApiErector() {
 	    _classCallCheck(this, SmartApiErector);
 
-	    this.resetOpts();
-	    getAjaxCore(this);
-	    this.init();
+	    this._fetchSupportCheck();
 	  }
 
 	  _createClass(SmartApiErector, [{
-	    key: 'init',
-
-	    // init the core of ajax, set default config
-	    value: function init() {
-	      var module = this.module;
+	    key: '_fetchSupportCheck',
+	    value: function _fetchSupportCheck() {
+	      SmartApiErector.SAinfos.hasFetch = typeof fetch === 'function';
 	    }
+	    // init the core of ajax, set default config
+
 	    // for vuejs
 
 	  }, {
 	    key: 'install',
 	    value: function install(Vue, options) {
-	      this.resetOpts(options);
+	      (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
 	      Vue.prototype.$fetch = this.vueFetch;
 	      Vue.mixin({
 	        data: function data() {
@@ -3027,19 +3031,19 @@
 	    }
 	  }, {
 	    key: 'vueFetch',
-	    value: function vueFetch(url, init) {
-	      return new SmartApiVue(SmartApiErector.ajaxCore, this, url, init);
+	    value: function vueFetch(config) {
+	      return new SmartApiVue(SmartApiErector.SAinfos, this, config);
 	    }
 	  }, {
 	    key: 'fetch',
-	    value: function fetch(url, init) {
+	    value: function fetch(config) {
 	      var module = SmartApiErector.checkContext(this);
-	      return moduleMap[module] ? new moduleMap[module](SmartApiErector.ajaxCore, this, url, init) : null;
+	      return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
 	    }
 	  }, {
 	    key: 'resetOpts',
 	    value: function resetOpts(options) {
-	      _Object$assign(SmartApiErector.ajaxCore.baseConfig, options);
+	      _Object$assign(SmartApiErector.SAinfos.userConfig, options);
 	    }
 	  }], [{
 	    key: 'checkContext',
@@ -3050,16 +3054,31 @@
 	        return 'react';
 	      }
 	    }
+	  }, {
+	    key: 'request',
+	    value: function request() {
+	      console.log(this);
+	    }
 	  }]);
 
 	  return SmartApiErector;
 	}();
 
-	SmartApiErector.ajaxCore = { baseConfig: _Object$create(null) };
+	SmartApiErector.SAinfos = {
+	  hasFetch: true,
+	  userConfig: _Object$create(null)
+	};
 
 
 	var index = new SmartApiErector();
 
-	return index;
+	function request(url, data, method) {
+	  var coreModule = this.coreModule;
+	}
+
+	exports.default = index;
+	exports.request = request;
+
+	Object.defineProperty(exports, '__esModule', { value: true });
 
 })));

@@ -1,9 +1,9 @@
-import SmartApi from './baseapi'
+import SmartApi from './SmartApi'
 export default class SmartApiVue extends SmartApi {
   _useSAkeys = false;
-  constructor (ajaxCore, context, url, data) {
+  constructor (ajaxCore, context, config) {
     super(ajaxCore, context);
-    this._createRequest(url, data);
+    this._createRequest(config);
     return this;
   }
   _stateLock (unlock) {
