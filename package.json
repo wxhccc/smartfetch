@@ -2,7 +2,7 @@
   "name": "smartapi",
   "version": "0.0.1",
   "description": "an easy use api plugin for vue and react",
-  "main": "dist/smartapi.common.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "rollup -w -c scripts/config.js --environment NODE_ENV:development",
@@ -38,6 +38,7 @@
     "babel-preset-stage-2": "^6.24.1"
   },
   "dependencies": {
-    "axios": "^0.18.0"
+    "axios": "^0.18.0",
+    "qs": "^6.5.2"
   }
 }

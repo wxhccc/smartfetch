@@ -1,8 +1,10 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.Smartapi = {})));
-}(this, (function (exports) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('axios')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'axios'], factory) :
+	(factory((global.Smartapi = {}),global.axios));
+}(this, (function (exports,axios) { 'use strict';
+
+	axios = axios && axios.hasOwnProperty('default') ? axios['default'] : axios;
 
 	function unwrapExports (x) {
 		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -383,71 +385,6 @@
 
 	var _Object$create = unwrapExports(create$1);
 
-	var f$1 = Object.getOwnPropertySymbols;
-
-	var _objectGops = {
-		f: f$1
-	};
-
-	var f$2 = {}.propertyIsEnumerable;
-
-	var _objectPie = {
-		f: f$2
-	};
-
-	// 7.1.13 ToObject(argument)
-
-	var _toObject = function (it) {
-	  return Object(_defined(it));
-	};
-
-	// 19.1.2.1 Object.assign(target, source, ...)
-
-
-
-
-
-	var $assign = Object.assign;
-
-	// should work with symbols and should have deterministic property order (V8 bug)
-	var _objectAssign = !$assign || _fails(function () {
-	  var A = {};
-	  var B = {};
-	  // eslint-disable-next-line no-undef
-	  var S = Symbol();
-	  var K = 'abcdefghijklmnopqrst';
-	  A[S] = 7;
-	  K.split('').forEach(function (k) { B[k] = k; });
-	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
-	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
-	  var T = _toObject(target);
-	  var aLen = arguments.length;
-	  var index = 1;
-	  var getSymbols = _objectGops.f;
-	  var isEnum = _objectPie.f;
-	  while (aLen > index) {
-	    var S = _iobject(arguments[index++]);
-	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
-	    var length = keys.length;
-	    var j = 0;
-	    var key;
-	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
-	  } return T;
-	} : $assign;
-
-	// 19.1.3.1 Object.assign(target, source)
-
-
-	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
-
-	var assign = _core.Object.assign;
-
-	var assign$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": assign, __esModule: true };
-	});
-
-	var _Object$assign = unwrapExports(assign$1);
-
 	// true  -> String#at
 	// false -> String#codePointAt
 	var _stringAt = function (TO_STRING) {
@@ -500,6 +437,12 @@
 	var _iterCreate = function (Constructor, NAME, next) {
 	  Constructor.prototype = _objectCreate(IteratorPrototype, { next: _propertyDesc(1, next) });
 	  _setToStringTag(Constructor, NAME + ' Iterator');
+	};
+
+	// 7.1.13 ToObject(argument)
+
+	var _toObject = function (it) {
+	  return Object(_defined(it));
 	};
 
 	// 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
@@ -639,10 +582,10 @@
 	  _iterators[NAME] = _iterators.Array;
 	}
 
-	var f$3 = _wks;
+	var f$1 = _wks;
 
 	var _wksExt = {
-		f: f$3
+		f: f$1
 	};
 
 	var iterator = _wksExt.f('iterator');
@@ -718,6 +661,18 @@
 	var _wksDefine = function (name) {
 	  var $Symbol = _core.Symbol || (_core.Symbol = _library ? {} : _global.Symbol || {});
 	  if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: _wksExt.f(name) });
+	};
+
+	var f$2 = Object.getOwnPropertySymbols;
+
+	var _objectGops = {
+		f: f$2
+	};
+
+	var f$3 = {}.propertyIsEnumerable;
+
+	var _objectPie = {
+		f: f$3
 	};
 
 	// all enumerable object keys, includes symbols
@@ -1064,6 +1019,53 @@
 
 	var _typeof = unwrapExports(_typeof_1);
 
+	// 19.1.2.1 Object.assign(target, source, ...)
+
+
+
+
+
+	var $assign = Object.assign;
+
+	// should work with symbols and should have deterministic property order (V8 bug)
+	var _objectAssign = !$assign || _fails(function () {
+	  var A = {};
+	  var B = {};
+	  // eslint-disable-next-line no-undef
+	  var S = Symbol();
+	  var K = 'abcdefghijklmnopqrst';
+	  A[S] = 7;
+	  K.split('').forEach(function (k) { B[k] = k; });
+	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
+	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
+	  var T = _toObject(target);
+	  var aLen = arguments.length;
+	  var index = 1;
+	  var getSymbols = _objectGops.f;
+	  var isEnum = _objectPie.f;
+	  while (aLen > index) {
+	    var S = _iobject(arguments[index++]);
+	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
+	    var length = keys.length;
+	    var j = 0;
+	    var key;
+	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
+	  } return T;
+	} : $assign;
+
+	// 19.1.3.1 Object.assign(target, source)
+
+
+	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
+
+	var assign = _core.Object.assign;
+
+	var assign$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": assign, __esModule: true };
+	});
+
+	var _Object$assign = unwrapExports(assign$1);
+
 	var classCallCheck = createCommonjsModule(function (module, exports) {
 
 	exports.__esModule = true;
@@ -1247,8 +1249,17 @@
 
 	var _inherits = unwrapExports(inherits);
 
-	//import axios from 'axios';
-	function AxiosCore () {}
+	function AxiosCore() {
+	  this._request = function (config) {
+	    return this.core(config).then(this._resCheck);
+	  };
+	  this._resCheck = function (response) {
+	    if (response.status === 200) {
+	      return response.data;
+	    }
+	    throw new Error(response.status);
+	  };
+	}
 
 	var defOpts = {
 	  credentitals: 'same-origin',
@@ -1265,7 +1276,7 @@
 	    _classCallCheck(this, SmartApi);
 
 	    this._silence = false;
-	    this._checkCode = true;
+	    this._needCodeCheck = true;
 	    this._codeCheckResult = false;
 	    this._lockKey = '';
 	    this._faileHandle = null;
@@ -1273,8 +1284,9 @@
 	    this._SAinfos = {};
 
 	    this._handleResData = function (resjson) {
-	      if (_this._codeCheck) {
-	        _this._codeCheckResult && _this._successHandle(resjson.data);
+	      if (_this._needCodeCheck) {
+	        var dataKey = _this.userConfig.dataKey || 'data';
+	        _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
 	      } else {
 	        _this._successHandle(resjson);
 	      }
@@ -1291,33 +1303,40 @@
 
 	    this._handleError = function (error) {
 	      _this._unlock();
-	      if (_this._silence) return;
-	      var errorHandle = _this.userConfig.errorHandle;
-
-	      errorHandle(error);
 	      _this._faileHandle && _this._faileHandle(error);
-	    };
+	      if (_this._silence) return;
+	      var msg = '';
+	      var statusMsgs = _this.statusMsgs,
+	          errorHandle = _this.userConfig.errorHandle;
 
-	    this._responseCheck = function (resjson) {
-	      var codeCheck = _this.userConfig.codeCheck;
-
-	      if (typeof codeCheck === 'function') {
-	        return codeCheck(resjson);
-	      } else if (typeof codeCheck === 'string') {
-	        return resjson[codeCheck];
+	      switch (error.name) {
+	        case 'TypeError':
+	          msg = '服务器未响应';
+	          break;
+	        case 'SyntaxError':
+	          msg = '数据解析失败';
+	          break;
+	        case 'Error':
+	          msg = statusMsgs[error.message] || '请求失败';
+	          break;
+	      }
+	      if (typeof errorHandle === 'function') {
+	        errorHandle(msg, error);
+	      } else {
+	        typeof alert === 'function' ? alert(msg) : console.log(error);
 	      }
 	    };
 
 	    this._codeCheck = function (resjson) {
 	      _this._unlock();
-	      if (_this._checkCode && (_this._codeCheckResult = _this._responseCheck(resjson))) {
+	      if (_this._needCodeCheck && _this._resOkCheck(resjson)) {
 	        return resjson;
 	      }
+	      _this._faileHandle && _this._faileHandle(null, resjson);
 	      if (_this._silence) return;
 	      var codeError = _this.userConfig.codeError;
 
 	      codeError(resjson);
-	      _this._faileHandle && _this._faileHandle(null, resjson);
 	    };
 
 	    _Object$assign(this, ajaxCore);
@@ -1329,7 +1348,7 @@
 	  _createClass(SmartApi, [{
 	    key: '_ajaxCoreMixin',
 	    value: function _ajaxCoreMixin(ajaxCore) {
-	      !ajaxCore.hasFetch && AxiosCore.call(this);
+	      !ajaxCore.useFetch && AxiosCore.call(this);
 	    }
 	  }, {
 	    key: '_createRequest',
@@ -1348,7 +1367,7 @@
 	    key: '_request',
 	    value: function _request(config) {
 	      this._init = _Object$assign({}, defOpts, config);
-	      return fetch(config.url, config).then(this._resCheck).then(this._typeHandle);
+	      return this.core(config.url, config).then(this._resCheck).then(this._typeHandle);
 	    }
 	  }, {
 	    key: '_lock',
@@ -1372,6 +1391,21 @@
 	        return response;
 	      }
 	      throw new Error(response.status);
+	    }
+	  }, {
+	    key: '_resOkCheck',
+	    value: function _resOkCheck(resjson) {
+	      var result = false;
+	      var resCheck = this.userConfig.resCheck;
+
+	      var resCheckType = typeof resCheck === 'undefined' ? 'undefined' : _typeof(resCheck);
+	      if (resCheckType === 'function') {
+	        result = resCheck(resjson);
+	      } else if (resCheckType === 'string') {
+	        result = resjson[resCheck];
+	      }
+	      this._codeCheckResult = result;
+	      return result;
 	    }
 	  }, {
 	    key: 'lock',
@@ -1402,9 +1436,9 @@
 	      return this;
 	    }
 	  }, {
-	    key: 'notCheckJson',
-	    value: function notCheckJson() {
-	      this._checkCode = false;
+	    key: 'notCheckCode',
+	    value: function notCheckCode() {
+	      this._needCodeCheck = false;
 	      return this;
 	    }
 	  }]);
@@ -2997,6 +3031,657 @@
 	  return SmartApiReact;
 	}(SmartApi);
 
+	var $JSON$1 = _core.JSON || (_core.JSON = { stringify: JSON.stringify });
+	var stringify = function stringify(it) { // eslint-disable-line no-unused-vars
+	  return $JSON$1.stringify.apply($JSON$1, arguments);
+	};
+
+	var stringify$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": stringify, __esModule: true };
+	});
+
+	var _JSON$stringify = unwrapExports(stringify$1);
+
+	var has = Object.prototype.hasOwnProperty;
+
+	var hexTable = (function () {
+	    var array = [];
+	    for (var i = 0; i < 256; ++i) {
+	        array.push('%' + ((i < 16 ? '0' : '') + i.toString(16)).toUpperCase());
+	    }
+
+	    return array;
+	}());
+
+	var compactQueue = function compactQueue(queue) {
+	    var obj;
+
+	    while (queue.length) {
+	        var item = queue.pop();
+	        obj = item.obj[item.prop];
+
+	        if (Array.isArray(obj)) {
+	            var compacted = [];
+
+	            for (var j = 0; j < obj.length; ++j) {
+	                if (typeof obj[j] !== 'undefined') {
+	                    compacted.push(obj[j]);
+	                }
+	            }
+
+	            item.obj[item.prop] = compacted;
+	        }
+	    }
+
+	    return obj;
+	};
+
+	var arrayToObject = function arrayToObject(source, options) {
+	    var obj = options && options.plainObjects ? Object.create(null) : {};
+	    for (var i = 0; i < source.length; ++i) {
+	        if (typeof source[i] !== 'undefined') {
+	            obj[i] = source[i];
+	        }
+	    }
+
+	    return obj;
+	};
+
+	var merge = function merge(target, source, options) {
+	    if (!source) {
+	        return target;
+	    }
+
+	    if (typeof source !== 'object') {
+	        if (Array.isArray(target)) {
+	            target.push(source);
+	        } else if (typeof target === 'object') {
+	            if (options.plainObjects || options.allowPrototypes || !has.call(Object.prototype, source)) {
+	                target[source] = true;
+	            }
+	        } else {
+	            return [target, source];
+	        }
+
+	        return target;
+	    }
+
+	    if (typeof target !== 'object') {
+	        return [target].concat(source);
+	    }
+
+	    var mergeTarget = target;
+	    if (Array.isArray(target) && !Array.isArray(source)) {
+	        mergeTarget = arrayToObject(target, options);
+	    }
+
+	    if (Array.isArray(target) && Array.isArray(source)) {
+	        source.forEach(function (item, i) {
+	            if (has.call(target, i)) {
+	                if (target[i] && typeof target[i] === 'object') {
+	                    target[i] = merge(target[i], item, options);
+	                } else {
+	                    target.push(item);
+	                }
+	            } else {
+	                target[i] = item;
+	            }
+	        });
+	        return target;
+	    }
+
+	    return Object.keys(source).reduce(function (acc, key) {
+	        var value = source[key];
+
+	        if (has.call(acc, key)) {
+	            acc[key] = merge(acc[key], value, options);
+	        } else {
+	            acc[key] = value;
+	        }
+	        return acc;
+	    }, mergeTarget);
+	};
+
+	var assign$2 = function assignSingleSource(target, source) {
+	    return Object.keys(source).reduce(function (acc, key) {
+	        acc[key] = source[key];
+	        return acc;
+	    }, target);
+	};
+
+	var decode = function (str) {
+	    try {
+	        return decodeURIComponent(str.replace(/\+/g, ' '));
+	    } catch (e) {
+	        return str;
+	    }
+	};
+
+	var encode = function encode(str) {
+	    // This code was originally written by Brian White (mscdex) for the io.js core querystring library.
+	    // It has been adapted here for stricter adherence to RFC 3986
+	    if (str.length === 0) {
+	        return str;
+	    }
+
+	    var string = typeof str === 'string' ? str : String(str);
+
+	    var out = '';
+	    for (var i = 0; i < string.length; ++i) {
+	        var c = string.charCodeAt(i);
+
+	        if (
+	            c === 0x2D // -
+	            || c === 0x2E // .
+	            || c === 0x5F // _
+	            || c === 0x7E // ~
+	            || (c >= 0x30 && c <= 0x39) // 0-9
+	            || (c >= 0x41 && c <= 0x5A) // a-z
+	            || (c >= 0x61 && c <= 0x7A) // A-Z
+	        ) {
+	            out += string.charAt(i);
+	            continue;
+	        }
+
+	        if (c < 0x80) {
+	            out = out + hexTable[c];
+	            continue;
+	        }
+
+	        if (c < 0x800) {
+	            out = out + (hexTable[0xC0 | (c >> 6)] + hexTable[0x80 | (c & 0x3F)]);
+	            continue;
+	        }
+
+	        if (c < 0xD800 || c >= 0xE000) {
+	            out = out + (hexTable[0xE0 | (c >> 12)] + hexTable[0x80 | ((c >> 6) & 0x3F)] + hexTable[0x80 | (c & 0x3F)]);
+	            continue;
+	        }
+
+	        i += 1;
+	        c = 0x10000 + (((c & 0x3FF) << 10) | (string.charCodeAt(i) & 0x3FF));
+	        out += hexTable[0xF0 | (c >> 18)]
+	            + hexTable[0x80 | ((c >> 12) & 0x3F)]
+	            + hexTable[0x80 | ((c >> 6) & 0x3F)]
+	            + hexTable[0x80 | (c & 0x3F)];
+	    }
+
+	    return out;
+	};
+
+	var compact = function compact(value) {
+	    var queue = [{ obj: { o: value }, prop: 'o' }];
+	    var refs = [];
+
+	    for (var i = 0; i < queue.length; ++i) {
+	        var item = queue[i];
+	        var obj = item.obj[item.prop];
+
+	        var keys = Object.keys(obj);
+	        for (var j = 0; j < keys.length; ++j) {
+	            var key = keys[j];
+	            var val = obj[key];
+	            if (typeof val === 'object' && val !== null && refs.indexOf(val) === -1) {
+	                queue.push({ obj: obj, prop: key });
+	                refs.push(val);
+	            }
+	        }
+	    }
+
+	    return compactQueue(queue);
+	};
+
+	var isRegExp = function isRegExp(obj) {
+	    return Object.prototype.toString.call(obj) === '[object RegExp]';
+	};
+
+	var isBuffer = function isBuffer(obj) {
+	    if (obj === null || typeof obj === 'undefined') {
+	        return false;
+	    }
+
+	    return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
+	};
+
+	var utils = {
+	    arrayToObject: arrayToObject,
+	    assign: assign$2,
+	    compact: compact,
+	    decode: decode,
+	    encode: encode,
+	    isBuffer: isBuffer,
+	    isRegExp: isRegExp,
+	    merge: merge
+	};
+
+	var replace = String.prototype.replace;
+	var percentTwenties = /%20/g;
+
+	var formats = {
+	    'default': 'RFC3986',
+	    formatters: {
+	        RFC1738: function (value) {
+	            return replace.call(value, percentTwenties, '+');
+	        },
+	        RFC3986: function (value) {
+	            return value;
+	        }
+	    },
+	    RFC1738: 'RFC1738',
+	    RFC3986: 'RFC3986'
+	};
+
+	var arrayPrefixGenerators = {
+	    brackets: function brackets(prefix) { // eslint-disable-line func-name-matching
+	        return prefix + '[]';
+	    },
+	    indices: function indices(prefix, key) { // eslint-disable-line func-name-matching
+	        return prefix + '[' + key + ']';
+	    },
+	    repeat: function repeat(prefix) { // eslint-disable-line func-name-matching
+	        return prefix;
+	    }
+	};
+
+	var toISO = Date.prototype.toISOString;
+
+	var defaults = {
+	    delimiter: '&',
+	    encode: true,
+	    encoder: utils.encode,
+	    encodeValuesOnly: false,
+	    serializeDate: function serializeDate(date) { // eslint-disable-line func-name-matching
+	        return toISO.call(date);
+	    },
+	    skipNulls: false,
+	    strictNullHandling: false
+	};
+
+	var stringify$2 = function stringify( // eslint-disable-line func-name-matching
+	    object,
+	    prefix,
+	    generateArrayPrefix,
+	    strictNullHandling,
+	    skipNulls,
+	    encoder,
+	    filter,
+	    sort,
+	    allowDots,
+	    serializeDate,
+	    formatter,
+	    encodeValuesOnly
+	) {
+	    var obj = object;
+	    if (typeof filter === 'function') {
+	        obj = filter(prefix, obj);
+	    } else if (obj instanceof Date) {
+	        obj = serializeDate(obj);
+	    } else if (obj === null) {
+	        if (strictNullHandling) {
+	            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder) : prefix;
+	        }
+
+	        obj = '';
+	    }
+
+	    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean' || utils.isBuffer(obj)) {
+	        if (encoder) {
+	            var keyValue = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder);
+	            return [formatter(keyValue) + '=' + formatter(encoder(obj, defaults.encoder))];
+	        }
+	        return [formatter(prefix) + '=' + formatter(String(obj))];
+	    }
+
+	    var values = [];
+
+	    if (typeof obj === 'undefined') {
+	        return values;
+	    }
+
+	    var objKeys;
+	    if (Array.isArray(filter)) {
+	        objKeys = filter;
+	    } else {
+	        var keys = Object.keys(obj);
+	        objKeys = sort ? keys.sort(sort) : keys;
+	    }
+
+	    for (var i = 0; i < objKeys.length; ++i) {
+	        var key = objKeys[i];
+
+	        if (skipNulls && obj[key] === null) {
+	            continue;
+	        }
+
+	        if (Array.isArray(obj)) {
+	            values = values.concat(stringify(
+	                obj[key],
+	                generateArrayPrefix(prefix, key),
+	                generateArrayPrefix,
+	                strictNullHandling,
+	                skipNulls,
+	                encoder,
+	                filter,
+	                sort,
+	                allowDots,
+	                serializeDate,
+	                formatter,
+	                encodeValuesOnly
+	            ));
+	        } else {
+	            values = values.concat(stringify(
+	                obj[key],
+	                prefix + (allowDots ? '.' + key : '[' + key + ']'),
+	                generateArrayPrefix,
+	                strictNullHandling,
+	                skipNulls,
+	                encoder,
+	                filter,
+	                sort,
+	                allowDots,
+	                serializeDate,
+	                formatter,
+	                encodeValuesOnly
+	            ));
+	        }
+	    }
+
+	    return values;
+	};
+
+	var stringify_1 = function (object, opts) {
+	    var obj = object;
+	    var options = opts ? utils.assign({}, opts) : {};
+
+	    if (options.encoder !== null && options.encoder !== undefined && typeof options.encoder !== 'function') {
+	        throw new TypeError('Encoder has to be a function.');
+	    }
+
+	    var delimiter = typeof options.delimiter === 'undefined' ? defaults.delimiter : options.delimiter;
+	    var strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults.strictNullHandling;
+	    var skipNulls = typeof options.skipNulls === 'boolean' ? options.skipNulls : defaults.skipNulls;
+	    var encode = typeof options.encode === 'boolean' ? options.encode : defaults.encode;
+	    var encoder = typeof options.encoder === 'function' ? options.encoder : defaults.encoder;
+	    var sort = typeof options.sort === 'function' ? options.sort : null;
+	    var allowDots = typeof options.allowDots === 'undefined' ? false : options.allowDots;
+	    var serializeDate = typeof options.serializeDate === 'function' ? options.serializeDate : defaults.serializeDate;
+	    var encodeValuesOnly = typeof options.encodeValuesOnly === 'boolean' ? options.encodeValuesOnly : defaults.encodeValuesOnly;
+	    if (typeof options.format === 'undefined') {
+	        options.format = formats['default'];
+	    } else if (!Object.prototype.hasOwnProperty.call(formats.formatters, options.format)) {
+	        throw new TypeError('Unknown format option provided.');
+	    }
+	    var formatter = formats.formatters[options.format];
+	    var objKeys;
+	    var filter;
+
+	    if (typeof options.filter === 'function') {
+	        filter = options.filter;
+	        obj = filter('', obj);
+	    } else if (Array.isArray(options.filter)) {
+	        filter = options.filter;
+	        objKeys = filter;
+	    }
+
+	    var keys = [];
+
+	    if (typeof obj !== 'object' || obj === null) {
+	        return '';
+	    }
+
+	    var arrayFormat;
+	    if (options.arrayFormat in arrayPrefixGenerators) {
+	        arrayFormat = options.arrayFormat;
+	    } else if ('indices' in options) {
+	        arrayFormat = options.indices ? 'indices' : 'repeat';
+	    } else {
+	        arrayFormat = 'indices';
+	    }
+
+	    var generateArrayPrefix = arrayPrefixGenerators[arrayFormat];
+
+	    if (!objKeys) {
+	        objKeys = Object.keys(obj);
+	    }
+
+	    if (sort) {
+	        objKeys.sort(sort);
+	    }
+
+	    for (var i = 0; i < objKeys.length; ++i) {
+	        var key = objKeys[i];
+
+	        if (skipNulls && obj[key] === null) {
+	            continue;
+	        }
+
+	        keys = keys.concat(stringify$2(
+	            obj[key],
+	            key,
+	            generateArrayPrefix,
+	            strictNullHandling,
+	            skipNulls,
+	            encode ? encoder : null,
+	            filter,
+	            sort,
+	            allowDots,
+	            serializeDate,
+	            formatter,
+	            encodeValuesOnly
+	        ));
+	    }
+
+	    var joined = keys.join(delimiter);
+	    var prefix = options.addQueryPrefix === true ? '?' : '';
+
+	    return joined.length > 0 ? prefix + joined : '';
+	};
+
+	var has$1 = Object.prototype.hasOwnProperty;
+
+	var defaults$1 = {
+	    allowDots: false,
+	    allowPrototypes: false,
+	    arrayLimit: 20,
+	    decoder: utils.decode,
+	    delimiter: '&',
+	    depth: 5,
+	    parameterLimit: 1000,
+	    plainObjects: false,
+	    strictNullHandling: false
+	};
+
+	var parseValues = function parseQueryStringValues(str, options) {
+	    var obj = {};
+	    var cleanStr = options.ignoreQueryPrefix ? str.replace(/^\?/, '') : str;
+	    var limit = options.parameterLimit === Infinity ? undefined : options.parameterLimit;
+	    var parts = cleanStr.split(options.delimiter, limit);
+
+	    for (var i = 0; i < parts.length; ++i) {
+	        var part = parts[i];
+
+	        var bracketEqualsPos = part.indexOf(']=');
+	        var pos = bracketEqualsPos === -1 ? part.indexOf('=') : bracketEqualsPos + 1;
+
+	        var key, val;
+	        if (pos === -1) {
+	            key = options.decoder(part, defaults$1.decoder);
+	            val = options.strictNullHandling ? null : '';
+	        } else {
+	            key = options.decoder(part.slice(0, pos), defaults$1.decoder);
+	            val = options.decoder(part.slice(pos + 1), defaults$1.decoder);
+	        }
+	        if (has$1.call(obj, key)) {
+	            obj[key] = [].concat(obj[key]).concat(val);
+	        } else {
+	            obj[key] = val;
+	        }
+	    }
+
+	    return obj;
+	};
+
+	var parseObject = function (chain, val, options) {
+	    var leaf = val;
+
+	    for (var i = chain.length - 1; i >= 0; --i) {
+	        var obj;
+	        var root = chain[i];
+
+	        if (root === '[]') {
+	            obj = [];
+	            obj = obj.concat(leaf);
+	        } else {
+	            obj = options.plainObjects ? Object.create(null) : {};
+	            var cleanRoot = root.charAt(0) === '[' && root.charAt(root.length - 1) === ']' ? root.slice(1, -1) : root;
+	            var index = parseInt(cleanRoot, 10);
+	            if (
+	                !isNaN(index)
+	                && root !== cleanRoot
+	                && String(index) === cleanRoot
+	                && index >= 0
+	                && (options.parseArrays && index <= options.arrayLimit)
+	            ) {
+	                obj = [];
+	                obj[index] = leaf;
+	            } else {
+	                obj[cleanRoot] = leaf;
+	            }
+	        }
+
+	        leaf = obj;
+	    }
+
+	    return leaf;
+	};
+
+	var parseKeys = function parseQueryStringKeys(givenKey, val, options) {
+	    if (!givenKey) {
+	        return;
+	    }
+
+	    // Transform dot notation to bracket notation
+	    var key = options.allowDots ? givenKey.replace(/\.([^.[]+)/g, '[$1]') : givenKey;
+
+	    // The regex chunks
+
+	    var brackets = /(\[[^[\]]*])/;
+	    var child = /(\[[^[\]]*])/g;
+
+	    // Get the parent
+
+	    var segment = brackets.exec(key);
+	    var parent = segment ? key.slice(0, segment.index) : key;
+
+	    // Stash the parent if it exists
+
+	    var keys = [];
+	    if (parent) {
+	        // If we aren't using plain objects, optionally prefix keys
+	        // that would overwrite object prototype properties
+	        if (!options.plainObjects && has$1.call(Object.prototype, parent)) {
+	            if (!options.allowPrototypes) {
+	                return;
+	            }
+	        }
+
+	        keys.push(parent);
+	    }
+
+	    // Loop through children appending to the array until we hit depth
+
+	    var i = 0;
+	    while ((segment = child.exec(key)) !== null && i < options.depth) {
+	        i += 1;
+	        if (!options.plainObjects && has$1.call(Object.prototype, segment[1].slice(1, -1))) {
+	            if (!options.allowPrototypes) {
+	                return;
+	            }
+	        }
+	        keys.push(segment[1]);
+	    }
+
+	    // If there's a remainder, just add whatever is left
+
+	    if (segment) {
+	        keys.push('[' + key.slice(segment.index) + ']');
+	    }
+
+	    return parseObject(keys, val, options);
+	};
+
+	var parse = function (str, opts) {
+	    var options = opts ? utils.assign({}, opts) : {};
+
+	    if (options.decoder !== null && options.decoder !== undefined && typeof options.decoder !== 'function') {
+	        throw new TypeError('Decoder has to be a function.');
+	    }
+
+	    options.ignoreQueryPrefix = options.ignoreQueryPrefix === true;
+	    options.delimiter = typeof options.delimiter === 'string' || utils.isRegExp(options.delimiter) ? options.delimiter : defaults$1.delimiter;
+	    options.depth = typeof options.depth === 'number' ? options.depth : defaults$1.depth;
+	    options.arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : defaults$1.arrayLimit;
+	    options.parseArrays = options.parseArrays !== false;
+	    options.decoder = typeof options.decoder === 'function' ? options.decoder : defaults$1.decoder;
+	    options.allowDots = typeof options.allowDots === 'boolean' ? options.allowDots : defaults$1.allowDots;
+	    options.plainObjects = typeof options.plainObjects === 'boolean' ? options.plainObjects : defaults$1.plainObjects;
+	    options.allowPrototypes = typeof options.allowPrototypes === 'boolean' ? options.allowPrototypes : defaults$1.allowPrototypes;
+	    options.parameterLimit = typeof options.parameterLimit === 'number' ? options.parameterLimit : defaults$1.parameterLimit;
+	    options.strictNullHandling = typeof options.strictNullHandling === 'boolean' ? options.strictNullHandling : defaults$1.strictNullHandling;
+
+	    if (str === '' || str === null || typeof str === 'undefined') {
+	        return options.plainObjects ? Object.create(null) : {};
+	    }
+
+	    var tempObj = typeof str === 'string' ? parseValues(str, options) : str;
+	    var obj = options.plainObjects ? Object.create(null) : {};
+
+	    // Iterate over the keys and setup the new object
+
+	    var keys = Object.keys(tempObj);
+	    for (var i = 0; i < keys.length; ++i) {
+	        var key = keys[i];
+	        var newObj = parseKeys(key, tempObj[key], options);
+	        obj = utils.merge(obj, newObj, options);
+	    }
+
+	    return utils.compact(obj);
+	};
+
+	var lib = {
+	    formats: formats,
+	    parse: parse,
+	    stringify: stringify_1
+	};
+
+	var urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
+
+	function SARequest () {
+	  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	  var useFetch = config.useFetch;
+
+	  return function (url, data) {
+	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
+
+	    method = urlMethod.includes(method) ? method : 'GET';
+	    var result = {
+	      url: url,
+	      method: method
+	    };
+	    if (!data) return result;
+	    if (['GET', 'HEAD'].includes(method)) {
+	      useFetch ? result.url += lib.stringify(data, { addQueryPrefix: true }) : result.params = data;
+	    } else {
+	      if (useFetch) {
+	        result.body = data instanceof FormData ? data : _JSON$stringify(data);
+	      } else {
+	        result.data = data;
+	      }
+	    }
+	    return result;
+	  };
+	}
+
 	var moduleMap = {
 	  'vue': SmartApiVue,
 	  'react': SmartApiReact
@@ -3012,7 +3697,19 @@
 	  _createClass(SmartApiErector, [{
 	    key: '_fetchSupportCheck',
 	    value: function _fetchSupportCheck() {
-	      SmartApiErector.SAinfos.hasFetch = typeof fetch === 'function';
+	      this._fetchEnable = typeof fetch === 'function';
+	      this._ajaxCoreSwitch(!this._fetchEnable);
+	    }
+	  }, {
+	    key: '_ajaxCoreSwitch',
+	    value: function _ajaxCoreSwitch(useAxios) {
+	      _Object$assign(SmartApiErector.SAinfos, useAxios ? {
+	        useFetch: false,
+	        core: axios
+	      } : {
+	        useFetch: true,
+	        core: fetch
+	      });
 	    }
 	    // init the core of ajax, set default config
 
@@ -3031,7 +3728,8 @@
 	    }
 	  }, {
 	    key: 'vueFetch',
-	    value: function vueFetch(config) {
+	    value: function vueFetch() {
+	      var config = typeof (arguments.length <= 0 ? undefined : arguments[0]) === 'string' ? request.apply(undefined, arguments) : arguments.length <= 0 ? undefined : arguments[0];
 	      return new SmartApiVue(SmartApiErector.SAinfos, this, config);
 	    }
 	  }, {
@@ -3043,7 +3741,17 @@
 	  }, {
 	    key: 'resetOpts',
 	    value: function resetOpts(options) {
-	      _Object$assign(SmartApiErector.SAinfos.userConfig, options);
+	      var _SmartApiErector$SAin = SmartApiErector.SAinfos,
+	          userConfig = _SmartApiErector$SAin.userConfig,
+	          statusMsgs = _SmartApiErector$SAin.statusMsgs;
+
+	      _Object$assign(userConfig, options);
+	      _typeof(options.statusWarn) === 'object' && _Object$assign(statusMsgs, options.statusWarn);
+	      options.forceAxios && this._ajaxCoreSwitch(true);
+	      /* if baseConfig has set and axios will be used , make a instance of axios to be core */
+	      if (options.baseConfig && !SmartApiErector.SAinfos.useFetch) {
+	        SmartApiErector.SAinfos.core = axios.create(options.baseConfig);
+	      }
 	    }
 	  }], [{
 	    key: 'checkContext',
@@ -3054,30 +3762,27 @@
 	        return 'react';
 	      }
 	    }
-	  }, {
-	    key: 'request',
-	    value: function request() {
-	      console.log(this);
-	    }
 	  }]);
 
 	  return SmartApiErector;
 	}();
 
 	SmartApiErector.SAinfos = {
-	  hasFetch: true,
-	  userConfig: _Object$create(null)
+	  useFetch: true,
+	  userConfig: _Object$create(null),
+	  statusMsgs: {
+	    '404': '请求地址不存在',
+	    '500': '服务器维护中，请稍后再试'
+	  }
 	};
 
 
+	var request = SARequest(SmartApiErector.SAinfos);
+
 	var index = new SmartApiErector();
 
-	function request(url, data, method) {
-	  var coreModule = this.coreModule;
-	}
-
-	exports.default = index;
 	exports.request = request;
+	exports.default = index;
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 

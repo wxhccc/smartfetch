@@ -18,13 +18,18 @@ function genConfig (env) {
       format: 'umd'
     }, outputs[env]),
     plugins: [ 
-      node(), 
+      node({
+        customResolveOptions: {
+          moduleDirectory: 'node_modules'
+        }
+      }),
       babel({
         runtimeHelpers: true,
         exclude: 'node_modules/**' // 只编译我们的源代码
       }),
       cjs()
     ].concat(env === 'production' ? uglify() : []),
+    external: ['axios'],
     watch: {
       include: 'src/**'
     }

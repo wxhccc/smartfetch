@@ -1,5 +1,7 @@
+import axios from 'axios';
 import SmartApiVue from './SmartApiVue';
 import SmartApiReact from './SmartApiReact';
+import SARequest from './Request';
 
 const moduleMap = {
   'vue': SmartApiVue,
@@ -10,8 +12,12 @@ class SmartApiErector {
     this._fetchSupportCheck();
   }
   static SAinfos = {
-    hasFetch: true, 
-    userConfig: Object.create(null)
+    useFetch: true, 
+    userConfig: Object.create(null),
+    statusMsgs: {
+      '404': '请求地址不存在',
+      '500': '服务器维护中，请稍后再试'
+    }
   };
   static checkContext (context) {
     if (context.hasOwnProperty('_isVue')) {
@@ -21,11 +27,18 @@ class SmartApiErector {
       return 'react';
     }
   }
-  static request () {
-    console.log(this);
-  }
   _fetchSupportCheck () {
-    SmartApiErector.SAinfos.hasFetch = (typeof fetch === 'function');
+    this._fetchEnable = (typeof fetch === 'function');
+    this._ajaxCoreSwitch(!this._fetchEnable);
+  }
+  _ajaxCoreSwitch (useAxios) {
+    Object.assign(SmartApiErector.SAinfos, useAxios ? {
+      useFetch: false,
+      core: axios
+    } : {
+      useFetch: true,
+      core: fetch
+    })
   }
   // init the core of ajax, set default config
 
@@ -37,7 +50,8 @@ class SmartApiErector {
       data: () => ({SAKEYS: {}})
     });
   }
-  vueFetch (config) {
+  vueFetch (...args) {
+    let config = (typeof args[0] === 'string') ? request(...args) : args[0];
     return new SmartApiVue(SmartApiErector.SAinfos, this, config);
   }
   fetch (config) {
@@ -45,20 +59,22 @@ class SmartApiErector {
     return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
   }
   resetOpts (options) {
-    Object.assign(SmartApiErector.SAinfos.userConfig, options);
+    let { userConfig, statusMsgs } = SmartApiErector.SAinfos;
+    Object.assign(userConfig, options);
+    (typeof options.statusWarn === 'object') && Object.assign(statusMsgs, options.statusWarn);
+    options.forceAxios && (this._ajaxCoreSwitch(true));
+    /* if baseConfig has set and axios will be used , make a instance of axios to be core */
+    if (options.baseConfig && !SmartApiErector.SAinfos.useFetch) {
+      SmartApiErector.SAinfos.core = axios.create(options.baseConfig);
+    }
   }
+
 }
+
+const request = SARequest(SmartApiErector.SAinfos);
+export {request};
 
 
 export default new SmartApiErector();
 
 
-export function request (url, data, method) {
-  let {coreModule} = this;
-
-};
-function checkUrl (url) {
-  if (url.indexOf('http')) return url;
-  let {baseUrl} = SmartApiErector.ajaxCore.baseConfig;
-  return baseUrl ? baseUrl + url : url;
-}

@@ -1,4 +1,5 @@
 import AxiosCore from './AxiosCore';
+
 const defOpts = {
   credentitals: 'same-origin',
   responseType: 'json'
@@ -9,7 +10,7 @@ const responseMixin = {
 
 export default class SmartApi {
   _silence = false;
-  _checkCode = true;
+  _needCodeCheck = true;
   _codeCheckResult = false;
   _lockKey = '';
   _faileHandle = null;
@@ -22,7 +23,7 @@ export default class SmartApi {
     return this;
   }
   _ajaxCoreMixin (ajaxCore) {
-    !ajaxCore.hasFetch && AxiosCore.call(this);
+    !ajaxCore.useFetch && AxiosCore.call(this);
   }
   _createRequest (config) {
     setTimeout(() => {
@@ -37,13 +38,14 @@ export default class SmartApi {
   }
   _request (config) {
     this._init = Object.assign({}, defOpts, config)
-    return fetch(config.url, config)
+    return this.core(config.url, config)
       .then(this._resCheck)
       .then(this._typeHandle);
   }
   _handleResData = (resjson) => {
-    if (this._codeCheck) {
-      this._codeCheckResult && this._successHandle(resjson.data);
+    if (this._needCodeCheck) {
+      const dataKey = this.userConfig.dataKey || 'data';
+      this._codeCheckResult && this._successHandle(resjson[dataKey]);
     }
     else {
       this._successHandle(resjson);
@@ -74,29 +76,48 @@ export default class SmartApi {
   }
   _handleError = (error) => {
     this._unlock();
-    if (this._silence) return;
-    let {errorHandle} = this.userConfig;
-    errorHandle(error);
     this._faileHandle && this._faileHandle(error);
+    if (this._silence) return;
+    let msg = '';
+    const {statusMsgs, userConfig: {errorHandle} } = this;
+    switch (error.name) {
+      case 'TypeError':
+        msg = '服务器未响应';
+        break;
+      case 'SyntaxError':
+        msg = '数据解析失败';
+        break;
+      case 'Error':
+        msg = statusMsgs[error.message] || '请求失败';
+        break;
+    }
+    if (typeof errorHandle === 'function') {
+      errorHandle(msg, error);
+    } else {
+      (typeof alert === 'function') ? alert(msg) : console.log(error);
+    }
   }
-  _responseCheck = (resjson) => {
-    let {codeCheck} = this.userConfig;
-    if (typeof codeCheck === 'function') {
-      return codeCheck(resjson);
+  _resOkCheck (resjson) {
+    let result = false;
+    const {resCheck} = this.userConfig;
+    let resCheckType = typeof resCheck;
+    if (resCheckType === 'function') {
+      result = resCheck(resjson);
+    } else if (resCheckType === 'string') {
+      result = resjson[resCheck];
     }
-    else if(typeof codeCheck === 'string'){
-      return resjson[codeCheck];
-    }
+    this._codeCheckResult = result;
+    return result;
   }
   _codeCheck = (resjson) => {
     this._unlock();
-    if (this._checkCode && (this._codeCheckResult = this._responseCheck(resjson))) {
+    if (this._needCodeCheck && this._resOkCheck(resjson)) {
       return resjson;
     }
+    this._faileHandle && this._faileHandle(null, resjson);
     if (this._silence) return;
     let {codeError} = this.userConfig;
     codeError(resjson);
-    this._faileHandle && this._faileHandle(null, resjson);
   }
   // public apis
   lock (key) {
@@ -117,8 +138,8 @@ export default class SmartApi {
     this._silence = true;
     return this;
   }
-  notCheckJson () {
-    this._checkCode = false;
+  notCheckCode () {
+    this._needCodeCheck = false;
     return this;
   }
 
