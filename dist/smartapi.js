@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('axios')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'axios'], factory) :
-	(factory((global.Smartapi = {}),global.axios));
+	(factory((global.smartfetch = {}),global.axios));
 }(this, (function (exports,axios) { 'use strict';
 
 	axios = axios && axios.hasOwnProperty('default') ? axios['default'] : axios;

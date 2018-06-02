@@ -1,5 +1,5 @@
 {
-  "name": "smartapi",
+  "name": "smartfetch",
   "version": "0.0.1",
   "description": "an easy use api plugin for vue and react",
   "main": "index.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wxhccc/smartapi.git"
+    "url": "git+https://github.com/wxhccc/smartfetch.git"
   },
   "keywords": [
     "api",
@@ -21,9 +21,9 @@
   "author": "gavinhe",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/wxhccc/smartapi/issues"
+    "url": "https://github.com/wxhccc/smartfetch/issues"
   },
-  "homepage": "https://github.com/wxhccc/smartapi#readme",
+  "homepage": "https://github.com/wxhccc/smartfetch#readme",
   "devDependencies": {
     "rollup": "^0.58.2",
     "rollup-plugin-babel": "^3.0.4",
