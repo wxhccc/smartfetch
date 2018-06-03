@@ -2,11 +2,11 @@
   "name": "smartfetch",
   "version": "0.0.1",
   "description": "an easy use api plugin for vue and react",
-  "main": "index.js",
+  "main": "dist/smartapi.common.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "rollup -w -c scripts/config.js --environment NODE_ENV:development",
-    "build": "rollup -c scripts/prod.config.js && rollup -c scripts/prod.config.js -f umd -o dist/anicanvas.min.js",
+    "build": "rollup -c scripts/config.js --environment NODE_ENV:production && rollup -c scripts/config.js -f umd -o dist/smartfetch.min.js --environment NODE_ENV:production",
     "start": "npm run dev"
   },
   "repository": {

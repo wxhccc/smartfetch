@@ -17,7 +17,7 @@ install the plugin in main.js
 ```
 import Vue from 'vue'
 ...
-import smartapi from 'smartapi'
+import smartfetch from 'smartfetch'
 
 /** those code can be import from config file **/
 
@@ -55,7 +55,7 @@ const useConfig = {
   }
 }
 
-Vue.use(smartapi, useConfig);
+Vue.use(smartfetch, useConfig);
 ...
 ```
 use the component 

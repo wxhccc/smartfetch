@@ -6,14 +6,14 @@ const uglify = require('rollup-plugin-uglify')
 const outputs = {
   production: {
     format: 'cjs',
-    file: 'dist/smartapi.common.js',
+    file: 'dist/smartfetch.common.js',
   }
 };
 function genConfig (env) {
   return {
     input: 'src/index.js',
     output: Object.assign({}, {
-      file: 'dist/smartapi.js',
+      file: 'dist/smartfetch.js',
       name: 'smartfetch',
       format: 'umd'
     }, outputs[env]),
@@ -29,7 +29,7 @@ function genConfig (env) {
       }),
       cjs()
     ].concat(env === 'production' ? uglify() : []),
-    external: ['axios'],
+    external: ['axios', 'qs'],
     watch: {
       include: 'src/**'
     }
