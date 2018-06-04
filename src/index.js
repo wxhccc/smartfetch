@@ -27,6 +27,15 @@ class SmartApiErector {
       return 'react';
     }
   }
+  static fetchArgsSwitch (...args) {
+    let config = args[0];
+    if (typeof config === 'string') {
+      config = request(...args);
+    } else if (typeof config === 'function') {
+      config = config(args.slice(1));
+    }
+    return config;
+  }
   _fetchSupportCheck () {
     this._fetchEnable = (typeof fetch === 'function');
     this._ajaxCoreSwitch(!this._fetchEnable);
@@ -40,6 +49,7 @@ class SmartApiErector {
       core: fetch
     })
   }
+
   // init the core of ajax, set default config
 
   // for vuejs
@@ -51,13 +61,15 @@ class SmartApiErector {
     });
   }
   vueFetch (...args) {
-    let config = (typeof args[0] === 'string') ? request(...args) : args[0];
+    let config = SmartApiErector.fetchArgsSwitch(...args);
     return new SmartApiVue(SmartApiErector.SAinfos, this, config);
   }
-  fetch (config) {
+  fetch (...args) {
     let module = SmartApiErector.checkContext(this);
+    let config = SmartApiErector.fetchArgsSwitch(...args);
     return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
   }
+
   resetOpts (options) {
     let { userConfig, statusMsgs } = SmartApiErector.SAinfos;
     Object.assign(userConfig, options);

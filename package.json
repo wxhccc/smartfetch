@@ -2,7 +2,7 @@
   "name": "smartfetch",
   "version": "0.0.2",
   "description": "an easy use api plugin for vue and react",
-  "main": "dist/smartapi.common.js",
+  "main": "dist/smartfetch.common.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "rollup -w -c scripts/config.js --environment NODE_ENV:development",
