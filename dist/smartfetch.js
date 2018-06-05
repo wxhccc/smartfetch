@@ -3097,9 +3097,10 @@
 	        core: axios
 	      } : {
 	        useFetch: true,
-	        core: fetch
+	        core: fetch.bind(window)
 	      });
 	    }
+
 	    // init the core of ajax, set default config
 
 	    // for vuejs
@@ -3118,13 +3119,14 @@
 	  }, {
 	    key: 'vueFetch',
 	    value: function vueFetch() {
-	      var config = typeof (arguments.length <= 0 ? undefined : arguments[0]) === 'string' ? request.apply(undefined, arguments) : arguments.length <= 0 ? undefined : arguments[0];
+	      var config = SmartApiErector.fetchArgsSwitch.apply(SmartApiErector, arguments);
 	      return new SmartApiVue(SmartApiErector.SAinfos, this, config);
 	    }
 	  }, {
 	    key: 'fetch',
-	    value: function fetch(config) {
+	    value: function fetch() {
 	      var module = SmartApiErector.checkContext(this);
+	      var config = SmartApiErector.fetchArgsSwitch.apply(SmartApiErector, arguments);
 	      return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
 	    }
 	  }, {
@@ -3150,6 +3152,21 @@
 	      } else if (context.hasOwnProperty('state') || context.hasOwnProperty('setState')) {
 	        return 'react';
 	      }
+	    }
+	  }, {
+	    key: 'fetchArgsSwitch',
+	    value: function fetchArgsSwitch() {
+	      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	        args[_key] = arguments[_key];
+	      }
+
+	      var config = args[0];
+	      if (typeof config === 'string') {
+	        config = request.apply(undefined, args);
+	      } else if (typeof config === 'function') {
+	        config = config(args.slice(1));
+	      }
+	      return config;
 	    }
 	  }]);
 

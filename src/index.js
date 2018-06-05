@@ -46,7 +46,7 @@ class SmartApiErector {
       core: axios
     } : {
       useFetch: true,
-      core: fetch
+      core: fetch.bind(window)
     })
   }
 
