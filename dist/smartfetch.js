@@ -538,6 +538,147 @@
 	  return { value: point, done: false };
 	});
 
+	// call something on iterator step with safe closing on error
+
+	var _iterCall = function (iterator, fn, value, entries) {
+	  try {
+	    return entries ? fn(_anObject(value)[0], value[1]) : fn(value);
+	  // 7.4.6 IteratorClose(iterator, completion)
+	  } catch (e) {
+	    var ret = iterator['return'];
+	    if (ret !== undefined) _anObject(ret.call(iterator));
+	    throw e;
+	  }
+	};
+
+	// check on default Array iterator
+
+	var ITERATOR$1 = _wks('iterator');
+	var ArrayProto = Array.prototype;
+
+	var _isArrayIter = function (it) {
+	  return it !== undefined && (_iterators.Array === it || ArrayProto[ITERATOR$1] === it);
+	};
+
+	var _createProperty = function (object, index, value) {
+	  if (index in object) _objectDp.f(object, index, _propertyDesc(0, value));
+	  else object[index] = value;
+	};
+
+	// getting tag from 19.1.3.6 Object.prototype.toString()
+
+	var TAG$1 = _wks('toStringTag');
+	// ES3 wrong here
+	var ARG = _cof(function () { return arguments; }()) == 'Arguments';
+
+	// fallback for IE11 Script Access Denied error
+	var tryGet = function (it, key) {
+	  try {
+	    return it[key];
+	  } catch (e) { /* empty */ }
+	};
+
+	var _classof = function (it) {
+	  var O, T, B;
+	  return it === undefined ? 'Undefined' : it === null ? 'Null'
+	    // @@toStringTag case
+	    : typeof (T = tryGet(O = Object(it), TAG$1)) == 'string' ? T
+	    // builtinTag case
+	    : ARG ? _cof(O)
+	    // ES3 arguments fallback
+	    : (B = _cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
+	};
+
+	var ITERATOR$2 = _wks('iterator');
+
+	var core_getIteratorMethod = _core.getIteratorMethod = function (it) {
+	  if (it != undefined) return it[ITERATOR$2]
+	    || it['@@iterator']
+	    || _iterators[_classof(it)];
+	};
+
+	var ITERATOR$3 = _wks('iterator');
+	var SAFE_CLOSING = false;
+
+	try {
+	  var riter = [7][ITERATOR$3]();
+	  riter['return'] = function () { SAFE_CLOSING = true; };
+	} catch (e) { /* empty */ }
+
+	var _iterDetect = function (exec, skipClosing) {
+	  if (!skipClosing && !SAFE_CLOSING) return false;
+	  var safe = false;
+	  try {
+	    var arr = [7];
+	    var iter = arr[ITERATOR$3]();
+	    iter.next = function () { return { done: safe = true }; };
+	    arr[ITERATOR$3] = function () { return iter; };
+	    exec(arr);
+	  } catch (e) { /* empty */ }
+	  return safe;
+	};
+
+	_export(_export.S + _export.F * !_iterDetect(function (iter) { }), 'Array', {
+	  // 22.1.2.1 Array.from(arrayLike, mapfn = undefined, thisArg = undefined)
+	  from: function from(arrayLike /* , mapfn = undefined, thisArg = undefined */) {
+	    var O = _toObject(arrayLike);
+	    var C = typeof this == 'function' ? this : Array;
+	    var aLen = arguments.length;
+	    var mapfn = aLen > 1 ? arguments[1] : undefined;
+	    var mapping = mapfn !== undefined;
+	    var index = 0;
+	    var iterFn = core_getIteratorMethod(O);
+	    var length, result, step, iterator;
+	    if (mapping) mapfn = _ctx(mapfn, aLen > 2 ? arguments[2] : undefined, 2);
+	    // if object isn't iterable or it's array with default iterator - use simple case
+	    if (iterFn != undefined && !(C == Array && _isArrayIter(iterFn))) {
+	      for (iterator = iterFn.call(O), result = new C(); !(step = iterator.next()).done; index++) {
+	        _createProperty(result, index, mapping ? _iterCall(iterator, mapfn, [step.value, index], true) : step.value);
+	      }
+	    } else {
+	      length = _toLength(O.length);
+	      for (result = new C(length); length > index; index++) {
+	        _createProperty(result, index, mapping ? mapfn(O[index], index) : O[index]);
+	      }
+	    }
+	    result.length = index;
+	    return result;
+	  }
+	});
+
+	var from = _core.Array.from;
+
+	var from$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": from, __esModule: true };
+	});
+
+	unwrapExports(from$1);
+
+	var toConsumableArray = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _from2 = _interopRequireDefault(from$1);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = function (arr) {
+	  if (Array.isArray(arr)) {
+	    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+	      arr2[i] = arr[i];
+	    }
+
+	    return arr2;
+	  } else {
+	    return (0, _from2.default)(arr);
+	  }
+	};
+	});
+
+	var _toConsumableArray = unwrapExports(toConsumableArray);
+
 	var _iterStep = function (done, value) {
 	  return { value: value, done: !!done };
 	};
@@ -2262,64 +2403,10 @@
 
 	var regenerator = runtimeModule;
 
-	// getting tag from 19.1.3.6 Object.prototype.toString()
-
-	var TAG$1 = _wks('toStringTag');
-	// ES3 wrong here
-	var ARG = _cof(function () { return arguments; }()) == 'Arguments';
-
-	// fallback for IE11 Script Access Denied error
-	var tryGet = function (it, key) {
-	  try {
-	    return it[key];
-	  } catch (e) { /* empty */ }
-	};
-
-	var _classof = function (it) {
-	  var O, T, B;
-	  return it === undefined ? 'Undefined' : it === null ? 'Null'
-	    // @@toStringTag case
-	    : typeof (T = tryGet(O = Object(it), TAG$1)) == 'string' ? T
-	    // builtinTag case
-	    : ARG ? _cof(O)
-	    // ES3 arguments fallback
-	    : (B = _cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
-	};
-
 	var _anInstance = function (it, Constructor, name, forbiddenField) {
 	  if (!(it instanceof Constructor) || (forbiddenField !== undefined && forbiddenField in it)) {
 	    throw TypeError(name + ': incorrect invocation!');
 	  } return it;
-	};
-
-	// call something on iterator step with safe closing on error
-
-	var _iterCall = function (iterator, fn, value, entries) {
-	  try {
-	    return entries ? fn(_anObject(value)[0], value[1]) : fn(value);
-	  // 7.4.6 IteratorClose(iterator, completion)
-	  } catch (e) {
-	    var ret = iterator['return'];
-	    if (ret !== undefined) _anObject(ret.call(iterator));
-	    throw e;
-	  }
-	};
-
-	// check on default Array iterator
-
-	var ITERATOR$1 = _wks('iterator');
-	var ArrayProto = Array.prototype;
-
-	var _isArrayIter = function (it) {
-	  return it !== undefined && (_iterators.Array === it || ArrayProto[ITERATOR$1] === it);
-	};
-
-	var ITERATOR$2 = _wks('iterator');
-
-	var core_getIteratorMethod = _core.getIteratorMethod = function (it) {
-	  if (it != undefined) return it[ITERATOR$2]
-	    || it['@@iterator']
-	    || _iterators[_classof(it)];
 	};
 
 	var _forOf = createCommonjsModule(function (module) {
@@ -2573,27 +2660,6 @@
 	    configurable: true,
 	    get: function () { return this; }
 	  });
-	};
-
-	var ITERATOR$3 = _wks('iterator');
-	var SAFE_CLOSING = false;
-
-	try {
-	  var riter = [7][ITERATOR$3]();
-	  riter['return'] = function () { SAFE_CLOSING = true; };
-	} catch (e) { /* empty */ }
-
-	var _iterDetect = function (exec, skipClosing) {
-	  if (!skipClosing && !SAFE_CLOSING) return false;
-	  var safe = false;
-	  try {
-	    var arr = [7];
-	    var iter = arr[ITERATOR$3]();
-	    iter.next = function () { return { done: safe = true }; };
-	    arr[ITERATOR$3] = function () { return iter; };
-	    exec(arr);
-	  } catch (e) { /* empty */ }
-	  return safe;
 	};
 
 	var task = _task.set;
@@ -3052,6 +3118,7 @@
 	  return function (url, data) {
 	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
 
+	    console.log(11, url, data, method);
 	    method = urlMethod.includes(method) ? method : 'GET';
 	    var result = {
 	      url: url,
@@ -3061,8 +3128,10 @@
 	    if (['GET', 'HEAD'].includes(method)) {
 	      useFetch ? result.url += qs.stringify(data, { addQueryPrefix: true }) : result.params = data;
 	    } else {
+	      var isFormData = data instanceof FormData;
+	      !isFormData && (result.headers = _Object$assign(result.headers || {}, { 'Content-Type': 'application/json' }));
 	      if (useFetch) {
-	        result.body = data instanceof FormData ? data : _JSON$stringify(data);
+	        result.body = isFormData ? data : _JSON$stringify(data);
 	      } else {
 	        result.data = data;
 	      }
@@ -3164,7 +3233,7 @@
 	      if (typeof config === 'string') {
 	        config = request.apply(undefined, args);
 	      } else if (typeof config === 'function') {
-	        config = config(args.slice(1));
+	        config = config.apply(undefined, _toConsumableArray(args.slice(1)));
 	      }
 	      return config;
 	    }

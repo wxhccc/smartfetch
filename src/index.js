@@ -32,7 +32,7 @@ class SmartApiErector {
     if (typeof config === 'string') {
       config = request(...args);
     } else if (typeof config === 'function') {
-      config = config(args.slice(1));
+      config = config(...args.slice(1));
     }
     return config;
   }

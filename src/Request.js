@@ -4,7 +4,8 @@ const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
 
 export default function (config = {}) {
   const {useFetch} = config;
-  return function(url, data, method = 'GET') {
+  return function (url, data, method = 'GET') {
+    console.log(11 ,url, data, method);
     method = urlMethod.includes(method) ? method : 'GET';
     let result = {
       url,
