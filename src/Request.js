@@ -15,8 +15,10 @@ export default function (config = {}) {
       useFetch ? (result.url += qs.stringify(data, { addQueryPrefix: true })) : (result.params = data);
     }
     else {
+      let isFormData = data instanceof FormData;
+      !isFormData && (result.headers = Object.assign(result.headers || {}, {'Content-Type': 'application/json'}));
       if (useFetch) {
-        result.body = data instanceof FormData ? data : JSON.stringify(data);
+        result.body = isFormData ? data : JSON.stringify(data);
       } else {
         result.data = data;
       }
