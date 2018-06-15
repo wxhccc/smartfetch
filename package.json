@@ -1,6 +1,6 @@
 {
   "name": "smartfetch",
-  "version": "0.2.4",
+  "version": "0.2.0",
   "description": "an easy use api plugin for vue and react",
   "main": "dist/smartfetch.common.js",
   "scripts": {
