@@ -3,10 +3,17 @@ import qs from 'qs';
 const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
 
 export default function (config = {}) {
-  const {useFetch} = config;
-  return function (url, data, method = 'GET') {
-    console.log(11 ,url, data, method);
+  const {useFetch, userConfig} = config;
+  return function (url, data, method = 'GET', returnLink = false) {
     method = urlMethod.includes(method) ? method : 'GET';
+    if (returnLink) {
+      const paramsStr = qs.stringify(data, { addQueryPrefix: true })
+      if (url.indexOf('http') >= 0) {
+        return url + paramsStr;
+      }
+      const {baseConfig: {baseUrl}} = userConfig;
+      return baseUrl + url + paramsStr;
+    }
     let result = {
       url,
       method

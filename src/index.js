@@ -84,7 +84,10 @@ class SmartApiErector {
 }
 
 const request = SARequest(SmartApiErector.SAinfos);
-export {request};
+
+export {
+  request
+}
 
 
 export default new SmartApiErector();

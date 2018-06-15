@@ -1508,8 +1508,14 @@
 	  }, {
 	    key: '_request',
 	    value: function _request(config) {
+	      var baseConfig = this.userConfig.baseConfig;
+
+	      if (baseConfig.baseUrl && config.url.indexOf('http') < 0) {
+	        config.url = baseConfig.baseUrl + config.url;
+	      }
+	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
 	      this._init = _Object$assign({}, defOpts, config);
-	      return this.core(config.url, config).then(this._resCheck).then(this._typeHandle);
+	      return this.core(config.url, this._init).then(this._resCheck).then(this._typeHandle);
 	    }
 	  }, {
 	    key: '_lock',
@@ -3113,13 +3119,23 @@
 
 	function SARequest () {
 	  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	  var useFetch = config.useFetch;
+	  var useFetch = config.useFetch,
+	      userConfig = config.userConfig;
 
 	  return function (url, data) {
 	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
+	    var returnLink = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
-	    console.log(11, url, data, method);
 	    method = urlMethod.includes(method) ? method : 'GET';
+	    if (returnLink) {
+	      var paramsStr = qs.stringify(data, { addQueryPrefix: true });
+	      if (url.indexOf('http') >= 0) {
+	        return url + paramsStr;
+	      }
+	      var baseUrl = userConfig.baseConfig.baseUrl;
+
+	      return baseUrl + url + paramsStr;
+	    }
 	    var result = {
 	      url: url,
 	      method: method
