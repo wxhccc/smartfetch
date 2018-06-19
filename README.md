@@ -33,6 +33,7 @@ const useConfig = {
   baseConfig: {  //baseConfig for all request
     baseURL: ''
   },
+  baseData: {},  // the data will append to all request
   errorHandle: notifyMsg, // the http error handler
   statusWarn: statusMsgs, // status warning text map
   resCheck: 'success', // the api success check key, can be a function
