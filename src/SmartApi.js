@@ -37,9 +37,9 @@ export default class SmartApi {
     }, 0);
   }
   _request (config) {
-    const {baseConfig} = this.userConfig
-    if (baseConfig.baseUrl && config.url.indexOf('http') < 0) {
-      config.url = baseConfig.baseUrl + config.url
+    const baseConfig = this.userConfig.baseConfig ? this.userConfig.baseConfig : {}
+    if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
+      config.url = baseConfig.baseURL + config.url
     }
     baseConfig.headers && (config.headers = Object.assign({}, config.headers || {}, baseConfig.headers))
     this._init = Object.assign({}, defOpts, config)

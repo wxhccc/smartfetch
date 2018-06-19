@@ -1508,10 +1508,9 @@
 	  }, {
 	    key: '_request',
 	    value: function _request(config) {
-	      var baseConfig = this.userConfig.baseConfig;
-
-	      if (baseConfig.baseUrl && config.url.indexOf('http') < 0) {
-	        config.url = baseConfig.baseUrl + config.url;
+	      var baseConfig = this.userConfig.baseConfig ? this.userConfig.baseConfig : {};
+	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
+	        config.url = baseConfig.baseURL + config.url;
 	      }
 	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
 	      this._init = _Object$assign({}, defOpts, config);
@@ -3119,33 +3118,40 @@
 
 	function SARequest () {
 	  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	  var useFetch = config.useFetch,
-	      userConfig = config.userConfig;
 
 	  return function (url, data) {
 	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
 	    var returnLink = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
 	    method = urlMethod.includes(method) ? method : 'GET';
+	    var useFetch = config.useFetch,
+	        userConfig = config.userConfig;
+
 	    if (returnLink) {
 	      var paramsStr = qs.stringify(data, { addQueryPrefix: true });
 	      if (url.indexOf('http') >= 0) {
 	        return url + paramsStr;
 	      }
-	      var baseUrl = userConfig.baseConfig.baseUrl;
+	      var baseConfig = userConfig.baseConfig;
 
-	      return baseUrl + url + paramsStr;
+	      var baseURL = baseConfig && baseConfig.baseURL ? baseConfig.baseURL : '';
+	      return baseURL + url + paramsStr;
 	    }
 	    var result = {
 	      url: url,
-	      method: method
+	      method: useFetch ? method : method.toLowerCase()
 	    };
-	    if (!data) return result;
+	    var baseData = userConfig.baseData;
+
+	    if (!data && !baseData) return result;
+	    !data && (data = {});
 	    if (['GET', 'HEAD'].includes(method)) {
+	      baseData && _Object$assign(data, baseData);
 	      useFetch ? result.url += qs.stringify(data, { addQueryPrefix: true }) : result.params = data;
 	    } else {
 	      var isFormData = data instanceof FormData;
 	      !isFormData && (result.headers = _Object$assign(result.headers || {}, { 'Content-Type': 'application/json' }));
+	      baseData && (isFormData ? appendDataToForm(data, baseData) : _Object$assign(data, baseData));
 	      if (useFetch) {
 	        result.body = isFormData ? data : _JSON$stringify(data);
 	      } else {
@@ -3154,6 +3160,12 @@
 	    }
 	    return result;
 	  };
+	}
+	function appendDataToForm(formdata, data) {
+	  if (!data || !formdata instanceof FormData) return;
+	  for (var i in data) {
+	    !formdata.has(i) && formdata.append(data[i]);
+	  }
 	}
 
 	var moduleMap = {
