@@ -6,7 +6,9 @@ export default function (config = {}) {
   return function (url, data, method = 'GET', returnLink = false) {
     method = urlMethod.includes(method) ? method : 'GET';
     const {useFetch, userConfig} = config;
+    const {baseData} = userConfig;
     if (returnLink) {
+      baseData && Object.assign(data, baseData);
       const paramsStr = qs.stringify(data, { addQueryPrefix: true })
       if (url.indexOf('http') >= 0) {
         return url + paramsStr;
@@ -19,7 +21,6 @@ export default function (config = {}) {
       url,
       method: useFetch ? method : method.toLowerCase()
     };
-    const {baseData} = userConfig;
     if (!data && !baseData) return result;
     !data && (data = {});
     if (['GET', 'HEAD'].includes(method)) {
