@@ -3126,8 +3126,11 @@
 	    method = urlMethod.includes(method) ? method : 'GET';
 	    var useFetch = config.useFetch,
 	        userConfig = config.userConfig;
+	    var baseData = userConfig.baseData;
 
+	    var trueBaseData = typeof baseData === 'function' ? baseData() : baseData;
 	    if (returnLink) {
+	      trueBaseData && _Object$assign(data, trueBaseData);
 	      var paramsStr = qs.stringify(data, { addQueryPrefix: true });
 	      if (url.indexOf('http') >= 0) {
 	        return url + paramsStr;
@@ -3141,17 +3144,15 @@
 	      url: url,
 	      method: useFetch ? method : method.toLowerCase()
 	    };
-	    var baseData = userConfig.baseData;
-
-	    if (!data && !baseData) return result;
+	    if (!data && !trueBaseData) return result;
 	    !data && (data = {});
 	    if (['GET', 'HEAD'].includes(method)) {
-	      baseData && _Object$assign(data, baseData);
+	      trueBaseData && _Object$assign(data, trueBaseData);
 	      useFetch ? result.url += qs.stringify(data, { addQueryPrefix: true }) : result.params = data;
 	    } else {
 	      var isFormData = data instanceof FormData;
 	      !isFormData && (result.headers = _Object$assign(result.headers || {}, { 'Content-Type': 'application/json' }));
-	      baseData && (isFormData ? appendDataToForm(data, baseData) : _Object$assign(data, baseData));
+	      trueBaseData && (isFormData ? appendDataToForm(data, trueBaseData) : _Object$assign(data, trueBaseData));
 	      if (useFetch) {
 	        result.body = isFormData ? data : _JSON$stringify(data);
 	      } else {

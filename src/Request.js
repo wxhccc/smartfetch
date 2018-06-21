@@ -7,8 +7,9 @@ export default function (config = {}) {
     method = urlMethod.includes(method) ? method : 'GET';
     const {useFetch, userConfig} = config;
     const {baseData} = userConfig;
+    const trueBaseData = typeof baseData === 'function' ? baseData() : baseData;
     if (returnLink) {
-      baseData && Object.assign(data, baseData);
+      trueBaseData && Object.assign(data, trueBaseData);
       const paramsStr = qs.stringify(data, { addQueryPrefix: true })
       if (url.indexOf('http') >= 0) {
         return url + paramsStr;
@@ -21,16 +22,16 @@ export default function (config = {}) {
       url,
       method: useFetch ? method : method.toLowerCase()
     };
-    if (!data && !baseData) return result;
+    if (!data && !trueBaseData) return result;
     !data && (data = {});
     if (['GET', 'HEAD'].includes(method)) {
-      baseData && Object.assign(data, baseData);
+      trueBaseData && Object.assign(data, trueBaseData);
       useFetch ? (result.url += qs.stringify(data, { addQueryPrefix: true })) : (result.params = data);
     }
     else {
       let isFormData = data instanceof FormData;
       !isFormData && (result.headers = Object.assign(result.headers || {}, {'Content-Type': 'application/json'}));
-      baseData && (isFormData ? appendDataToForm(data, baseData) : Object.assign(data, baseData));
+      trueBaseData && (isFormData ? appendDataToForm(data, trueBaseData) : Object.assign(data, trueBaseData));
       if (useFetch) {
         result.body = isFormData ? data : JSON.stringify(data);
       } else {
