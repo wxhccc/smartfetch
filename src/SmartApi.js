@@ -13,6 +13,7 @@ export default class SmartApi {
   _needCodeCheck = true;
   _codeCheckResult = false;
   _lockKey = '';
+  _useCore='default';
   _faileHandle = null;
   _successHandle = null;
   _SAinfos = {};
@@ -26,6 +27,8 @@ export default class SmartApi {
     !ajaxCore.useFetch && AxiosCore.call(this);
   }
   _createRequest (config) {
+    if(!config || !config.url) return;
+    this._checkRequestCore(config)
     setTimeout(() => {
       if (!this._checkLock()) {
         this._lock();
@@ -36,8 +39,13 @@ export default class SmartApi {
       }
     }, 0);
   }
+  _checkRequestCore (config) {
+    if (!config.useCore || typeof config.useCore !== 'string') return;
+    this.useCore(config.useCore);
+    delete config.useCore;
+  }
   _request (config) {
-    const baseConfig = this.userConfig.baseConfig ? this.userConfig.baseConfig : {}
+    const baseConfig = this.baseCfg || {};
     if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
       config.url = baseConfig.baseURL + config.url
     }
@@ -125,6 +133,14 @@ export default class SmartApi {
     codeError(resjson);
   }
   // public apis
+  useCore (corekey) {
+    if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
+      this._useCore = corekey;
+      this.baseCfg = this.baseCfgs[this._useCore]
+      !this.useFetch && (this.core = this.axiosCores[this._useCore]);
+    }
+    return this;
+  }
   lock (key) {
     if (key && typeof key === 'string') {
       this._lockKey = key;

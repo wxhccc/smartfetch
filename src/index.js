@@ -7,12 +7,17 @@ const moduleMap = {
   'vue': SmartApiVue,
   'react': SmartApiReact
 };
-class SmartApiErector {
-  constructor () {
+// an export function for easier use
+
+export class SmartApiErector {
+  constructor (options) {
     this._fetchSupportCheck();
+    options && (typeof options === 'object') && this.resetOpts(options);
   }
   static SAinfos = {
-    useFetch: true, 
+    useFetch: true,
+    axiosCores: Object.create(null),
+    baseCfgs: Object.create(null),
     userConfig: Object.create(null),
     statusMsgs: {
       '404': '请求地址不存在',
@@ -36,6 +41,20 @@ class SmartApiErector {
     }
     return config;
   }
+  static fetchCoreSetup (baseConfigs) {
+    const {SAinfos, SAinfos: {axiosCores, baseCfgs, useFetch}} = this;
+    const baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [{key: 'default', ...baseConfigs}];
+    baseConfig.forEach(item => {
+      const {key} = item;
+      if (key) {
+        delete item.key;
+        baseCfgs[key] = item
+        !useFetch && (axiosCores[key] = axios.create(item));
+      }
+    })
+    SAinfos.baseCfg = baseCfgs['default'];
+    !useFetch && (SAinfos.core = axiosCores['default']);
+  }
   _fetchSupportCheck () {
     this._fetchEnable = (typeof fetch === 'function');
     this._ajaxCoreSwitch(!this._fetchEnable);
@@ -52,14 +71,15 @@ class SmartApiErector {
 
   // init the core of ajax, set default config
 
-  // for vuejs
+  // for Vue.use method of vuejs 
   install (Vue, options) {
-    (typeof options === 'object') && this.resetOpts(options);
+    options && (typeof options === 'object') && this.resetOpts(options);
     Vue.prototype.$fetch = this.vueFetch;
     Vue.mixin({
       data: () => ({SAKEYS: {}})
     });
   }
+  // a special method of fetch for vue
   vueFetch (...args) {
     let config = SmartApiErector.fetchArgsSwitch(...args);
     return new SmartApiVue(SmartApiErector.SAinfos, this, config);
@@ -69,27 +89,22 @@ class SmartApiErector {
     let config = SmartApiErector.fetchArgsSwitch(...args);
     return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
   }
-
+  // reset options
   resetOpts (options) {
     let { userConfig, statusMsgs } = SmartApiErector.SAinfos;
     Object.assign(userConfig, options);
-    (typeof options.statusWarn === 'object') && Object.assign(statusMsgs, options.statusWarn);
-    options.forceAxios && (this._ajaxCoreSwitch(true));
+    options.statusWarn && (typeof options.statusWarn === 'object') && Object.assign(statusMsgs, options.statusWarn);
+    options.forceAxios && this._ajaxCoreSwitch(true);
     /* if baseConfig has set and axios will be used , make a instance of axios to be core */
-    if (options.baseConfig && !SmartApiErector.SAinfos.useFetch) {
-      SmartApiErector.SAinfos.core = axios.create(options.baseConfig);
-    }
+    options.baseConfig && SmartApiErector.fetchCoreSetup(options.baseConfig);
   }
 
 }
 
 const request = SARequest(SmartApiErector.SAinfos);
 
-export {
-  request
-}
-
-
+export {request}
+ 
 export default new SmartApiErector();
 
 

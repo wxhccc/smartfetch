@@ -30,9 +30,19 @@ const codeMsgs = {
   'E001': '未登录'
 };
 const useConfig = {
-  baseConfig: {  //baseConfig for all request
+  baseConfig: {  //baseConfig for all request ,can be an array to set multiple
     baseURL: ''
   },
+  /*baseConfig: [  // key is necessary to switch
+    {
+      key: 'default',  // 'default' will be the default baseConfig set
+      baseURL: 'url1'
+    },
+    {
+      key: 'upload'
+      baseURL: 'url2'
+    }
+  ]*/
   baseData: {},  // the data will append to all request, accept an object or a function
   errorHandle: notifyMsg, // the http error handler
   statusWarn: statusMsgs, // status warning text map

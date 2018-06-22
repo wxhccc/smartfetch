@@ -3,28 +3,25 @@ import qs from 'qs';
 const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
 
 export default function (config = {}) {
-  return function (url, data, method = 'GET', returnLink = false) {
+  let useCore = 'default';
+  function request(url, data, method = 'GET', returnLink = false) {
     method = urlMethod.includes(method) ? method : 'GET';
-    const {useFetch, userConfig} = config;
+    const {useFetch, userConfig, baseCfgs} = config;
+    const canUseLink = ['GET', 'HEAD'].includes(method);
     const {baseData} = userConfig;
-    const trueBaseData = typeof baseData === 'function' ? baseData() : baseData;
-    if (returnLink) {
-      trueBaseData && Object.assign(data, trueBaseData);
-      const paramsStr = qs.stringify(data, { addQueryPrefix: true })
-      if (url.indexOf('http') >= 0) {
-        return url + paramsStr;
-      }
-      const {baseConfig} = userConfig;
-      const baseURL = baseConfig && baseConfig.baseURL ? baseConfig.baseURL : ''
-      return baseURL + url + paramsStr;
+    const trueBaseData = typeof baseData === 'function' ? baseData(useCore) : baseData;
+    if (returnLink && canUseLink) {
+      const baseCfg = baseCfgs && baseCfgs[useCore] ? baseCfgs[useCore] : null
+      return returnRequestLink(baseCfg, url, data, trueBaseData)
     }
     let result = {
       url,
       method: useFetch ? method : method.toLowerCase()
     };
+    useCore && (result.useCore = useCore)
     if (!data && !trueBaseData) return result;
     !data && (data = {});
-    if (['GET', 'HEAD'].includes(method)) {
+    if (canUseLink) {
       trueBaseData && Object.assign(data, trueBaseData);
       useFetch ? (result.url += qs.stringify(data, { addQueryPrefix: true })) : (result.params = data);
     }
@@ -40,7 +37,30 @@ export default function (config = {}) {
     }
     return result;
   }
+  return function (...args) {
+    useCore = 'default';
+    const {axiosCores, baseCfgs} = config;
+    const farg = args[0]
+    if (typeof farg === 'string') {
+      return request(...args)
+    } else if(farg && (typeof farg.useCore === 'string') && baseCfgs[farg.useCore]) {
+      useCore = farg.useCore
+      return request
+    } else {
+      return () => ({})
+    }
+    
+  }
 };
+function returnRequestLink (baseCfg, url, data, baseData) {
+  baseData && Object.assign(data, baseData);
+  const paramsStr = qs.stringify(data, { addQueryPrefix: true })
+  if (url.indexOf('http') >= 0) {
+    return url + paramsStr;
+  }
+  const baseURL = baseCfg && baseCfg.baseURL ? baseCfg.baseURL : ''
+  return baseURL + url + paramsStr;
+}
 
 function appendDataToForm (formdata, data) {
   if (!data || !formdata instanceof FormData) return;

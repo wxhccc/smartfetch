@@ -386,6 +386,98 @@
 
 	var _Object$create = unwrapExports(create$1);
 
+	var f$1 = Object.getOwnPropertySymbols;
+
+	var _objectGops = {
+		f: f$1
+	};
+
+	var f$2 = {}.propertyIsEnumerable;
+
+	var _objectPie = {
+		f: f$2
+	};
+
+	// 7.1.13 ToObject(argument)
+
+	var _toObject = function (it) {
+	  return Object(_defined(it));
+	};
+
+	// 19.1.2.1 Object.assign(target, source, ...)
+
+
+
+
+
+	var $assign = Object.assign;
+
+	// should work with symbols and should have deterministic property order (V8 bug)
+	var _objectAssign = !$assign || _fails(function () {
+	  var A = {};
+	  var B = {};
+	  // eslint-disable-next-line no-undef
+	  var S = Symbol();
+	  var K = 'abcdefghijklmnopqrst';
+	  A[S] = 7;
+	  K.split('').forEach(function (k) { B[k] = k; });
+	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
+	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
+	  var T = _toObject(target);
+	  var aLen = arguments.length;
+	  var index = 1;
+	  var getSymbols = _objectGops.f;
+	  var isEnum = _objectPie.f;
+	  while (aLen > index) {
+	    var S = _iobject(arguments[index++]);
+	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
+	    var length = keys.length;
+	    var j = 0;
+	    var key;
+	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
+	  } return T;
+	} : $assign;
+
+	// 19.1.3.1 Object.assign(target, source)
+
+
+	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
+
+	var assign = _core.Object.assign;
+
+	var assign$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": assign, __esModule: true };
+	});
+
+	var _Object$assign = unwrapExports(assign$1);
+
+	var _extends = createCommonjsModule(function (module, exports) {
+
+	exports.__esModule = true;
+
+
+
+	var _assign2 = _interopRequireDefault(assign$1);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	exports.default = _assign2.default || function (target) {
+	  for (var i = 1; i < arguments.length; i++) {
+	    var source = arguments[i];
+
+	    for (var key in source) {
+	      if (Object.prototype.hasOwnProperty.call(source, key)) {
+	        target[key] = source[key];
+	      }
+	    }
+	  }
+
+	  return target;
+	};
+	});
+
+	var _extends$1 = unwrapExports(_extends);
+
 	// true  -> String#at
 	// false -> String#codePointAt
 	var _stringAt = function (TO_STRING) {
@@ -438,12 +530,6 @@
 	var _iterCreate = function (Constructor, NAME, next) {
 	  Constructor.prototype = _objectCreate(IteratorPrototype, { next: _propertyDesc(1, next) });
 	  _setToStringTag(Constructor, NAME + ' Iterator');
-	};
-
-	// 7.1.13 ToObject(argument)
-
-	var _toObject = function (it) {
-	  return Object(_defined(it));
 	};
 
 	// 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
@@ -724,10 +810,10 @@
 	  _iterators[NAME] = _iterators.Array;
 	}
 
-	var f$1 = _wks;
+	var f$3 = _wks;
 
 	var _wksExt = {
-		f: f$1
+		f: f$3
 	};
 
 	var iterator = _wksExt.f('iterator');
@@ -803,18 +889,6 @@
 	var _wksDefine = function (name) {
 	  var $Symbol = _core.Symbol || (_core.Symbol = _library ? {} : _global.Symbol || {});
 	  if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: _wksExt.f(name) });
-	};
-
-	var f$2 = Object.getOwnPropertySymbols;
-
-	var _objectGops = {
-		f: f$2
-	};
-
-	var f$3 = {}.propertyIsEnumerable;
-
-	var _objectPie = {
-		f: f$3
 	};
 
 	// all enumerable object keys, includes symbols
@@ -1161,53 +1235,6 @@
 
 	var _typeof = unwrapExports(_typeof_1);
 
-	// 19.1.2.1 Object.assign(target, source, ...)
-
-
-
-
-
-	var $assign = Object.assign;
-
-	// should work with symbols and should have deterministic property order (V8 bug)
-	var _objectAssign = !$assign || _fails(function () {
-	  var A = {};
-	  var B = {};
-	  // eslint-disable-next-line no-undef
-	  var S = Symbol();
-	  var K = 'abcdefghijklmnopqrst';
-	  A[S] = 7;
-	  K.split('').forEach(function (k) { B[k] = k; });
-	  return $assign({}, A)[S] != 7 || Object.keys($assign({}, B)).join('') != K;
-	}) ? function assign(target, source) { // eslint-disable-line no-unused-vars
-	  var T = _toObject(target);
-	  var aLen = arguments.length;
-	  var index = 1;
-	  var getSymbols = _objectGops.f;
-	  var isEnum = _objectPie.f;
-	  while (aLen > index) {
-	    var S = _iobject(arguments[index++]);
-	    var keys = getSymbols ? _objectKeys(S).concat(getSymbols(S)) : _objectKeys(S);
-	    var length = keys.length;
-	    var j = 0;
-	    var key;
-	    while (length > j) if (isEnum.call(S, key = keys[j++])) T[key] = S[key];
-	  } return T;
-	} : $assign;
-
-	// 19.1.3.1 Object.assign(target, source)
-
-
-	_export(_export.S + _export.F, 'Object', { assign: _objectAssign });
-
-	var assign = _core.Object.assign;
-
-	var assign$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": assign, __esModule: true };
-	});
-
-	var _Object$assign = unwrapExports(assign$1);
-
 	var classCallCheck = createCommonjsModule(function (module, exports) {
 
 	exports.__esModule = true;
@@ -1421,6 +1448,7 @@
 	    this._needCodeCheck = true;
 	    this._codeCheckResult = false;
 	    this._lockKey = '';
+	    this._useCore = 'default';
 	    this._faileHandle = null;
 	    this._successHandle = null;
 	    this._SAinfos = {};
@@ -1497,6 +1525,8 @@
 	    value: function _createRequest(config) {
 	      var _this2 = this;
 
+	      if (!config || !config.url) return;
+	      this._checkRequestCore(config);
 	      setTimeout(function () {
 	        if (!_this2._checkLock()) {
 	          _this2._lock();
@@ -1506,9 +1536,16 @@
 	      }, 0);
 	    }
 	  }, {
+	    key: '_checkRequestCore',
+	    value: function _checkRequestCore(config) {
+	      if (!config.useCore || typeof config.useCore !== 'string') return;
+	      this.useCore(config.useCore);
+	      delete config.useCore;
+	    }
+	  }, {
 	    key: '_request',
 	    value: function _request(config) {
-	      var baseConfig = this.userConfig.baseConfig ? this.userConfig.baseConfig : {};
+	      var baseConfig = this.baseCfg || {};
 	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
 	        config.url = baseConfig.baseURL + config.url;
 	      }
@@ -1555,9 +1592,19 @@
 	      return result;
 	    }
 	  }, {
-	    key: 'lock',
+	    key: 'useCore',
 
 	    // public apis
+	    value: function useCore(corekey) {
+	      if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
+	        this._useCore = corekey;
+	        this.baseCfg = this.baseCfgs[this._useCore];
+	        !this.useFetch && (this.core = this.axiosCores[this._useCore]);
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'lock',
 	    value: function lock(key) {
 	      if (key && typeof key === 'string') {
 	        this._lockKey = key;
@@ -3119,34 +3166,32 @@
 	function SARequest () {
 	  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-	  return function (url, data) {
+	  var useCore = 'default';
+	  function request(url, data) {
 	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
 	    var returnLink = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
 	    method = urlMethod.includes(method) ? method : 'GET';
 	    var useFetch = config.useFetch,
-	        userConfig = config.userConfig;
+	        userConfig = config.userConfig,
+	        baseCfgs = config.baseCfgs;
+
+	    var canUseLink = ['GET', 'HEAD'].includes(method);
 	    var baseData = userConfig.baseData;
 
-	    var trueBaseData = typeof baseData === 'function' ? baseData() : baseData;
-	    if (returnLink) {
-	      trueBaseData && _Object$assign(data, trueBaseData);
-	      var paramsStr = qs.stringify(data, { addQueryPrefix: true });
-	      if (url.indexOf('http') >= 0) {
-	        return url + paramsStr;
-	      }
-	      var baseConfig = userConfig.baseConfig;
-
-	      var baseURL = baseConfig && baseConfig.baseURL ? baseConfig.baseURL : '';
-	      return baseURL + url + paramsStr;
+	    var trueBaseData = typeof baseData === 'function' ? baseData(useCore) : baseData;
+	    if (returnLink && canUseLink) {
+	      var baseCfg = baseCfgs && baseCfgs[useCore] ? baseCfgs[useCore] : null;
+	      return returnRequestLink(baseCfg, url, data, trueBaseData);
 	    }
 	    var result = {
 	      url: url,
 	      method: useFetch ? method : method.toLowerCase()
 	    };
+	    useCore && (result.useCore = useCore);
 	    if (!data && !trueBaseData) return result;
 	    !data && (data = {});
-	    if (['GET', 'HEAD'].includes(method)) {
+	    if (canUseLink) {
 	      trueBaseData && _Object$assign(data, trueBaseData);
 	      useFetch ? result.url += qs.stringify(data, { addQueryPrefix: true }) : result.params = data;
 	    } else {
@@ -3160,8 +3205,34 @@
 	      }
 	    }
 	    return result;
+	  }
+	  return function () {
+	    useCore = 'default';
+	    var axiosCores = config.axiosCores,
+	        baseCfgs = config.baseCfgs;
+
+	    var farg = arguments.length <= 0 ? undefined : arguments[0];
+	    if (typeof farg === 'string') {
+	      return request.apply(undefined, arguments);
+	    } else if (farg && typeof farg.useCore === 'string' && baseCfgs[farg.useCore]) {
+	      useCore = farg.useCore;
+	      return request;
+	    } else {
+	      return function () {
+	        return {};
+	      };
+	    }
 	  };
+	}function returnRequestLink(baseCfg, url, data, baseData) {
+	  baseData && _Object$assign(data, baseData);
+	  var paramsStr = qs.stringify(data, { addQueryPrefix: true });
+	  if (url.indexOf('http') >= 0) {
+	    return url + paramsStr;
+	  }
+	  var baseURL = baseCfg && baseCfg.baseURL ? baseCfg.baseURL : '';
+	  return baseURL + url + paramsStr;
 	}
+
 	function appendDataToForm(formdata, data) {
 	  if (!data || !formdata instanceof FormData) return;
 	  for (var i in data) {
@@ -3173,12 +3244,14 @@
 	  'vue': SmartApiVue,
 	  'react': SmartApiReact
 	};
+	// an export function for easier use
 
 	var SmartApiErector = function () {
-	  function SmartApiErector() {
+	  function SmartApiErector(options) {
 	    _classCallCheck(this, SmartApiErector);
 
 	    this._fetchSupportCheck();
+	    options && (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
 	  }
 
 	  _createClass(SmartApiErector, [{
@@ -3201,12 +3274,12 @@
 
 	    // init the core of ajax, set default config
 
-	    // for vuejs
+	    // for Vue.use method of vuejs 
 
 	  }, {
 	    key: 'install',
 	    value: function install(Vue, options) {
-	      (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
+	      options && (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
 	      Vue.prototype.$fetch = this.vueFetch;
 	      Vue.mixin({
 	        data: function data() {
@@ -3214,6 +3287,8 @@
 	        }
 	      });
 	    }
+	    // a special method of fetch for vue
+
 	  }, {
 	    key: 'vueFetch',
 	    value: function vueFetch() {
@@ -3227,6 +3302,8 @@
 	      var config = SmartApiErector.fetchArgsSwitch.apply(SmartApiErector, arguments);
 	      return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
 	    }
+	    // reset options
+
 	  }, {
 	    key: 'resetOpts',
 	    value: function resetOpts(options) {
@@ -3235,12 +3312,10 @@
 	          statusMsgs = _SmartApiErector$SAin.statusMsgs;
 
 	      _Object$assign(userConfig, options);
-	      _typeof(options.statusWarn) === 'object' && _Object$assign(statusMsgs, options.statusWarn);
+	      options.statusWarn && _typeof(options.statusWarn) === 'object' && _Object$assign(statusMsgs, options.statusWarn);
 	      options.forceAxios && this._ajaxCoreSwitch(true);
 	      /* if baseConfig has set and axios will be used , make a instance of axios to be core */
-	      if (options.baseConfig && !SmartApiErector.SAinfos.useFetch) {
-	        SmartApiErector.SAinfos.core = axios.create(options.baseConfig);
-	      }
+	      options.baseConfig && SmartApiErector.fetchCoreSetup(options.baseConfig);
 	    }
 	  }], [{
 	    key: 'checkContext',
@@ -3266,6 +3341,28 @@
 	      }
 	      return config;
 	    }
+	  }, {
+	    key: 'fetchCoreSetup',
+	    value: function fetchCoreSetup(baseConfigs) {
+	      var SAinfos = this.SAinfos,
+	          _SAinfos = this.SAinfos,
+	          axiosCores = _SAinfos.axiosCores,
+	          baseCfgs = _SAinfos.baseCfgs,
+	          useFetch = _SAinfos.useFetch;
+
+	      var baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [_extends$1({ key: 'default' }, baseConfigs)];
+	      baseConfig.forEach(function (item) {
+	        var key = item.key;
+
+	        if (key) {
+	          delete item.key;
+	          baseCfgs[key] = item;
+	          !useFetch && (axiosCores[key] = axios.create(item));
+	        }
+	      });
+	      SAinfos.baseCfg = baseCfgs['default'];
+	      !useFetch && (SAinfos.core = axiosCores['default']);
+	    }
 	  }]);
 
 	  return SmartApiErector;
@@ -3273,18 +3370,19 @@
 
 	SmartApiErector.SAinfos = {
 	  useFetch: true,
+	  axiosCores: _Object$create(null),
+	  baseCfgs: _Object$create(null),
 	  userConfig: _Object$create(null),
 	  statusMsgs: {
 	    '404': '请求地址不存在',
 	    '500': '服务器维护中，请稍后再试'
 	  }
 	};
-
-
 	var request = SARequest(SmartApiErector.SAinfos);
 
 	var index = new SmartApiErector();
 
+	exports.SmartApiErector = SmartApiErector;
 	exports.request = request;
 	exports.default = index;
 
