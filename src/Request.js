@@ -65,6 +65,6 @@ function returnRequestLink (baseCfg, url, data, baseData) {
 function appendDataToForm (formdata, data) {
   if (!data || !formdata instanceof FormData) return;
   for(let i in data) {
-    !formdata.has(i) && formdata.append(data[i])
+    !formdata.has(i) && formdata.append(i, data[i])
   }
 }

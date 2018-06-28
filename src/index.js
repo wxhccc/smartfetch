@@ -9,7 +9,7 @@ const moduleMap = {
 };
 // an export function for easier use
 
-export class SmartApiErector {
+export class SmartFetch {
   constructor (options) {
     this._fetchSupportCheck();
     options && (typeof options === 'object') && this.resetOpts(options);
@@ -60,7 +60,7 @@ export class SmartApiErector {
     this._ajaxCoreSwitch(!this._fetchEnable);
   }
   _ajaxCoreSwitch (useAxios) {
-    Object.assign(SmartApiErector.SAinfos, useAxios ? {
+    Object.assign(SmartFetch.SAinfos, useAxios ? {
       useFetch: false,
       core: axios
     } : {
@@ -81,30 +81,30 @@ export class SmartApiErector {
   }
   // a special method of fetch for vue
   vueFetch (...args) {
-    let config = SmartApiErector.fetchArgsSwitch(...args);
-    return new SmartApiVue(SmartApiErector.SAinfos, this, config);
+    let config = SmartFetch.fetchArgsSwitch(...args);
+    return new SmartApiVue(SmartFetch.SAinfos, this, config);
   }
   fetch (...args) {
-    let module = SmartApiErector.checkContext(this);
-    let config = SmartApiErector.fetchArgsSwitch(...args);
-    return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
+    let module = SmartFetch.checkContext(this);
+    let config = SmartFetch.fetchArgsSwitch(...args);
+    return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : null;
   }
   // reset options
   resetOpts (options) {
-    let { userConfig, statusMsgs } = SmartApiErector.SAinfos;
+    let { userConfig, statusMsgs } = SmartFetch.SAinfos;
     Object.assign(userConfig, options);
     options.statusWarn && (typeof options.statusWarn === 'object') && Object.assign(statusMsgs, options.statusWarn);
     options.forceAxios && this._ajaxCoreSwitch(true);
     /* if baseConfig has set and axios will be used , make a instance of axios to be core */
-    options.baseConfig && SmartApiErector.fetchCoreSetup(options.baseConfig);
+    options.baseConfig && SmartFetch.fetchCoreSetup(options.baseConfig);
   }
 
 }
 
-const request = SARequest(SmartApiErector.SAinfos);
+const request = SARequest(SmartFetch.SAinfos);
 
 export {request}
  
-export default new SmartApiErector();
+export default new SmartFetch();
 
 

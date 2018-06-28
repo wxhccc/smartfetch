@@ -3236,7 +3236,7 @@
 	function appendDataToForm(formdata, data) {
 	  if (!data || !formdata instanceof FormData) return;
 	  for (var i in data) {
-	    !formdata.has(i) && formdata.append(data[i]);
+	    !formdata.has(i) && formdata.append(i, data[i]);
 	  }
 	}
 
@@ -3246,15 +3246,15 @@
 	};
 	// an export function for easier use
 
-	var SmartApiErector = function () {
-	  function SmartApiErector(options) {
-	    _classCallCheck(this, SmartApiErector);
+	var SmartFetch = function () {
+	  function SmartFetch(options) {
+	    _classCallCheck(this, SmartFetch);
 
 	    this._fetchSupportCheck();
 	    options && (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
 	  }
 
-	  _createClass(SmartApiErector, [{
+	  _createClass(SmartFetch, [{
 	    key: '_fetchSupportCheck',
 	    value: function _fetchSupportCheck() {
 	      this._fetchEnable = typeof fetch === 'function';
@@ -3263,7 +3263,7 @@
 	  }, {
 	    key: '_ajaxCoreSwitch',
 	    value: function _ajaxCoreSwitch(useAxios) {
-	      _Object$assign(SmartApiErector.SAinfos, useAxios ? {
+	      _Object$assign(SmartFetch.SAinfos, useAxios ? {
 	        useFetch: false,
 	        core: axios
 	      } : {
@@ -3292,30 +3292,30 @@
 	  }, {
 	    key: 'vueFetch',
 	    value: function vueFetch() {
-	      var config = SmartApiErector.fetchArgsSwitch.apply(SmartApiErector, arguments);
-	      return new SmartApiVue(SmartApiErector.SAinfos, this, config);
+	      var config = SmartFetch.fetchArgsSwitch.apply(SmartFetch, arguments);
+	      return new SmartApiVue(SmartFetch.SAinfos, this, config);
 	    }
 	  }, {
 	    key: 'fetch',
 	    value: function fetch() {
-	      var module = SmartApiErector.checkContext(this);
-	      var config = SmartApiErector.fetchArgsSwitch.apply(SmartApiErector, arguments);
-	      return moduleMap[module] ? new moduleMap[module](SmartApiErector.SAinfos, this, config) : null;
+	      var module = SmartFetch.checkContext(this);
+	      var config = SmartFetch.fetchArgsSwitch.apply(SmartFetch, arguments);
+	      return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : null;
 	    }
 	    // reset options
 
 	  }, {
 	    key: 'resetOpts',
 	    value: function resetOpts(options) {
-	      var _SmartApiErector$SAin = SmartApiErector.SAinfos,
-	          userConfig = _SmartApiErector$SAin.userConfig,
-	          statusMsgs = _SmartApiErector$SAin.statusMsgs;
+	      var _SmartFetch$SAinfos = SmartFetch.SAinfos,
+	          userConfig = _SmartFetch$SAinfos.userConfig,
+	          statusMsgs = _SmartFetch$SAinfos.statusMsgs;
 
 	      _Object$assign(userConfig, options);
 	      options.statusWarn && _typeof(options.statusWarn) === 'object' && _Object$assign(statusMsgs, options.statusWarn);
 	      options.forceAxios && this._ajaxCoreSwitch(true);
 	      /* if baseConfig has set and axios will be used , make a instance of axios to be core */
-	      options.baseConfig && SmartApiErector.fetchCoreSetup(options.baseConfig);
+	      options.baseConfig && SmartFetch.fetchCoreSetup(options.baseConfig);
 	    }
 	  }], [{
 	    key: 'checkContext',
@@ -3365,10 +3365,10 @@
 	    }
 	  }]);
 
-	  return SmartApiErector;
+	  return SmartFetch;
 	}();
 
-	SmartApiErector.SAinfos = {
+	SmartFetch.SAinfos = {
 	  useFetch: true,
 	  axiosCores: _Object$create(null),
 	  baseCfgs: _Object$create(null),
@@ -3378,11 +3378,11 @@
 	    '500': '服务器维护中，请稍后再试'
 	  }
 	};
-	var request = SARequest(SmartApiErector.SAinfos);
+	var request = SARequest(SmartFetch.SAinfos);
 
-	var index = new SmartApiErector();
+	var index = new SmartFetch();
 
-	exports.SmartApiErector = SmartApiErector;
+	exports.SmartFetch = SmartFetch;
 	exports.request = request;
 	exports.default = index;
 
