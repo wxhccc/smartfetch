@@ -27,7 +27,7 @@ export default class SmartApi {
     !ajaxCore.useFetch && AxiosCore.call(this);
   }
   _createRequest (config) {
-    if(!config || !config.url) return;
+    if(!config || typeof config.url !== 'string') return;
     this._checkRequestCore(config)
     setTimeout(() => {
       if (!this._checkLock()) {
