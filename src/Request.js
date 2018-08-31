@@ -1,10 +1,16 @@
 import qs from 'qs';
+import axios from 'axios'
 
 const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
+const enctypeType = {
+  json: 'application/json',
+  urlencode: 'application/x-www-form-urlencoded',
+  text: 'text/plain'
+}
 
 export default function (config = {}) {
   let useCore = 'default';
-  function request(url, data, method = 'GET', returnLink = false) {
+  function request(url, data, method = 'GET', returnLink = false, enctype = 'json') {
     method = urlMethod.includes(method) ? method : 'GET';
     const {useFetch, userConfig, baseCfgs} = config;
     const canUseLink = ['GET', 'HEAD'].includes(method);
@@ -27,12 +33,12 @@ export default function (config = {}) {
     }
     else {
       let isFormData = data instanceof FormData;
-      !isFormData && (result.headers = Object.assign(result.headers || {}, {'Content-Type': 'application/json'}));
       trueBaseData && (isFormData ? appendDataToForm(data, trueBaseData) : Object.assign(data, trueBaseData));
       if (useFetch) {
-        result.body = isFormData ? data : JSON.stringify(data);
+        result.headers = Object.assign(result.headers || {}, {'Content-Type': enctypeType[enctype] ? enctypeType[enctype] : enctypeType['json'] })
+        result.body = isFormData ? data : (enctype === 'json' ? JSON.stringify(data) : qs.stringify(data));
       } else {
-        result.data = data;
+        result.data = (isFormData || enctype === 'json') ? data : qs.stringify(data);
       }
     }
     return result;

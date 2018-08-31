@@ -1525,7 +1525,7 @@
 	    value: function _createRequest(config) {
 	      var _this2 = this;
 
-	      if (!config || !config.url) return;
+	      if (!config || typeof config.url !== 'string') return;
 	      this._checkRequestCore(config);
 	      setTimeout(function () {
 	        if (!_this2._checkLock()) {
@@ -3162,6 +3162,11 @@
 	var _JSON$stringify = unwrapExports(stringify$1);
 
 	var urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
+	var enctypeType = {
+	  json: 'application/json',
+	  urlencode: 'application/x-www-form-urlencoded',
+	  text: 'text/plain'
+	};
 
 	function SARequest () {
 	  var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -3170,6 +3175,7 @@
 	  function request(url, data) {
 	    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'GET';
 	    var returnLink = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+	    var enctype = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'json';
 
 	    method = urlMethod.includes(method) ? method : 'GET';
 	    var useFetch = config.useFetch,
@@ -3196,12 +3202,12 @@
 	      useFetch ? result.url += qs.stringify(data, { addQueryPrefix: true }) : result.params = data;
 	    } else {
 	      var isFormData = data instanceof FormData;
-	      !isFormData && (result.headers = _Object$assign(result.headers || {}, { 'Content-Type': 'application/json' }));
 	      trueBaseData && (isFormData ? appendDataToForm(data, trueBaseData) : _Object$assign(data, trueBaseData));
 	      if (useFetch) {
-	        result.body = isFormData ? data : _JSON$stringify(data);
+	        result.headers = _Object$assign(result.headers || {}, { 'Content-Type': enctypeType[enctype] ? enctypeType[enctype] : enctypeType['json'] });
+	        result.body = isFormData ? data : enctype === 'json' ? _JSON$stringify(data) : qs.stringify(data);
 	      } else {
-	        result.data = data;
+	        result.data = isFormData || enctype === 'json' ? data : qs.stringify(data);
 	      }
 	    }
 	    return result;
