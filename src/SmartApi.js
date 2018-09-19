@@ -32,9 +32,8 @@ export default class SmartApi {
     setTimeout(() => {
       if (!this._checkLock()) {
         this._lock();
-        this._reqPromise = this._request(config).then(this._codeCheck);
-        this._successHandle && this._reqPromise.then(this._handleResData);
-        this._reqPromise.catch(this._handleError);
+        this._reqPromise = this._request(config).then(this._codeCheck).then(this._handleResData).catch(this._handleError);;
+        this._successHandle && this._reqPromise;
       }
     }, 0);
   }
@@ -55,6 +54,7 @@ export default class SmartApi {
       .then(this._typeHandle);
   }
   _handleResData = (resjson) => {
+    if (!this._successHandle) return
     if (this._needCodeCheck) {
       const dataKey = this.userConfig.dataKey || 'data';
       this._codeCheckResult && this._successHandle(resjson[dataKey]);

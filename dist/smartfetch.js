@@ -1454,6 +1454,7 @@
 	    this._SAinfos = {};
 
 	    this._handleResData = function (resjson) {
+	      if (!_this._successHandle) return;
 	      if (_this._needCodeCheck) {
 	        var dataKey = _this.userConfig.dataKey || 'data';
 	        _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
@@ -1531,9 +1532,7 @@
 	      setTimeout(function () {
 	        if (!_this2._checkLock()) {
 	          _this2._lock();
-	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck);
-	          _this2._successHandle && _this2._reqPromise.then(_this2._handleResData);
-	          _this2._reqPromise.catch(_this2._handleError);
+	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).then(_this2._handleResData).catch(_this2._handleError);          _this2._successHandle && _this2._reqPromise;
 	        }
 	      }, 0);
 	    }
