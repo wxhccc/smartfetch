@@ -124,13 +124,14 @@ export default class SmartApi {
   }
   _codeCheck = (resjson) => {
     this._unlock();
-    if (this._needCodeCheck && this._resOkCheck(resjson)) {
+    if (this._needCodeCheck && !this._resOkCheck(resjson)) {
+      this._faileHandle && this._faileHandle(null, resjson);
+      if (this._silence) return;
+      let {codeError} = this.userConfig;
+      codeError(resjson);
+    } else {
       return resjson;
     }
-    this._faileHandle && this._faileHandle(null, resjson);
-    if (this._silence) return;
-    let {codeError} = this.userConfig;
-    codeError(resjson);
   }
   // public apis
   useCore (corekey) {

@@ -1499,14 +1499,15 @@
 
 	    this._codeCheck = function (resjson) {
 	      _this._unlock();
-	      if (_this._needCodeCheck && _this._resOkCheck(resjson)) {
+	      if (_this._needCodeCheck && !_this._resOkCheck(resjson)) {
+	        _this._faileHandle && _this._faileHandle(null, resjson);
+	        if (_this._silence) return;
+	        var codeError = _this.userConfig.codeError;
+
+	        codeError(resjson);
+	      } else {
 	        return resjson;
 	      }
-	      _this._faileHandle && _this._faileHandle(null, resjson);
-	      if (_this._silence) return;
-	      var codeError = _this.userConfig.codeError;
-
-	      codeError(resjson);
 	    };
 
 	    _Object$assign(this, ajaxCore);
