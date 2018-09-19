@@ -1531,8 +1531,9 @@
 	      setTimeout(function () {
 	        if (!_this2._checkLock()) {
 	          _this2._lock();
-	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).catch(_this2._handleError);
+	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck);
 	          _this2._successHandle && _this2._reqPromise.then(_this2._handleResData);
+	          _this2._reqPromise.catch(_this2._handleError);
 	        }
 	      }, 0);
 	    }

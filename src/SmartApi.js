@@ -32,10 +32,9 @@ export default class SmartApi {
     setTimeout(() => {
       if (!this._checkLock()) {
         this._lock();
-        this._reqPromise = this._request(config)
-          .then(this._codeCheck)
-          .catch(this._handleError);
+        this._reqPromise = this._request(config).then(this._codeCheck);
         this._successHandle && this._reqPromise.then(this._handleResData);
+        this._reqPromise.catch(this._handleError);
       }
     }, 0);
   }

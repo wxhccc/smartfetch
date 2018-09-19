@@ -1,4 +1,4 @@
-# smartapi
+# smartfetch
 an easy use api plugin for vue and react.
 
 # Installing
