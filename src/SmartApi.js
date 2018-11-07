@@ -57,13 +57,15 @@ export default class SmartApi {
   }
   _handleResData = (resjson) => {
     if (!this._successHandle) return
-    if (this._needCodeCheck) {
-      const dataKey = this.userConfig.dataKey || 'data';
-      this._codeCheckResult && this._successHandle(resjson[dataKey]);
-    }
-    else {
-      this._successHandle(resjson);
-    }
+    try {
+      if (this._needCodeCheck) {
+        const dataKey = this.userConfig.dataKey || 'data';
+        this._codeCheckResult && this._successHandle(resjson[dataKey]);
+      }
+      else {
+        this._successHandle(resjson);
+      }
+    } catch (e) {}
   }
   _lock () {
     this._stateLock();
