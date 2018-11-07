@@ -1,4 +1,5 @@
 import axios from 'axios';
+import SmartApi from './SmartApi';
 import SmartApiVue from './SmartApiVue';
 import SmartApiReact from './SmartApiReact';
 import SARequest from './Request';
@@ -81,13 +82,18 @@ export class SmartFetch {
   }
   // a special method of fetch for vue
   vueFetch (...args) {
-    let config = SmartFetch.fetchArgsSwitch(...args);
+    const config = SmartFetch.fetchArgsSwitch(...args);
     return new SmartApiVue(SmartFetch.SAinfos, this, config);
   }
   fetch (...args) {
-    let module = SmartFetch.checkContext(this);
-    let config = SmartFetch.fetchArgsSwitch(...args);
-    return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : null;
+    const module = SmartFetch.checkContext(this);
+    const config = SmartFetch.fetchArgsSwitch(...args);
+    !moduleMap[module] && (window.$SAKEYS = {})
+    return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : SmartApi(SmartFetch.SAinfos, window);
+  }
+  // 获取配置信息
+  modifyBaseConfigs (handler) {
+    typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig)
   }
   // reset options
   resetOpts (options) {

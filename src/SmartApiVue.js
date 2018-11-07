@@ -1,4 +1,6 @@
 import SmartApi from './SmartApi'
+const { hasOwnProperty } = Object.prototype
+
 export default class SmartApiVue extends SmartApi {
   _useSAkeys = false;
   constructor (ajaxCore, context, config) {
@@ -6,21 +8,24 @@ export default class SmartApiVue extends SmartApi {
     this._createRequest(config);
     return this;
   }
-  _stateLock (unlock) {
-    let {_lockKey, _context, _context: {SAKEYS}} = this;
-    if (_context.hasOwnProperty(_lockKey)) {
-      _context[_lockKey] = !unlock;
-    } else {
-      if (SAKEYS.hasOwnProperty(_lockKey)) {
-        SAKEYS[_lockKey] = !unlock;
+  _setValue (obj, path, value) {
+    const { SAKEYS } = obj;
+    const { $set } = this._context
+    this._useSAkeys = !hasOwnProperty.call(obj, path[0])
+    let curObj = this._useSAkeys ? SAKEYS : obj;
+    for(let i = 0; i < path.length; i++) {
+      const key = path[i];
+      const hasKey = hasOwnProperty.call(curObj, key)
+      const isObj = hasKey && typeof curObj[key] === 'object' && curObj[key]
+      if (i === path.length - 1) {
+        hasKey ? (!isObj && (curObj[key] = value)) : $set(curObj, key, value)
       } else {
-        _context.$set(SAKEYS, _lockKey, true);
-        this._useSAkeys = true;
+        !hasKey && $set(curObj, key, {})
+      }
+      curObj = curObj[key]
+      if (typeof curObj !== 'object') {
+        break;
       }
     }
-  }
-  _getLockValue () {
-    let {_context, _lockKey, _useSAkeys} = this;
-    return _useSAkeys ? _context.SAKEYS[_lockKey] : _context[_lockKey];
   }
 }

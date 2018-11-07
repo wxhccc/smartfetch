@@ -1293,6 +1293,276 @@
 
 	var _createClass = unwrapExports(createClass);
 
+	function AxiosCore() {
+	  this._request = function (config) {
+	    return this.core(config).then(this._resCheck);
+	  };
+	  this._resCheck = function (response) {
+	    if (response.status === 200) {
+	      return response.data;
+	    }
+	    throw new Error(response.status);
+	  };
+	}
+
+	var defOpts = {
+	  credentitals: 'same-origin',
+	  responseType: 'json'
+	};
+	var responseMixin = {
+	  'json': 'json'
+	};
+
+	var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+
+	var SmartApi = function () {
+	  function SmartApi(ajaxCore, context) {
+	    var _this = this;
+
+	    _classCallCheck(this, SmartApi);
+
+	    this._silence = false;
+	    this._needCodeCheck = true;
+	    this._codeCheckResult = false;
+	    this._lockKey = [];
+	    this._useCore = 'default';
+	    this._faileHandle = null;
+	    this._successHandle = null;
+	    this._SAinfos = {};
+
+	    this._handleResData = function (resjson) {
+	      if (!_this._successHandle) return;
+	      if (_this._needCodeCheck) {
+	        var dataKey = _this.userConfig.dataKey || 'data';
+	        _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
+	      } else {
+	        _this._successHandle(resjson);
+	      }
+	    };
+
+	    this._typeHandle = function (response) {
+	      var responseType = _this._init.responseType;
+
+	      var mixFn = responseMixin[responseType];
+	      if (response[mixFn]) {
+	        return response[mixFn]();
+	      }
+	    };
+
+	    this._handleError = function (error) {
+	      _this._unlock();
+	      _this._faileHandle && _this._faileHandle(error);
+	      if (_this._silence) return;
+	      var msg = '';
+	      var statusMsgs = _this.statusMsgs,
+	          errorHandle = _this.userConfig.errorHandle;
+
+	      switch (error.name) {
+	        case 'TypeError':
+	          msg = '服务器未响应';
+	          break;
+	        case 'SyntaxError':
+	          msg = '数据解析失败';
+	          break;
+	        case 'Error':
+	          msg = statusMsgs[error.message] || '请求失败';
+	          break;
+	      }
+	      if (typeof errorHandle === 'function') {
+	        errorHandle(msg, error);
+	      } else {
+	        typeof alert === 'function' ? alert(msg) : console.log(error);
+	      }
+	    };
+
+	    this._codeCheck = function (resjson) {
+	      _this._unlock();
+	      if (_this._needCodeCheck && !_this._resOkCheck(resjson)) {
+	        _this._faileHandle && _this._faileHandle(null, resjson);
+	        if (_this._silence) return;
+	        var codeError = _this.userConfig.codeError;
+
+	        codeError(resjson);
+	      } else {
+	        return resjson;
+	      }
+	    };
+
+	    _Object$assign(this, ajaxCore);
+	    this._ajaxCoreMixin(ajaxCore);
+	    this._context = context;
+	    return this;
+	  }
+
+	  _createClass(SmartApi, [{
+	    key: '_ajaxCoreMixin',
+	    value: function _ajaxCoreMixin(ajaxCore) {
+	      !ajaxCore.useFetch && AxiosCore.call(this);
+	    }
+	  }, {
+	    key: '_createRequest',
+	    value: function _createRequest(config) {
+	      var _this2 = this;
+
+	      if (!config || typeof config.url !== 'string') return;
+	      this._checkRequestCore(config);
+	      setTimeout(function () {
+	        if (!_this2._checkLock()) {
+	          _this2._lock();
+	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).then(_this2._handleResData).catch(_this2._handleError);          _this2._successHandle && _this2._reqPromise;
+	        }
+	      }, 0);
+	    }
+	  }, {
+	    key: '_checkRequestCore',
+	    value: function _checkRequestCore(config) {
+	      if (!config.useCore || typeof config.useCore !== 'string') return;
+	      this.useCore(config.useCore);
+	      delete config.useCore;
+	    }
+	  }, {
+	    key: '_request',
+	    value: function _request(config) {
+	      var baseConfig = this.baseCfg || {};
+	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
+	        config.url = baseConfig.baseURL + config.url;
+	      }
+	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
+	      this._init = _Object$assign({}, defOpts, config);
+	      return this.core(config.url, this._init).then(this._resCheck).then(this._typeHandle);
+	    }
+	  }, {
+	    key: '_lock',
+	    value: function _lock() {
+	      this._stateLock();
+	    }
+	  }, {
+	    key: '_unlock',
+	    value: function _unlock() {
+	      this._stateLock(true);
+	    }
+	  }, {
+	    key: '_checkLock',
+	    value: function _checkLock() {
+	      return this._lockKey && this._getLockValue();
+	    }
+	  }, {
+	    key: '_stateLock',
+	    value: function _stateLock(unlock) {
+	      var _lockKey = this._lockKey,
+	          _context = this._context;
+
+	      this._setValue(_context, _lockKey, !unlock);
+	    }
+	  }, {
+	    key: '_getLockValue',
+	    value: function _getLockValue() {
+	      var _context = this._context,
+	          _lockKey = this._lockKey,
+	          _useSAkeys = this._useSAkeys;
+
+	      return this._getValue(_useSAkeys ? _context.SAKEYS : _context, _lockKey);
+	    }
+	  }, {
+	    key: '_getValue',
+	    value: function _getValue(obj, path) {
+	      var result = false;
+	      var hasOwnProperty = Object.prototype.hasOwnProperty;
+	      if (obj && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object' && Array.isArray(path)) {
+	        var curObj = obj;
+	        for (var i = 0; i < path.length; i++) {
+	          var key = path[i];
+	          if ((typeof curObj === 'undefined' ? 'undefined' : _typeof(curObj)) !== 'object' || !hasOwnProperty.call(curObj, key)) {
+	            break;
+	          }
+	          curObj = curObj[key];
+	          i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false);
+	        }
+	      }
+	      return result;
+	    }
+	  }, {
+	    key: '_setValue',
+	    value: function _setValue(obj, path, value) {
+	      var curObj = obj.SAKEYS;
+	      for (var i = 0; i < path.length; i++) {
+	        var key = path[i];
+	        !hasOwnProperty$1.call(curObj, key) && (curObj[key] = i === path.length - 1 ? value : {});
+	        curObj = curObj[key];
+	      }
+	    }
+	  }, {
+	    key: '_resCheck',
+	    value: function _resCheck(response) {
+	      if (response.ok) {
+	        return response;
+	      }
+	      throw new Error(response.status);
+	    }
+	  }, {
+	    key: '_resOkCheck',
+	    value: function _resOkCheck(resjson) {
+	      var result = false;
+	      var resCheck = this.userConfig.resCheck;
+
+	      var resCheckType = typeof resCheck === 'undefined' ? 'undefined' : _typeof(resCheck);
+	      if (resCheckType === 'function') {
+	        result = resCheck(resjson);
+	      } else if (resCheckType === 'string') {
+	        result = resjson[resCheck];
+	      }
+	      this._codeCheckResult = result;
+	      return result;
+	    }
+	  }, {
+	    key: 'useCore',
+
+	    // public apis
+	    value: function useCore(corekey) {
+	      if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
+	        this._useCore = corekey;
+	        this.baseCfg = this.baseCfgs[this._useCore];
+	        !this.useFetch && (this.core = this.axiosCores[this._useCore]);
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'lock',
+	    value: function lock(key) {
+	      if (key && typeof key === 'string') {
+	        this._lockKey = key.split('.');
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'done',
+	    value: function done(successHandle) {
+	      typeof successHandle === 'function' && (this._successHandle = successHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'faile',
+	    value: function faile(faileHandle) {
+	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'silence',
+	    value: function silence() {
+	      this._silence = true;
+	      return this;
+	    }
+	  }, {
+	    key: 'notCheckCode',
+	    value: function notCheckCode() {
+	      this._needCodeCheck = false;
+	      return this;
+	    }
+	  }]);
+
+	  return SmartApi;
+	}();
+
 	// most Object methods by ES6 should accept primitives
 
 
@@ -1418,228 +1688,7 @@
 
 	var _inherits = unwrapExports(inherits);
 
-	function AxiosCore() {
-	  this._request = function (config) {
-	    return this.core(config).then(this._resCheck);
-	  };
-	  this._resCheck = function (response) {
-	    if (response.status === 200) {
-	      return response.data;
-	    }
-	    throw new Error(response.status);
-	  };
-	}
-
-	var defOpts = {
-	  credentitals: 'same-origin',
-	  responseType: 'json'
-	};
-	var responseMixin = {
-	  'json': 'json'
-	};
-
-	var SmartApi = function () {
-	  function SmartApi(ajaxCore, context) {
-	    var _this = this;
-
-	    _classCallCheck(this, SmartApi);
-
-	    this._silence = false;
-	    this._needCodeCheck = true;
-	    this._codeCheckResult = false;
-	    this._lockKey = '';
-	    this._useCore = 'default';
-	    this._faileHandle = null;
-	    this._successHandle = null;
-	    this._SAinfos = {};
-
-	    this._handleResData = function (resjson) {
-	      if (!_this._successHandle) return;
-	      if (_this._needCodeCheck) {
-	        var dataKey = _this.userConfig.dataKey || 'data';
-	        _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
-	      } else {
-	        _this._successHandle(resjson);
-	      }
-	    };
-
-	    this._typeHandle = function (response) {
-	      var responseType = _this._init.responseType;
-
-	      var mixFn = responseMixin[responseType];
-	      if (response[mixFn]) {
-	        return response[mixFn]();
-	      }
-	    };
-
-	    this._handleError = function (error) {
-	      _this._unlock();
-	      _this._faileHandle && _this._faileHandle(error);
-	      if (_this._silence) return;
-	      var msg = '';
-	      var statusMsgs = _this.statusMsgs,
-	          errorHandle = _this.userConfig.errorHandle;
-
-	      switch (error.name) {
-	        case 'TypeError':
-	          msg = '服务器未响应';
-	          break;
-	        case 'SyntaxError':
-	          msg = '数据解析失败';
-	          break;
-	        case 'Error':
-	          msg = statusMsgs[error.message] || '请求失败';
-	          break;
-	      }
-	      if (typeof errorHandle === 'function') {
-	        errorHandle(msg, error);
-	      } else {
-	        typeof alert === 'function' ? alert(msg) : console.log(error);
-	      }
-	    };
-
-	    this._codeCheck = function (resjson) {
-	      _this._unlock();
-	      if (_this._needCodeCheck && !_this._resOkCheck(resjson)) {
-	        _this._faileHandle && _this._faileHandle(null, resjson);
-	        if (_this._silence) return;
-	        var codeError = _this.userConfig.codeError;
-
-	        codeError(resjson);
-	      } else {
-	        return resjson;
-	      }
-	    };
-
-	    _Object$assign(this, ajaxCore);
-	    this._ajaxCoreMixin(ajaxCore);
-	    this._context = context;
-	    return this;
-	  }
-
-	  _createClass(SmartApi, [{
-	    key: '_ajaxCoreMixin',
-	    value: function _ajaxCoreMixin(ajaxCore) {
-	      !ajaxCore.useFetch && AxiosCore.call(this);
-	    }
-	  }, {
-	    key: '_createRequest',
-	    value: function _createRequest(config) {
-	      var _this2 = this;
-
-	      if (!config || typeof config.url !== 'string') return;
-	      this._checkRequestCore(config);
-	      setTimeout(function () {
-	        if (!_this2._checkLock()) {
-	          _this2._lock();
-	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).then(_this2._handleResData).catch(_this2._handleError);          _this2._successHandle && _this2._reqPromise;
-	        }
-	      }, 0);
-	    }
-	  }, {
-	    key: '_checkRequestCore',
-	    value: function _checkRequestCore(config) {
-	      if (!config.useCore || typeof config.useCore !== 'string') return;
-	      this.useCore(config.useCore);
-	      delete config.useCore;
-	    }
-	  }, {
-	    key: '_request',
-	    value: function _request(config) {
-	      var baseConfig = this.baseCfg || {};
-	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
-	        config.url = baseConfig.baseURL + config.url;
-	      }
-	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
-	      this._init = _Object$assign({}, defOpts, config);
-	      return this.core(config.url, this._init).then(this._resCheck).then(this._typeHandle);
-	    }
-	  }, {
-	    key: '_lock',
-	    value: function _lock() {
-	      this._stateLock();
-	    }
-	  }, {
-	    key: '_unlock',
-	    value: function _unlock() {
-	      this._stateLock(true);
-	    }
-	  }, {
-	    key: '_checkLock',
-	    value: function _checkLock() {
-	      return this._lockKey && this._getLockValue();
-	    }
-	  }, {
-	    key: '_resCheck',
-	    value: function _resCheck(response) {
-	      if (response.ok) {
-	        return response;
-	      }
-	      throw new Error(response.status);
-	    }
-	  }, {
-	    key: '_resOkCheck',
-	    value: function _resOkCheck(resjson) {
-	      var result = false;
-	      var resCheck = this.userConfig.resCheck;
-
-	      var resCheckType = typeof resCheck === 'undefined' ? 'undefined' : _typeof(resCheck);
-	      if (resCheckType === 'function') {
-	        result = resCheck(resjson);
-	      } else if (resCheckType === 'string') {
-	        result = resjson[resCheck];
-	      }
-	      this._codeCheckResult = result;
-	      return result;
-	    }
-	  }, {
-	    key: 'useCore',
-
-	    // public apis
-	    value: function useCore(corekey) {
-	      if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
-	        this._useCore = corekey;
-	        this.baseCfg = this.baseCfgs[this._useCore];
-	        !this.useFetch && (this.core = this.axiosCores[this._useCore]);
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: 'lock',
-	    value: function lock(key) {
-	      if (key && typeof key === 'string') {
-	        this._lockKey = key;
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: 'done',
-	    value: function done(successHandle) {
-	      typeof successHandle === 'function' && (this._successHandle = successHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'faile',
-	    value: function faile(faileHandle) {
-	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'silence',
-	    value: function silence() {
-	      this._silence = true;
-	      return this;
-	    }
-	  }, {
-	    key: 'notCheckCode',
-	    value: function notCheckCode() {
-	      this._needCodeCheck = false;
-	      return this;
-	    }
-	  }]);
-
-	  return SmartApi;
-	}();
+	var hasOwnProperty$2 = Object.prototype.hasOwnProperty;
 
 	var SmartApiVue = function (_SmartApi) {
 	  _inherits(SmartApiVue, _SmartApi);
@@ -1658,31 +1707,27 @@
 	  }
 
 	  _createClass(SmartApiVue, [{
-	    key: '_stateLock',
-	    value: function _stateLock(unlock) {
-	      var _lockKey = this._lockKey,
-	          _context = this._context,
-	          SAKEYS = this._context.SAKEYS;
+	    key: '_setValue',
+	    value: function _setValue(obj, path, value) {
+	      var SAKEYS = obj.SAKEYS;
+	      var $set = this._context.$set;
 
-	      if (_context.hasOwnProperty(_lockKey)) {
-	        _context[_lockKey] = !unlock;
-	      } else {
-	        if (SAKEYS.hasOwnProperty(_lockKey)) {
-	          SAKEYS[_lockKey] = !unlock;
+	      this._useSAkeys = !hasOwnProperty$2.call(obj, path[0]);
+	      var curObj = this._useSAkeys ? SAKEYS : obj;
+	      for (var i = 0; i < path.length; i++) {
+	        var key = path[i];
+	        var hasKey = hasOwnProperty$2.call(curObj, key);
+	        var isObj = hasKey && _typeof(curObj[key]) === 'object' && curObj[key];
+	        if (i === path.length - 1) {
+	          hasKey ? !isObj && (curObj[key] = value) : $set(curObj, key, value);
 	        } else {
-	          _context.$set(SAKEYS, _lockKey, true);
-	          this._useSAkeys = true;
+	          !hasKey && $set(curObj, key, {});
+	        }
+	        curObj = curObj[key];
+	        if ((typeof curObj === 'undefined' ? 'undefined' : _typeof(curObj)) !== 'object') {
+	          break;
 	        }
 	      }
-	    }
-	  }, {
-	    key: '_getLockValue',
-	    value: function _getLockValue() {
-	      var _context = this._context,
-	          _lockKey = this._lockKey,
-	          _useSAkeys = this._useSAkeys;
-
-	      return _useSAkeys ? _context.SAKEYS[_lockKey] : _context[_lockKey];
 	    }
 	  }]);
 
@@ -3146,6 +3191,9 @@
 
 	      setStateSync.call(_context, _defineProperty({}, _lockKey, !unlock));
 	    }
+	  }, {
+	    key: '_setValue',
+	    value: function _setValue(obj, path, value) {}
 	  }]);
 
 	  return SmartApiReact;
@@ -3307,7 +3355,15 @@
 	    value: function fetch() {
 	      var module = SmartFetch.checkContext(this);
 	      var config = SmartFetch.fetchArgsSwitch.apply(SmartFetch, arguments);
-	      return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : null;
+	      !moduleMap[module] && (window.$SAKEYS = {});
+	      return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : SmartApi(SmartFetch.SAinfos, window);
+	    }
+	    // 获取配置信息
+
+	  }, {
+	    key: 'modifyBaseConfigs',
+	    value: function modifyBaseConfigs(handler) {
+	      typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig);
 	    }
 	    // reset options
 

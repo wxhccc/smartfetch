@@ -8,11 +8,13 @@ const responseMixin = {
   'json': 'json',
 }
 
+const { hasOwnProperty } = Object.prototype
+
 export default class SmartApi {
   _silence = false;
   _needCodeCheck = true;
   _codeCheckResult = false;
-  _lockKey = '';
+  _lockKey = [];
   _useCore='default';
   _faileHandle = null;
   _successHandle = null;
@@ -72,6 +74,39 @@ export default class SmartApi {
   _checkLock () {
     return this._lockKey && this._getLockValue();
   }
+  _stateLock (unlock) {
+    const { _lockKey, _context } = this;
+    this._setValue(_context, _lockKey, !unlock)
+  }
+  _getLockValue () {
+    const {_context, _lockKey, _useSAkeys} = this;
+    return this._getValue(_useSAkeys ? _context.SAKEYS : _context, _lockKey);
+  }
+  _getValue (obj, path) {
+    let result = false;
+    const hasOwnProperty = Object.prototype.hasOwnProperty
+    if (obj && typeof obj === 'object' && Array.isArray(path)) {
+      let curObj = obj;
+      for (let i = 0; i < path.length; i++) {
+        const key = path[i]
+        if (typeof curObj !== 'object' || !hasOwnProperty.call(curObj, key)) {
+          break;
+        }
+        curObj = curObj[key]
+        i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false)
+      }
+    }
+    return result
+  }
+  _setValue (obj, path, value) {
+    let curObj = obj.SAKEYS
+    for(let i = 0; i < path.length; i++) {
+      const key = path[i]
+      !hasOwnProperty.call(curObj, key) && (curObj[key] = i === path.length - 1 ? value : {})
+      curObj = curObj[key]
+    }
+  }
+
 
   _typeHandle = (response) => {
     let {responseType} = this._init;
@@ -143,7 +178,7 @@ export default class SmartApi {
   }
   lock (key) {
     if (key && typeof key === 'string') {
-      this._lockKey = key;
+      this._lockKey = key.split('.');
     }
     return this;
   }

@@ -13,6 +13,9 @@ export default class SmartApiReact extends SmartApi {
     let {_lockKey, _context} = this;
     setStateSync.call(_context, {[_lockKey]: !unlock});
   }
+  _setValue (obj, path, value) {
+    
+  }
 }
 
 async function setStateSync (newState) {
