@@ -46,10 +46,11 @@ export class SmartFetch {
     const {SAinfos, SAinfos: {axiosCores, baseCfgs, useFetch}} = this;
     const baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [{key: 'default', ...baseConfigs}];
     baseConfig.forEach(item => {
-      const {key} = item;
+      let newItem = Object.assign({}, item)
+      const {key} = newItem;
       if (key) {
-        delete item.key;
-        baseCfgs[key] = item
+        delete newItem.key;
+        baseCfgs[key] = newItem
         !useFetch && (axiosCores[key] = axios.create(item));
       }
     })
@@ -93,7 +94,7 @@ export class SmartFetch {
   }
   // 获取配置信息
   modifyBaseConfigs (handler) {
-    typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig)
+    typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig) && SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
   }
   // reset options
   resetOpts (options) {

@@ -121,6 +121,7 @@ baseConfig: [
   }
 ]
 ```
+ps: if you want to modify baseConfig after plugin init, you can use "modifyBaseConfigs" method
 
 **baseData**: the data will merge to all request peyload, receive object or function
 
@@ -267,6 +268,22 @@ const request1 = function(data) {
 }
 this.$fetch(request1, {a: 1, b: 2})
 
+
+```
+**modifyBaseConfigs**
+explain: you can use this method to modify "baseConfig" when you need
+
+how to use
+```
+import smartfetch from 'smartfetch'
+smartfetch.modifyBaseConfigs(baseConfigs => {
+  // single config
+  baseConfigs.headers.token = 'xxx'
+  // configs array
+  baseConfigs.forEach(item => {
+    item.headers.token = 'xxx'
+  })
+})
 
 ```
 
