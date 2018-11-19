@@ -94,7 +94,9 @@ export class SmartFetch {
   }
   // 获取配置信息
   modifyBaseConfigs (handler) {
-    typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig) && SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
+    if (typeof handler !== 'function') return
+    handler(SmartFetch.SAinfos.userConfig.baseConfig)
+    SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
   }
   // reset options
   resetOpts (options) {

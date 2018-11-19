@@ -1332,12 +1332,14 @@
 
 	    this._handleResData = function (resjson) {
 	      if (!_this._successHandle) return;
-	      if (_this._needCodeCheck) {
-	        var dataKey = _this.userConfig.dataKey || 'data';
-	        _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
-	      } else {
-	        _this._successHandle(resjson);
-	      }
+	      try {
+	        if (_this._needCodeCheck) {
+	          var dataKey = _this.userConfig.dataKey || 'data';
+	          _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
+	        } else {
+	          _this._successHandle(resjson);
+	        }
+	      } catch (e) {}
 	    };
 
 	    this._typeHandle = function (response) {
@@ -3363,7 +3365,9 @@
 	  }, {
 	    key: 'modifyBaseConfigs',
 	    value: function modifyBaseConfigs(handler) {
-	      typeof handler === 'function' && handler(SmartFetch.SAinfos.userConfig.baseConfig);
+	      if (typeof handler !== 'function') return;
+	      handler(SmartFetch.SAinfos.userConfig.baseConfig);
+	      SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
 	    }
 	    // reset options
 
@@ -3415,11 +3419,12 @@
 
 	      var baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [_extends$1({ key: 'default' }, baseConfigs)];
 	      baseConfig.forEach(function (item) {
-	        var key = item.key;
+	        var newItem = _Object$assign({}, item);
+	        var key = newItem.key;
 
 	        if (key) {
-	          delete item.key;
-	          baseCfgs[key] = item;
+	          delete newItem.key;
+	          baseCfgs[key] = newItem;
 	          !useFetch && (axiosCores[key] = axios.create(item));
 	        }
 	      });
