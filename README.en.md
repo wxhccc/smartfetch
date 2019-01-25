@@ -19,9 +19,9 @@ import Vue from 'vue'
 ...
 import smartfetch from 'smartfetch'
 
-/** 配置文件推荐使用独立文件 **/
+/** those code can be import from config file **/
 
-import { Notification } from 'element-ui';  // 错误提示可按需求选择ui库组件实现
+import { Notification } from 'element-ui';  // you can use the ui component you like
 const statusMsgs = {
   '404': '请求地址不存在',
   '500': '服务器维护中，请稍后再试'
@@ -30,12 +30,12 @@ const codeMsgs = {
   'E001': '未登录'
 };
 const useConfig = {
-  baseConfig: {  // 基础配置对象，多份配置可使用数组
+  baseConfig: {  //baseConfig for all request ,can be an array to set multiple
     baseURL: ''
   },
-  /*baseConfig: [  // 多配置时key是必须的，用来切换配置
+  /*baseConfig: [  // key is necessary to switch
     {
-      key: 'default',  // 'default' 是默认配置的key
+      key: 'default',  // 'default' will be the default baseConfig set
       baseURL: 'url1'
     },
     {
@@ -43,10 +43,10 @@ const useConfig = {
       baseURL: 'url2'
     }
   ]*/
-  baseData: {},  // 基础数据，会随着所有请求发送，适合无法再header里添加token的场景。 可以为数据对象，或者函数
-  errorHandle: notifyMsg, // 统一错误处理，优先级低于codeError
-  statusWarn: statusMsgs, // response对象status值转换对象，用于自定义status文案
-  resCheck: 'success', // 返回值检测，用于过滤通用接口数据， 可以为
+  baseData: {},  // the data will append to all request, accept an object or a function
+  errorHandle: notifyMsg, // the http error handler
+  statusWarn: statusMsgs, // status warning text map
+  resCheck: 'success', // the api success check key, can be a function
   forceAxios: true, // force to use axios to request, default fetch 
   dataKey: 'data',  // the api data key, default 'data'
   codeError: (resjson) => { /* the web system error code handler, you can use api error message or use code switch to message you want */ 

@@ -12,18 +12,16 @@ const moduleMap = {
 
 export class SmartFetch {
   constructor (options) {
-    this._fetchSupportCheck();
-    options && (typeof options === 'object') && this.resetOpts(options);
+    const opts = options && (typeof options === 'object') ? options : null
+    opts && this.resetOpts(opts);
+    this._fetchSupportCheck(opts && opts.forceAxios);
   }
-  static SAinfos = {
+  static SFinfos = {
     useFetch: true,
     axiosCores: Object.create(null),
     baseCfgs: Object.create(null),
     userConfig: Object.create(null),
-    statusMsgs: {
-      '404': '请求地址不存在',
-      '500': '服务器维护中，请稍后再试'
-    }
+    statusMsgs: {}
   };
   static checkContext (context) {
     if (context.hasOwnProperty('_isVue')) {
@@ -43,31 +41,32 @@ export class SmartFetch {
     return config;
   }
   static fetchCoreSetup (baseConfigs) {
-    const {SAinfos, SAinfos: {axiosCores, baseCfgs, useFetch}} = this;
-    const baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [{key: 'default', ...baseConfigs}];
+    const { SFinfos, SFinfos: { axiosCores, baseCfgs, useFetch, userConfig } } = this;
+    const baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [{ key: 'default', ...baseConfigs }];
+    const validateStatus = userConfig && (typeof userConfig.validateStatus === 'function') ? userConfig.validateStatus : null;
     baseConfig.forEach(item => {
-      let newItem = Object.assign({}, item)
-      const {key} = newItem;
+      let newItem = Object.assign(validateStatus ? { validateStatus } : {}, item)
+      const { key } = newItem;
       if (key) {
         delete newItem.key;
         baseCfgs[key] = newItem
         !useFetch && (axiosCores[key] = axios.create(item));
       }
     })
-    SAinfos.baseCfg = baseCfgs['default'];
-    !useFetch && (SAinfos.core = axiosCores['default']);
+    SFinfos.baseCfg = baseCfgs['default'];
+    !useFetch && (SFinfos.core = axiosCores['default']);
   }
-  _fetchSupportCheck () {
+  _fetchSupportCheck (forceAxios) {
     this._fetchEnable = (typeof fetch === 'function');
-    this._ajaxCoreSwitch(!this._fetchEnable);
+    !forceAxios && this._ajaxCoreSwitch(!this._fetchEnable);
   }
   _ajaxCoreSwitch (useAxios) {
-    Object.assign(SmartFetch.SAinfos, useAxios ? {
+    Object.assign(SmartFetch.SFinfos, useAxios ? {
       useFetch: false,
       core: axios
     } : {
       useFetch: true,
-      core: fetch.bind(window)
+      core: fetch.bind(window || global)
     })
   }
 
@@ -78,29 +77,29 @@ export class SmartFetch {
     options && (typeof options === 'object') && this.resetOpts(options);
     Vue.prototype.$fetch = this.vueFetch;
     Vue.mixin({
-      data: () => ({SAKEYS: {}})
+      data: () => ({ SAKEYS: {} })
     });
   }
   // a special method of fetch for vue
   vueFetch (...args) {
     const config = SmartFetch.fetchArgsSwitch(...args);
-    return new SmartApiVue(SmartFetch.SAinfos, this, config);
+    return new SmartApiVue(SmartFetch.SFinfos, this, config);
   }
   fetch (...args) {
     const module = SmartFetch.checkContext(this);
     const config = SmartFetch.fetchArgsSwitch(...args);
     !moduleMap[module] && (window.$SAKEYS = {})
-    return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : SmartApi(SmartFetch.SAinfos, window);
+    return moduleMap[module] ? new moduleMap[module](SmartFetch.SFinfos, this, config) : SmartApi(SmartFetch.SFinfos, window);
   }
   // 获取配置信息
   modifyBaseConfigs (handler) {
     if (typeof handler !== 'function') return
-    handler(SmartFetch.SAinfos.userConfig.baseConfig)
-    SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
+    handler(SmartFetch.SFinfos.userConfig.baseConfig)
+    SmartFetch.fetchCoreSetup(SmartFetch.SFinfos.userConfig.baseConfig);
   }
   // reset options
   resetOpts (options) {
-    let { userConfig, statusMsgs } = SmartFetch.SAinfos;
+    let { userConfig, statusMsgs } = SmartFetch.SFinfos;
     Object.assign(userConfig, options);
     options.statusWarn && (typeof options.statusWarn === 'object') && Object.assign(statusMsgs, options.statusWarn);
     options.forceAxios && this._ajaxCoreSwitch(true);
@@ -110,9 +109,9 @@ export class SmartFetch {
 
 }
 
-const request = SARequest(SmartFetch.SAinfos);
+const request = SARequest(SmartFetch.SFinfos);
 
-export {request}
+export { request }
  
 export default new SmartFetch();
 

@@ -5,20 +5,36 @@ const defOpts = {
   responseType: 'json'
 };
 const responseMixin = {
-  'json': 'json',
+  json: 'json',
+  text: 'text',
+  blob: 'blob',
+  arraybuffer: 'arrayBuffer'
 }
 
 const { hasOwnProperty } = Object.prototype
 
+class CodeError extends Error {
+  constructor (...args) {
+    super(...args)
+  }
+}
+class CallbackSyntaxError extends Error {
+  constructor (...args) {
+    super(...args)
+  }
+}
+
 export default class SmartApi {
+  __response = null;
   _silence = false;
   _needCodeCheck = true;
   _codeCheckResult = false;
   _lockKey = [];
-  _useCore='default';
+  _useCore = 'default';
   _faileHandle = null;
   _successHandle = null;
-  _SAinfos = {};
+  _returnPromise = false;
+  _SFinfos = {};
   constructor (ajaxCore, context) {
     Object.assign(this, ajaxCore);
     this._ajaxCoreMixin(ajaxCore)
@@ -31,13 +47,12 @@ export default class SmartApi {
   _createRequest (config) {
     if(!config || typeof config.url !== 'string') return;
     this._checkRequestCore(config)
-    setTimeout(() => {
+    this._reqPromise = Promise.resolve().then(() => {
       if (!this._checkLock()) {
         this._lock();
-        this._reqPromise = this._request(config).then(this._codeCheck).then(this._handleResData).catch(this._handleError);;
-        this._successHandle && this._reqPromise;
+        return this._request(config).then(this._codeCheck).then(this._handleResData).catch(this._handleError);;
       }
-    }, 0);
+    })
   }
   _checkRequestCore (config) {
     if (!config.useCore || typeof config.useCore !== 'string') return;
@@ -52,20 +67,24 @@ export default class SmartApi {
     baseConfig.headers && (config.headers = Object.assign({}, config.headers || {}, baseConfig.headers))
     this._init = Object.assign({}, defOpts, config)
     return this.core(config.url, this._init)
-      .then(this._resCheck)
+      .then(this._resStatusCheck)
       .then(this._typeHandle);
   }
   _handleResData = (resjson) => {
-    if (!this._successHandle) return
+    let data = resjson
     try {
       if (this._needCodeCheck) {
         const dataKey = this.userConfig.dataKey || 'data';
-        this._codeCheckResult && this._successHandle(resjson[dataKey]);
+        data = resjson[dataKey]
+        this._codeCheckResult && this._successHandle && this._successHandle(data);
       }
       else {
-        this._successHandle(resjson);
+        this._successHandle && this._successHandle(data);
       }
-    } catch (e) {}
+      return data
+    } catch (e) {
+      throw new CallbackSyntaxError(e)
+    }
   }
   _lock () {
     this._stateLock();
@@ -111,44 +130,52 @@ export default class SmartApi {
 
 
   _typeHandle = (response) => {
-    let {responseType} = this._init;
-    let mixFn = responseMixin[responseType];
+    const { responseType } = this._init;
+    const mixFn = responseMixin[responseType];
     if (response[mixFn]) {
       return response[mixFn]();
     }
   }
-  _resCheck (response) {
-    if (response.ok) {
+  _resStatusCheck = (response) => {
+    this.__response = response;
+    const { validateStatus } = this.baseCfg;
+    if (validateStatus ? validateStatus(response.status) : response.ok) {
       return response;
     }
-    throw new Error(response.status);
+    throw new RangeError(response.status);
   }
   _handleError = (error) => {
     this._unlock();
-    this._faileHandle && this._faileHandle(error);
+    try {
+      this._faileHandle && this._faileHandle(error);
+    } catch (e) {}
+    
     if (this._silence) return;
     let msg = '';
-    const {statusMsgs, userConfig: {errorHandle} } = this;
-    switch (error.name) {
-      case 'TypeError':
-        msg = '服务器未响应';
-        break;
-      case 'SyntaxError':
-        msg = '数据解析失败';
-        break;
-      case 'Error':
-        msg = statusMsgs[error.message] || '请求失败';
-        break;
+    let status = ''
+    const { statusMsgs, userConfig: { errorHandle, codeError }, useFetch } = this;
+    if ((useFetch && error instanceof TypeError) || error.message === 'Network Error') {
+      msg = '服务器未响应';
+    } else if (error instanceof SyntaxError) {
+      msg = '数据解析失败';
+    } else if (error instanceof RangeError || error.response) {
+      error.response && (this.__response = error.response)
+      const { status } = this.__response
+      msg = statusMsgs[status] || '请求失败';
     }
-    if (typeof errorHandle === 'function') {
-      errorHandle(msg, error);
+    if (error instanceof CodeError && typeof codeError === 'function') {
+      codeError(this.__response.data)
+    } else if (error instanceof CallbackSyntaxError) {
+      // 回调函数内的语法错误默认静默
+    } else if (typeof errorHandle === 'function') {
+      errorHandle(msg, error, this.__response);
     } else {
       (typeof alert === 'function') ? alert(msg) : console.log(error);
     }
   }
   _resOkCheck (resjson) {
     let result = false;
-    const {resCheck} = this.userConfig;
+    const { resCheck } = this.userConfig;
     let resCheckType = typeof resCheck;
     if (resCheckType === 'function') {
       result = resCheck(resjson);
@@ -161,10 +188,7 @@ export default class SmartApi {
   _codeCheck = (resjson) => {
     this._unlock();
     if (this._needCodeCheck && !this._resOkCheck(resjson)) {
-      this._faileHandle && this._faileHandle(null, resjson);
-      if (this._silence) return;
-      let {codeError} = this.userConfig;
-      codeError(resjson);
+      throw new CodeError('code checked failed')
     } else {
       return resjson;
     }
@@ -187,6 +211,10 @@ export default class SmartApi {
   done (successHandle) {
     typeof successHandle === 'function' && (this._successHandle = successHandle);
     return this;
+  }
+  promise () {
+    this._returnPromise = true;
+    return this._reqPromise;
   }
   faile (faileHandle) {
     typeof faileHandle === 'function' && (this._faileHandle = faileHandle);

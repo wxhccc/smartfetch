@@ -8,7 +8,7 @@
 	axios = axios && axios.hasOwnProperty('default') ? axios['default'] : axios;
 
 	function unwrapExports (x) {
-		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x.default : x;
 	}
 
 	function createCommonjsModule(fn, module) {
@@ -732,13 +732,13 @@
 	  }
 	});
 
-	var from = _core.Array.from;
+	var from_1 = _core.Array.from;
 
-	var from$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": from, __esModule: true };
+	var from_1$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": from_1, __esModule: true };
 	});
 
-	unwrapExports(from$1);
+	unwrapExports(from_1$1);
 
 	var toConsumableArray = createCommonjsModule(function (module, exports) {
 
@@ -746,7 +746,7 @@
 
 
 
-	var _from2 = _interopRequireDefault(from$1);
+	var _from2 = _interopRequireDefault(from_1$1);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1293,277 +1293,564 @@
 
 	var _createClass = unwrapExports(createClass);
 
-	function AxiosCore() {
-	  this._request = function (config) {
-	    return this.core(config).then(this._resCheck);
+	var _anInstance = function (it, Constructor, name, forbiddenField) {
+	  if (!(it instanceof Constructor) || (forbiddenField !== undefined && forbiddenField in it)) {
+	    throw TypeError(name + ': incorrect invocation!');
+	  } return it;
+	};
+
+	var _forOf = createCommonjsModule(function (module) {
+	var BREAK = {};
+	var RETURN = {};
+	var exports = module.exports = function (iterable, entries, fn, that, ITERATOR) {
+	  var iterFn = ITERATOR ? function () { return iterable; } : core_getIteratorMethod(iterable);
+	  var f = _ctx(fn, that, entries ? 2 : 1);
+	  var index = 0;
+	  var length, step, iterator, result;
+	  if (typeof iterFn != 'function') throw TypeError(iterable + ' is not iterable!');
+	  // fast case for arrays with default iterator
+	  if (_isArrayIter(iterFn)) for (length = _toLength(iterable.length); length > index; index++) {
+	    result = entries ? f(_anObject(step = iterable[index])[0], step[1]) : f(iterable[index]);
+	    if (result === BREAK || result === RETURN) return result;
+	  } else for (iterator = iterFn.call(iterable); !(step = iterator.next()).done;) {
+	    result = _iterCall(iterator, f, step.value, entries);
+	    if (result === BREAK || result === RETURN) return result;
+	  }
+	};
+	exports.BREAK = BREAK;
+	exports.RETURN = RETURN;
+	});
+
+	// 7.3.20 SpeciesConstructor(O, defaultConstructor)
+
+
+	var SPECIES = _wks('species');
+	var _speciesConstructor = function (O, D) {
+	  var C = _anObject(O).constructor;
+	  var S;
+	  return C === undefined || (S = _anObject(C)[SPECIES]) == undefined ? D : _aFunction(S);
+	};
+
+	// fast apply, http://jsperf.lnkit.com/fast-apply/5
+	var _invoke = function (fn, args, that) {
+	  var un = that === undefined;
+	  switch (args.length) {
+	    case 0: return un ? fn()
+	                      : fn.call(that);
+	    case 1: return un ? fn(args[0])
+	                      : fn.call(that, args[0]);
+	    case 2: return un ? fn(args[0], args[1])
+	                      : fn.call(that, args[0], args[1]);
+	    case 3: return un ? fn(args[0], args[1], args[2])
+	                      : fn.call(that, args[0], args[1], args[2]);
+	    case 4: return un ? fn(args[0], args[1], args[2], args[3])
+	                      : fn.call(that, args[0], args[1], args[2], args[3]);
+	  } return fn.apply(that, args);
+	};
+
+	var process = _global.process;
+	var setTask = _global.setImmediate;
+	var clearTask = _global.clearImmediate;
+	var MessageChannel = _global.MessageChannel;
+	var Dispatch = _global.Dispatch;
+	var counter = 0;
+	var queue = {};
+	var ONREADYSTATECHANGE = 'onreadystatechange';
+	var defer, channel, port;
+	var run = function () {
+	  var id = +this;
+	  // eslint-disable-next-line no-prototype-builtins
+	  if (queue.hasOwnProperty(id)) {
+	    var fn = queue[id];
+	    delete queue[id];
+	    fn();
+	  }
+	};
+	var listener = function (event) {
+	  run.call(event.data);
+	};
+	// Node.js 0.9+ & IE10+ has setImmediate, otherwise:
+	if (!setTask || !clearTask) {
+	  setTask = function setImmediate(fn) {
+	    var args = [];
+	    var i = 1;
+	    while (arguments.length > i) args.push(arguments[i++]);
+	    queue[++counter] = function () {
+	      // eslint-disable-next-line no-new-func
+	      _invoke(typeof fn == 'function' ? fn : Function(fn), args);
+	    };
+	    defer(counter);
+	    return counter;
 	  };
-	  this._resCheck = function (response) {
-	    if (response.status === 200) {
-	      return response.data;
+	  clearTask = function clearImmediate(id) {
+	    delete queue[id];
+	  };
+	  // Node.js 0.8-
+	  if (_cof(process) == 'process') {
+	    defer = function (id) {
+	      process.nextTick(_ctx(run, id, 1));
+	    };
+	  // Sphere (JS game engine) Dispatch API
+	  } else if (Dispatch && Dispatch.now) {
+	    defer = function (id) {
+	      Dispatch.now(_ctx(run, id, 1));
+	    };
+	  // Browsers with MessageChannel, includes WebWorkers
+	  } else if (MessageChannel) {
+	    channel = new MessageChannel();
+	    port = channel.port2;
+	    channel.port1.onmessage = listener;
+	    defer = _ctx(port.postMessage, port, 1);
+	  // Browsers with postMessage, skip WebWorkers
+	  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
+	  } else if (_global.addEventListener && typeof postMessage == 'function' && !_global.importScripts) {
+	    defer = function (id) {
+	      _global.postMessage(id + '', '*');
+	    };
+	    _global.addEventListener('message', listener, false);
+	  // IE8-
+	  } else if (ONREADYSTATECHANGE in _domCreate('script')) {
+	    defer = function (id) {
+	      _html.appendChild(_domCreate('script'))[ONREADYSTATECHANGE] = function () {
+	        _html.removeChild(this);
+	        run.call(id);
+	      };
+	    };
+	  // Rest old browsers
+	  } else {
+	    defer = function (id) {
+	      setTimeout(_ctx(run, id, 1), 0);
+	    };
+	  }
+	}
+	var _task = {
+	  set: setTask,
+	  clear: clearTask
+	};
+
+	var macrotask = _task.set;
+	var Observer = _global.MutationObserver || _global.WebKitMutationObserver;
+	var process$1 = _global.process;
+	var Promise$1 = _global.Promise;
+	var isNode = _cof(process$1) == 'process';
+
+	var _microtask = function () {
+	  var head, last, notify;
+
+	  var flush = function () {
+	    var parent, fn;
+	    if (isNode && (parent = process$1.domain)) parent.exit();
+	    while (head) {
+	      fn = head.fn;
+	      head = head.next;
+	      try {
+	        fn();
+	      } catch (e) {
+	        if (head) notify();
+	        else last = undefined;
+	        throw e;
+	      }
+	    } last = undefined;
+	    if (parent) parent.enter();
+	  };
+
+	  // Node.js
+	  if (isNode) {
+	    notify = function () {
+	      process$1.nextTick(flush);
+	    };
+	  // browsers with MutationObserver, except iOS Safari - https://github.com/zloirock/core-js/issues/339
+	  } else if (Observer && !(_global.navigator && _global.navigator.standalone)) {
+	    var toggle = true;
+	    var node = document.createTextNode('');
+	    new Observer(flush).observe(node, { characterData: true }); // eslint-disable-line no-new
+	    notify = function () {
+	      node.data = toggle = !toggle;
+	    };
+	  // environments with maybe non-completely correct, but existent Promise
+	  } else if (Promise$1 && Promise$1.resolve) {
+	    var promise = Promise$1.resolve();
+	    notify = function () {
+	      promise.then(flush);
+	    };
+	  // for other environments - macrotask based on:
+	  // - setImmediate
+	  // - MessageChannel
+	  // - window.postMessag
+	  // - onreadystatechange
+	  // - setTimeout
+	  } else {
+	    notify = function () {
+	      // strange IE + webpack dev server bug - use .call(global)
+	      macrotask.call(_global, flush);
+	    };
+	  }
+
+	  return function (fn) {
+	    var task = { fn: fn, next: undefined };
+	    if (last) last.next = task;
+	    if (!head) {
+	      head = task;
+	      notify();
+	    } last = task;
+	  };
+	};
+
+	// 25.4.1.5 NewPromiseCapability(C)
+
+
+	function PromiseCapability(C) {
+	  var resolve, reject;
+	  this.promise = new C(function ($$resolve, $$reject) {
+	    if (resolve !== undefined || reject !== undefined) throw TypeError('Bad Promise constructor');
+	    resolve = $$resolve;
+	    reject = $$reject;
+	  });
+	  this.resolve = _aFunction(resolve);
+	  this.reject = _aFunction(reject);
+	}
+
+	var f$7 = function (C) {
+	  return new PromiseCapability(C);
+	};
+
+	var _newPromiseCapability = {
+		f: f$7
+	};
+
+	var _perform = function (exec) {
+	  try {
+	    return { e: false, v: exec() };
+	  } catch (e) {
+	    return { e: true, v: e };
+	  }
+	};
+
+	var _promiseResolve = function (C, x) {
+	  _anObject(C);
+	  if (_isObject(x) && x.constructor === C) return x;
+	  var promiseCapability = _newPromiseCapability.f(C);
+	  var resolve = promiseCapability.resolve;
+	  resolve(x);
+	  return promiseCapability.promise;
+	};
+
+	var _redefineAll = function (target, src, safe) {
+	  for (var key in src) {
+	    if (safe && target[key]) target[key] = src[key];
+	    else _hide(target, key, src[key]);
+	  } return target;
+	};
+
+	var SPECIES$1 = _wks('species');
+
+	var _setSpecies = function (KEY) {
+	  var C = typeof _core[KEY] == 'function' ? _core[KEY] : _global[KEY];
+	  if (_descriptors && C && !C[SPECIES$1]) _objectDp.f(C, SPECIES$1, {
+	    configurable: true,
+	    get: function () { return this; }
+	  });
+	};
+
+	var task = _task.set;
+	var microtask = _microtask();
+
+
+
+	var PROMISE = 'Promise';
+	var TypeError$1 = _global.TypeError;
+	var process$2 = _global.process;
+	var $Promise = _global[PROMISE];
+	var isNode$1 = _classof(process$2) == 'process';
+	var empty = function () { /* empty */ };
+	var Internal, newGenericPromiseCapability, OwnPromiseCapability, Wrapper;
+	var newPromiseCapability = newGenericPromiseCapability = _newPromiseCapability.f;
+
+	var USE_NATIVE$1 = !!function () {
+	  try {
+	    // correct subclassing with @@species support
+	    var promise = $Promise.resolve(1);
+	    var FakePromise = (promise.constructor = {})[_wks('species')] = function (exec) {
+	      exec(empty, empty);
+	    };
+	    // unhandled rejections tracking support, NodeJS Promise without it fails @@species test
+	    return (isNode$1 || typeof PromiseRejectionEvent == 'function') && promise.then(empty) instanceof FakePromise;
+	  } catch (e) { /* empty */ }
+	}();
+
+	// helpers
+	var isThenable = function (it) {
+	  var then;
+	  return _isObject(it) && typeof (then = it.then) == 'function' ? then : false;
+	};
+	var notify = function (promise, isReject) {
+	  if (promise._n) return;
+	  promise._n = true;
+	  var chain = promise._c;
+	  microtask(function () {
+	    var value = promise._v;
+	    var ok = promise._s == 1;
+	    var i = 0;
+	    var run = function (reaction) {
+	      var handler = ok ? reaction.ok : reaction.fail;
+	      var resolve = reaction.resolve;
+	      var reject = reaction.reject;
+	      var domain = reaction.domain;
+	      var result, then, exited;
+	      try {
+	        if (handler) {
+	          if (!ok) {
+	            if (promise._h == 2) onHandleUnhandled(promise);
+	            promise._h = 1;
+	          }
+	          if (handler === true) result = value;
+	          else {
+	            if (domain) domain.enter();
+	            result = handler(value); // may throw
+	            if (domain) {
+	              domain.exit();
+	              exited = true;
+	            }
+	          }
+	          if (result === reaction.promise) {
+	            reject(TypeError$1('Promise-chain cycle'));
+	          } else if (then = isThenable(result)) {
+	            then.call(result, resolve, reject);
+	          } else resolve(result);
+	        } else reject(value);
+	      } catch (e) {
+	        if (domain && !exited) domain.exit();
+	        reject(e);
+	      }
+	    };
+	    while (chain.length > i) run(chain[i++]); // variable length - can't use forEach
+	    promise._c = [];
+	    promise._n = false;
+	    if (isReject && !promise._h) onUnhandled(promise);
+	  });
+	};
+	var onUnhandled = function (promise) {
+	  task.call(_global, function () {
+	    var value = promise._v;
+	    var unhandled = isUnhandled(promise);
+	    var result, handler, console;
+	    if (unhandled) {
+	      result = _perform(function () {
+	        if (isNode$1) {
+	          process$2.emit('unhandledRejection', value, promise);
+	        } else if (handler = _global.onunhandledrejection) {
+	          handler({ promise: promise, reason: value });
+	        } else if ((console = _global.console) && console.error) {
+	          console.error('Unhandled promise rejection', value);
+	        }
+	      });
+	      // Browsers should not trigger `rejectionHandled` event if it was handled here, NodeJS - should
+	      promise._h = isNode$1 || isUnhandled(promise) ? 2 : 1;
+	    } promise._a = undefined;
+	    if (unhandled && result.e) throw result.v;
+	  });
+	};
+	var isUnhandled = function (promise) {
+	  return promise._h !== 1 && (promise._a || promise._c).length === 0;
+	};
+	var onHandleUnhandled = function (promise) {
+	  task.call(_global, function () {
+	    var handler;
+	    if (isNode$1) {
+	      process$2.emit('rejectionHandled', promise);
+	    } else if (handler = _global.onrejectionhandled) {
+	      handler({ promise: promise, reason: promise._v });
 	    }
-	    throw new Error(response.status);
+	  });
+	};
+	var $reject = function (value) {
+	  var promise = this;
+	  if (promise._d) return;
+	  promise._d = true;
+	  promise = promise._w || promise; // unwrap
+	  promise._v = value;
+	  promise._s = 2;
+	  if (!promise._a) promise._a = promise._c.slice();
+	  notify(promise, true);
+	};
+	var $resolve = function (value) {
+	  var promise = this;
+	  var then;
+	  if (promise._d) return;
+	  promise._d = true;
+	  promise = promise._w || promise; // unwrap
+	  try {
+	    if (promise === value) throw TypeError$1("Promise can't be resolved itself");
+	    if (then = isThenable(value)) {
+	      microtask(function () {
+	        var wrapper = { _w: promise, _d: false }; // wrap
+	        try {
+	          then.call(value, _ctx($resolve, wrapper, 1), _ctx($reject, wrapper, 1));
+	        } catch (e) {
+	          $reject.call(wrapper, e);
+	        }
+	      });
+	    } else {
+	      promise._v = value;
+	      promise._s = 1;
+	      notify(promise, false);
+	    }
+	  } catch (e) {
+	    $reject.call({ _w: promise, _d: false }, e); // wrap
+	  }
+	};
+
+	// constructor polyfill
+	if (!USE_NATIVE$1) {
+	  // 25.4.3.1 Promise(executor)
+	  $Promise = function Promise(executor) {
+	    _anInstance(this, $Promise, PROMISE, '_h');
+	    _aFunction(executor);
+	    Internal.call(this);
+	    try {
+	      executor(_ctx($resolve, this, 1), _ctx($reject, this, 1));
+	    } catch (err) {
+	      $reject.call(this, err);
+	    }
+	  };
+	  // eslint-disable-next-line no-unused-vars
+	  Internal = function Promise(executor) {
+	    this._c = [];             // <- awaiting reactions
+	    this._a = undefined;      // <- checked in isUnhandled reactions
+	    this._s = 0;              // <- state
+	    this._d = false;          // <- done
+	    this._v = undefined;      // <- value
+	    this._h = 0;              // <- rejection state, 0 - default, 1 - handled, 2 - unhandled
+	    this._n = false;          // <- notify
+	  };
+	  Internal.prototype = _redefineAll($Promise.prototype, {
+	    // 25.4.5.3 Promise.prototype.then(onFulfilled, onRejected)
+	    then: function then(onFulfilled, onRejected) {
+	      var reaction = newPromiseCapability(_speciesConstructor(this, $Promise));
+	      reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
+	      reaction.fail = typeof onRejected == 'function' && onRejected;
+	      reaction.domain = isNode$1 ? process$2.domain : undefined;
+	      this._c.push(reaction);
+	      if (this._a) this._a.push(reaction);
+	      if (this._s) notify(this, false);
+	      return reaction.promise;
+	    },
+	    // 25.4.5.1 Promise.prototype.catch(onRejected)
+	    'catch': function (onRejected) {
+	      return this.then(undefined, onRejected);
+	    }
+	  });
+	  OwnPromiseCapability = function () {
+	    var promise = new Internal();
+	    this.promise = promise;
+	    this.resolve = _ctx($resolve, promise, 1);
+	    this.reject = _ctx($reject, promise, 1);
+	  };
+	  _newPromiseCapability.f = newPromiseCapability = function (C) {
+	    return C === $Promise || C === Wrapper
+	      ? new OwnPromiseCapability(C)
+	      : newGenericPromiseCapability(C);
 	  };
 	}
 
-	var defOpts = {
-	  credentitals: 'same-origin',
-	  responseType: 'json'
-	};
-	var responseMixin = {
-	  'json': 'json'
-	};
+	_export(_export.G + _export.W + _export.F * !USE_NATIVE$1, { Promise: $Promise });
+	_setToStringTag($Promise, PROMISE);
+	_setSpecies(PROMISE);
+	Wrapper = _core[PROMISE];
 
-	var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
-
-	var SmartApi = function () {
-	  function SmartApi(ajaxCore, context) {
-	    var _this = this;
-
-	    _classCallCheck(this, SmartApi);
-
-	    this._silence = false;
-	    this._needCodeCheck = true;
-	    this._codeCheckResult = false;
-	    this._lockKey = [];
-	    this._useCore = 'default';
-	    this._faileHandle = null;
-	    this._successHandle = null;
-	    this._SAinfos = {};
-
-	    this._handleResData = function (resjson) {
-	      if (!_this._successHandle) return;
-	      try {
-	        if (_this._needCodeCheck) {
-	          var dataKey = _this.userConfig.dataKey || 'data';
-	          _this._codeCheckResult && _this._successHandle(resjson[dataKey]);
-	        } else {
-	          _this._successHandle(resjson);
-	        }
-	      } catch (e) {}
-	    };
-
-	    this._typeHandle = function (response) {
-	      var responseType = _this._init.responseType;
-
-	      var mixFn = responseMixin[responseType];
-	      if (response[mixFn]) {
-	        return response[mixFn]();
-	      }
-	    };
-
-	    this._handleError = function (error) {
-	      _this._unlock();
-	      _this._faileHandle && _this._faileHandle(error);
-	      if (_this._silence) return;
-	      var msg = '';
-	      var statusMsgs = _this.statusMsgs,
-	          errorHandle = _this.userConfig.errorHandle;
-
-	      switch (error.name) {
-	        case 'TypeError':
-	          msg = '服务器未响应';
-	          break;
-	        case 'SyntaxError':
-	          msg = '数据解析失败';
-	          break;
-	        case 'Error':
-	          msg = statusMsgs[error.message] || '请求失败';
-	          break;
-	      }
-	      if (typeof errorHandle === 'function') {
-	        errorHandle(msg, error);
-	      } else {
-	        typeof alert === 'function' ? alert(msg) : console.log(error);
-	      }
-	    };
-
-	    this._codeCheck = function (resjson) {
-	      _this._unlock();
-	      if (_this._needCodeCheck && !_this._resOkCheck(resjson)) {
-	        _this._faileHandle && _this._faileHandle(null, resjson);
-	        if (_this._silence) return;
-	        var codeError = _this.userConfig.codeError;
-
-	        codeError(resjson);
-	      } else {
-	        return resjson;
-	      }
-	    };
-
-	    _Object$assign(this, ajaxCore);
-	    this._ajaxCoreMixin(ajaxCore);
-	    this._context = context;
-	    return this;
+	// statics
+	_export(_export.S + _export.F * !USE_NATIVE$1, PROMISE, {
+	  // 25.4.4.5 Promise.reject(r)
+	  reject: function reject(r) {
+	    var capability = newPromiseCapability(this);
+	    var $$reject = capability.reject;
+	    $$reject(r);
+	    return capability.promise;
 	  }
+	});
+	_export(_export.S + _export.F * (_library || !USE_NATIVE$1), PROMISE, {
+	  // 25.4.4.6 Promise.resolve(x)
+	  resolve: function resolve(x) {
+	    return _promiseResolve(_library && this === Wrapper ? $Promise : this, x);
+	  }
+	});
+	_export(_export.S + _export.F * !(USE_NATIVE$1 && _iterDetect(function (iter) {
+	  $Promise.all(iter)['catch'](empty);
+	})), PROMISE, {
+	  // 25.4.4.1 Promise.all(iterable)
+	  all: function all(iterable) {
+	    var C = this;
+	    var capability = newPromiseCapability(C);
+	    var resolve = capability.resolve;
+	    var reject = capability.reject;
+	    var result = _perform(function () {
+	      var values = [];
+	      var index = 0;
+	      var remaining = 1;
+	      _forOf(iterable, false, function (promise) {
+	        var $index = index++;
+	        var alreadyCalled = false;
+	        values.push(undefined);
+	        remaining++;
+	        C.resolve(promise).then(function (value) {
+	          if (alreadyCalled) return;
+	          alreadyCalled = true;
+	          values[$index] = value;
+	          --remaining || resolve(values);
+	        }, reject);
+	      });
+	      --remaining || resolve(values);
+	    });
+	    if (result.e) reject(result.v);
+	    return capability.promise;
+	  },
+	  // 25.4.4.4 Promise.race(iterable)
+	  race: function race(iterable) {
+	    var C = this;
+	    var capability = newPromiseCapability(C);
+	    var reject = capability.reject;
+	    var result = _perform(function () {
+	      _forOf(iterable, false, function (promise) {
+	        C.resolve(promise).then(capability.resolve, reject);
+	      });
+	    });
+	    if (result.e) reject(result.v);
+	    return capability.promise;
+	  }
+	});
 
-	  _createClass(SmartApi, [{
-	    key: '_ajaxCoreMixin',
-	    value: function _ajaxCoreMixin(ajaxCore) {
-	      !ajaxCore.useFetch && AxiosCore.call(this);
-	    }
-	  }, {
-	    key: '_createRequest',
-	    value: function _createRequest(config) {
-	      var _this2 = this;
+	_export(_export.P + _export.R, 'Promise', { 'finally': function (onFinally) {
+	  var C = _speciesConstructor(this, _core.Promise || _global.Promise);
+	  var isFunction = typeof onFinally == 'function';
+	  return this.then(
+	    isFunction ? function (x) {
+	      return _promiseResolve(C, onFinally()).then(function () { return x; });
+	    } : onFinally,
+	    isFunction ? function (e) {
+	      return _promiseResolve(C, onFinally()).then(function () { throw e; });
+	    } : onFinally
+	  );
+	} });
 
-	      if (!config || typeof config.url !== 'string') return;
-	      this._checkRequestCore(config);
-	      setTimeout(function () {
-	        if (!_this2._checkLock()) {
-	          _this2._lock();
-	          _this2._reqPromise = _this2._request(config).then(_this2._codeCheck).then(_this2._handleResData).catch(_this2._handleError);          _this2._successHandle && _this2._reqPromise;
-	        }
-	      }, 0);
-	    }
-	  }, {
-	    key: '_checkRequestCore',
-	    value: function _checkRequestCore(config) {
-	      if (!config.useCore || typeof config.useCore !== 'string') return;
-	      this.useCore(config.useCore);
-	      delete config.useCore;
-	    }
-	  }, {
-	    key: '_request',
-	    value: function _request(config) {
-	      var baseConfig = this.baseCfg || {};
-	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
-	        config.url = baseConfig.baseURL + config.url;
-	      }
-	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
-	      this._init = _Object$assign({}, defOpts, config);
-	      return this.core(config.url, this._init).then(this._resCheck).then(this._typeHandle);
-	    }
-	  }, {
-	    key: '_lock',
-	    value: function _lock() {
-	      this._stateLock();
-	    }
-	  }, {
-	    key: '_unlock',
-	    value: function _unlock() {
-	      this._stateLock(true);
-	    }
-	  }, {
-	    key: '_checkLock',
-	    value: function _checkLock() {
-	      return this._lockKey && this._getLockValue();
-	    }
-	  }, {
-	    key: '_stateLock',
-	    value: function _stateLock(unlock) {
-	      var _lockKey = this._lockKey,
-	          _context = this._context;
+	// https://github.com/tc39/proposal-promise-try
 
-	      this._setValue(_context, _lockKey, !unlock);
-	    }
-	  }, {
-	    key: '_getLockValue',
-	    value: function _getLockValue() {
-	      var _context = this._context,
-	          _lockKey = this._lockKey,
-	          _useSAkeys = this._useSAkeys;
 
-	      return this._getValue(_useSAkeys ? _context.SAKEYS : _context, _lockKey);
-	    }
-	  }, {
-	    key: '_getValue',
-	    value: function _getValue(obj, path) {
-	      var result = false;
-	      var hasOwnProperty = Object.prototype.hasOwnProperty;
-	      if (obj && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object' && Array.isArray(path)) {
-	        var curObj = obj;
-	        for (var i = 0; i < path.length; i++) {
-	          var key = path[i];
-	          if ((typeof curObj === 'undefined' ? 'undefined' : _typeof(curObj)) !== 'object' || !hasOwnProperty.call(curObj, key)) {
-	            break;
-	          }
-	          curObj = curObj[key];
-	          i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false);
-	        }
-	      }
-	      return result;
-	    }
-	  }, {
-	    key: '_setValue',
-	    value: function _setValue(obj, path, value) {
-	      var curObj = obj.SAKEYS;
-	      for (var i = 0; i < path.length; i++) {
-	        var key = path[i];
-	        !hasOwnProperty$1.call(curObj, key) && (curObj[key] = i === path.length - 1 ? value : {});
-	        curObj = curObj[key];
-	      }
-	    }
-	  }, {
-	    key: '_resCheck',
-	    value: function _resCheck(response) {
-	      if (response.ok) {
-	        return response;
-	      }
-	      throw new Error(response.status);
-	    }
-	  }, {
-	    key: '_resOkCheck',
-	    value: function _resOkCheck(resjson) {
-	      var result = false;
-	      var resCheck = this.userConfig.resCheck;
 
-	      var resCheckType = typeof resCheck === 'undefined' ? 'undefined' : _typeof(resCheck);
-	      if (resCheckType === 'function') {
-	        result = resCheck(resjson);
-	      } else if (resCheckType === 'string') {
-	        result = resjson[resCheck];
-	      }
-	      this._codeCheckResult = result;
-	      return result;
-	    }
-	  }, {
-	    key: 'useCore',
 
-	    // public apis
-	    value: function useCore(corekey) {
-	      if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
-	        this._useCore = corekey;
-	        this.baseCfg = this.baseCfgs[this._useCore];
-	        !this.useFetch && (this.core = this.axiosCores[this._useCore]);
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: 'lock',
-	    value: function lock(key) {
-	      if (key && typeof key === 'string') {
-	        this._lockKey = key.split('.');
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: 'done',
-	    value: function done(successHandle) {
-	      typeof successHandle === 'function' && (this._successHandle = successHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'faile',
-	    value: function faile(faileHandle) {
-	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
-	      return this;
-	    }
-	  }, {
-	    key: 'silence',
-	    value: function silence() {
-	      this._silence = true;
-	      return this;
-	    }
-	  }, {
-	    key: 'notCheckCode',
-	    value: function notCheckCode() {
-	      this._needCodeCheck = false;
-	      return this;
-	    }
-	  }]);
+	_export(_export.S, 'Promise', { 'try': function (callbackfn) {
+	  var promiseCapability = _newPromiseCapability.f(this);
+	  var result = _perform(callbackfn);
+	  (result.e ? promiseCapability.reject : promiseCapability.resolve)(result.v);
+	  return promiseCapability.promise;
+	} });
 
-	  return SmartApi;
-	}();
+	var promise = _core.Promise;
+
+	var promise$1 = createCommonjsModule(function (module) {
+	module.exports = { "default": promise, __esModule: true };
+	});
+
+	var _Promise = unwrapExports(promise$1);
 
 	// most Object methods by ES6 should accept primitives
 
@@ -1689,6 +1976,333 @@
 	});
 
 	var _inherits = unwrapExports(inherits);
+
+	function AxiosCore() {
+	  var _this = this;
+
+	  this._request = function (config) {
+	    return this.core(config).then(this._resStatusCheck);
+	  };
+	  this._resStatusCheck = function (response) {
+	    _this.__response = response;
+	    return response.data;
+	  };
+	}
+
+	var defOpts = {
+	  credentitals: 'same-origin',
+	  responseType: 'json'
+	};
+	var responseMixin = {
+	  json: 'json',
+	  text: 'text',
+	  blob: 'blob',
+	  arraybuffer: 'arrayBuffer'
+	};
+
+	var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+
+	var CodeError = function (_Error) {
+	  _inherits(CodeError, _Error);
+
+	  function CodeError() {
+	    var _ref;
+
+	    _classCallCheck(this, CodeError);
+
+	    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	      args[_key] = arguments[_key];
+	    }
+
+	    return _possibleConstructorReturn(this, (_ref = CodeError.__proto__ || _Object$getPrototypeOf(CodeError)).call.apply(_ref, [this].concat(args)));
+	  }
+
+	  return CodeError;
+	}(Error);
+
+	var CallbackSyntaxError = function (_Error2) {
+	  _inherits(CallbackSyntaxError, _Error2);
+
+	  function CallbackSyntaxError() {
+	    var _ref2;
+
+	    _classCallCheck(this, CallbackSyntaxError);
+
+	    for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+	      args[_key2] = arguments[_key2];
+	    }
+
+	    return _possibleConstructorReturn(this, (_ref2 = CallbackSyntaxError.__proto__ || _Object$getPrototypeOf(CallbackSyntaxError)).call.apply(_ref2, [this].concat(args)));
+	  }
+
+	  return CallbackSyntaxError;
+	}(Error);
+
+	var SmartApi = function () {
+	  function SmartApi(ajaxCore, context) {
+	    var _this3 = this;
+
+	    _classCallCheck(this, SmartApi);
+
+	    this.__response = null;
+	    this._silence = false;
+	    this._needCodeCheck = true;
+	    this._codeCheckResult = false;
+	    this._lockKey = [];
+	    this._useCore = 'default';
+	    this._faileHandle = null;
+	    this._successHandle = null;
+	    this._returnPromise = false;
+	    this._SFinfos = {};
+
+	    this._handleResData = function (resjson) {
+	      var data = resjson;
+	      try {
+	        if (_this3._needCodeCheck) {
+	          var dataKey = _this3.userConfig.dataKey || 'data';
+	          data = resjson[dataKey];
+	          _this3._codeCheckResult && _this3._successHandle && _this3._successHandle(data);
+	        } else {
+	          _this3._successHandle && _this3._successHandle(data);
+	        }
+	        return data;
+	      } catch (e) {
+	        throw new CallbackSyntaxError(e);
+	      }
+	    };
+
+	    this._typeHandle = function (response) {
+	      var responseType = _this3._init.responseType;
+
+	      var mixFn = responseMixin[responseType];
+	      if (response[mixFn]) {
+	        return response[mixFn]();
+	      }
+	    };
+
+	    this._resStatusCheck = function (response) {
+	      _this3.__response = response;
+	      var validateStatus = _this3.baseCfg.validateStatus;
+
+	      if (validateStatus ? validateStatus(response.status) : response.ok) {
+	        return response;
+	      }
+	      throw new RangeError(response.status);
+	    };
+
+	    this._handleError = function (error) {
+	      _this3._unlock();
+	      try {
+	        _this3._faileHandle && _this3._faileHandle(error);
+	      } catch (e) {}
+
+	      if (_this3._silence) return;
+	      var msg = '';
+	      var statusMsgs = _this3.statusMsgs,
+	          _userConfig = _this3.userConfig,
+	          errorHandle = _userConfig.errorHandle,
+	          codeError = _userConfig.codeError,
+	          useFetch = _this3.useFetch;
+
+	      if (useFetch && error instanceof TypeError || error.message === 'Network Error') {
+	        msg = '服务器未响应';
+	      } else if (error instanceof SyntaxError) {
+	        msg = '数据解析失败';
+	      } else if (error instanceof RangeError || error.response) {
+	        error.response && (_this3.__response = error.response);
+	        var _status = _this3.__response.status;
+
+	        msg = statusMsgs[_status] || '请求失败';
+	      }
+	      if (error instanceof CodeError && typeof codeError === 'function') {
+	        codeError(_this3.__response.data);
+	      } else if (error instanceof CallbackSyntaxError) ; else if (typeof errorHandle === 'function') {
+	        errorHandle(msg, error, _this3.__response);
+	      } else {
+	        typeof alert === 'function' ? alert(msg) : console.log(error);
+	      }
+	    };
+
+	    this._codeCheck = function (resjson) {
+	      _this3._unlock();
+	      if (_this3._needCodeCheck && !_this3._resOkCheck(resjson)) {
+	        throw new CodeError('code checked failed');
+	      } else {
+	        return resjson;
+	      }
+	    };
+
+	    _Object$assign(this, ajaxCore);
+	    this._ajaxCoreMixin(ajaxCore);
+	    this._context = context;
+	    return this;
+	  }
+
+	  _createClass(SmartApi, [{
+	    key: '_ajaxCoreMixin',
+	    value: function _ajaxCoreMixin(ajaxCore) {
+	      !ajaxCore.useFetch && AxiosCore.call(this);
+	    }
+	  }, {
+	    key: '_createRequest',
+	    value: function _createRequest(config) {
+	      var _this4 = this;
+
+	      if (!config || typeof config.url !== 'string') return;
+	      this._checkRequestCore(config);
+	      this._reqPromise = _Promise.resolve().then(function () {
+	        if (!_this4._checkLock()) {
+	          _this4._lock();
+	          return _this4._request(config).then(_this4._codeCheck).then(_this4._handleResData).catch(_this4._handleError);        }
+	      });
+	    }
+	  }, {
+	    key: '_checkRequestCore',
+	    value: function _checkRequestCore(config) {
+	      if (!config.useCore || typeof config.useCore !== 'string') return;
+	      this.useCore(config.useCore);
+	      delete config.useCore;
+	    }
+	  }, {
+	    key: '_request',
+	    value: function _request(config) {
+	      var baseConfig = this.baseCfg || {};
+	      if (baseConfig.baseURL && config.url.indexOf('http') < 0) {
+	        config.url = baseConfig.baseURL + config.url;
+	      }
+	      baseConfig.headers && (config.headers = _Object$assign({}, config.headers || {}, baseConfig.headers));
+	      this._init = _Object$assign({}, defOpts, config);
+	      return this.core(config.url, this._init).then(this._resStatusCheck).then(this._typeHandle);
+	    }
+	  }, {
+	    key: '_lock',
+	    value: function _lock() {
+	      this._stateLock();
+	    }
+	  }, {
+	    key: '_unlock',
+	    value: function _unlock() {
+	      this._stateLock(true);
+	    }
+	  }, {
+	    key: '_checkLock',
+	    value: function _checkLock() {
+	      return this._lockKey && this._getLockValue();
+	    }
+	  }, {
+	    key: '_stateLock',
+	    value: function _stateLock(unlock) {
+	      var _lockKey = this._lockKey,
+	          _context = this._context;
+
+	      this._setValue(_context, _lockKey, !unlock);
+	    }
+	  }, {
+	    key: '_getLockValue',
+	    value: function _getLockValue() {
+	      var _context = this._context,
+	          _lockKey = this._lockKey,
+	          _useSAkeys = this._useSAkeys;
+
+	      return this._getValue(_useSAkeys ? _context.SAKEYS : _context, _lockKey);
+	    }
+	  }, {
+	    key: '_getValue',
+	    value: function _getValue(obj, path) {
+	      var result = false;
+	      var hasOwnProperty = Object.prototype.hasOwnProperty;
+	      if (obj && (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object' && Array.isArray(path)) {
+	        var curObj = obj;
+	        for (var i = 0; i < path.length; i++) {
+	          var key = path[i];
+	          if ((typeof curObj === 'undefined' ? 'undefined' : _typeof(curObj)) !== 'object' || !hasOwnProperty.call(curObj, key)) {
+	            break;
+	          }
+	          curObj = curObj[key];
+	          i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false);
+	        }
+	      }
+	      return result;
+	    }
+	  }, {
+	    key: '_setValue',
+	    value: function _setValue(obj, path, value) {
+	      var curObj = obj.SAKEYS;
+	      for (var i = 0; i < path.length; i++) {
+	        var key = path[i];
+	        !hasOwnProperty$1.call(curObj, key) && (curObj[key] = i === path.length - 1 ? value : {});
+	        curObj = curObj[key];
+	      }
+	    }
+	  }, {
+	    key: '_resOkCheck',
+	    value: function _resOkCheck(resjson) {
+	      var result = false;
+	      var resCheck = this.userConfig.resCheck;
+
+	      var resCheckType = typeof resCheck === 'undefined' ? 'undefined' : _typeof(resCheck);
+	      if (resCheckType === 'function') {
+	        result = resCheck(resjson);
+	      } else if (resCheckType === 'string') {
+	        result = resjson[resCheck];
+	      }
+	      this._codeCheckResult = result;
+	      return result;
+	    }
+	  }, {
+	    key: 'useCore',
+
+	    // public apis
+	    value: function useCore(corekey) {
+	      if (corekey && typeof corekey === 'string' && this.baseCfgs[corekey]) {
+	        this._useCore = corekey;
+	        this.baseCfg = this.baseCfgs[this._useCore];
+	        !this.useFetch && (this.core = this.axiosCores[this._useCore]);
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'lock',
+	    value: function lock(key) {
+	      if (key && typeof key === 'string') {
+	        this._lockKey = key.split('.');
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: 'done',
+	    value: function done(successHandle) {
+	      typeof successHandle === 'function' && (this._successHandle = successHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'promise',
+	    value: function promise() {
+	      this._returnPromise = true;
+	      return this._reqPromise;
+	    }
+	  }, {
+	    key: 'faile',
+	    value: function faile(faileHandle) {
+	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'silence',
+	    value: function silence() {
+	      this._silence = true;
+	      return this;
+	    }
+	  }, {
+	    key: 'notCheckCode',
+	    value: function notCheckCode() {
+	      this._needCodeCheck = false;
+	      return this;
+	    }
+	  }]);
+
+	  return SmartApi;
+	}();
 
 	var hasOwnProperty$2 = Object.prototype.hasOwnProperty;
 
@@ -2503,565 +3117,6 @@
 
 	var regenerator = runtimeModule;
 
-	var _anInstance = function (it, Constructor, name, forbiddenField) {
-	  if (!(it instanceof Constructor) || (forbiddenField !== undefined && forbiddenField in it)) {
-	    throw TypeError(name + ': incorrect invocation!');
-	  } return it;
-	};
-
-	var _forOf = createCommonjsModule(function (module) {
-	var BREAK = {};
-	var RETURN = {};
-	var exports = module.exports = function (iterable, entries, fn, that, ITERATOR) {
-	  var iterFn = ITERATOR ? function () { return iterable; } : core_getIteratorMethod(iterable);
-	  var f = _ctx(fn, that, entries ? 2 : 1);
-	  var index = 0;
-	  var length, step, iterator, result;
-	  if (typeof iterFn != 'function') throw TypeError(iterable + ' is not iterable!');
-	  // fast case for arrays with default iterator
-	  if (_isArrayIter(iterFn)) for (length = _toLength(iterable.length); length > index; index++) {
-	    result = entries ? f(_anObject(step = iterable[index])[0], step[1]) : f(iterable[index]);
-	    if (result === BREAK || result === RETURN) return result;
-	  } else for (iterator = iterFn.call(iterable); !(step = iterator.next()).done;) {
-	    result = _iterCall(iterator, f, step.value, entries);
-	    if (result === BREAK || result === RETURN) return result;
-	  }
-	};
-	exports.BREAK = BREAK;
-	exports.RETURN = RETURN;
-	});
-
-	// 7.3.20 SpeciesConstructor(O, defaultConstructor)
-
-
-	var SPECIES = _wks('species');
-	var _speciesConstructor = function (O, D) {
-	  var C = _anObject(O).constructor;
-	  var S;
-	  return C === undefined || (S = _anObject(C)[SPECIES]) == undefined ? D : _aFunction(S);
-	};
-
-	// fast apply, http://jsperf.lnkit.com/fast-apply/5
-	var _invoke = function (fn, args, that) {
-	  var un = that === undefined;
-	  switch (args.length) {
-	    case 0: return un ? fn()
-	                      : fn.call(that);
-	    case 1: return un ? fn(args[0])
-	                      : fn.call(that, args[0]);
-	    case 2: return un ? fn(args[0], args[1])
-	                      : fn.call(that, args[0], args[1]);
-	    case 3: return un ? fn(args[0], args[1], args[2])
-	                      : fn.call(that, args[0], args[1], args[2]);
-	    case 4: return un ? fn(args[0], args[1], args[2], args[3])
-	                      : fn.call(that, args[0], args[1], args[2], args[3]);
-	  } return fn.apply(that, args);
-	};
-
-	var process = _global.process;
-	var setTask = _global.setImmediate;
-	var clearTask = _global.clearImmediate;
-	var MessageChannel = _global.MessageChannel;
-	var Dispatch = _global.Dispatch;
-	var counter = 0;
-	var queue = {};
-	var ONREADYSTATECHANGE = 'onreadystatechange';
-	var defer, channel, port;
-	var run = function () {
-	  var id = +this;
-	  // eslint-disable-next-line no-prototype-builtins
-	  if (queue.hasOwnProperty(id)) {
-	    var fn = queue[id];
-	    delete queue[id];
-	    fn();
-	  }
-	};
-	var listener = function (event) {
-	  run.call(event.data);
-	};
-	// Node.js 0.9+ & IE10+ has setImmediate, otherwise:
-	if (!setTask || !clearTask) {
-	  setTask = function setImmediate(fn) {
-	    var args = [];
-	    var i = 1;
-	    while (arguments.length > i) args.push(arguments[i++]);
-	    queue[++counter] = function () {
-	      // eslint-disable-next-line no-new-func
-	      _invoke(typeof fn == 'function' ? fn : Function(fn), args);
-	    };
-	    defer(counter);
-	    return counter;
-	  };
-	  clearTask = function clearImmediate(id) {
-	    delete queue[id];
-	  };
-	  // Node.js 0.8-
-	  if (_cof(process) == 'process') {
-	    defer = function (id) {
-	      process.nextTick(_ctx(run, id, 1));
-	    };
-	  // Sphere (JS game engine) Dispatch API
-	  } else if (Dispatch && Dispatch.now) {
-	    defer = function (id) {
-	      Dispatch.now(_ctx(run, id, 1));
-	    };
-	  // Browsers with MessageChannel, includes WebWorkers
-	  } else if (MessageChannel) {
-	    channel = new MessageChannel();
-	    port = channel.port2;
-	    channel.port1.onmessage = listener;
-	    defer = _ctx(port.postMessage, port, 1);
-	  // Browsers with postMessage, skip WebWorkers
-	  // IE8 has postMessage, but it's sync & typeof its postMessage is 'object'
-	  } else if (_global.addEventListener && typeof postMessage == 'function' && !_global.importScripts) {
-	    defer = function (id) {
-	      _global.postMessage(id + '', '*');
-	    };
-	    _global.addEventListener('message', listener, false);
-	  // IE8-
-	  } else if (ONREADYSTATECHANGE in _domCreate('script')) {
-	    defer = function (id) {
-	      _html.appendChild(_domCreate('script'))[ONREADYSTATECHANGE] = function () {
-	        _html.removeChild(this);
-	        run.call(id);
-	      };
-	    };
-	  // Rest old browsers
-	  } else {
-	    defer = function (id) {
-	      setTimeout(_ctx(run, id, 1), 0);
-	    };
-	  }
-	}
-	var _task = {
-	  set: setTask,
-	  clear: clearTask
-	};
-
-	var macrotask = _task.set;
-	var Observer = _global.MutationObserver || _global.WebKitMutationObserver;
-	var process$1 = _global.process;
-	var Promise$1 = _global.Promise;
-	var isNode = _cof(process$1) == 'process';
-
-	var _microtask = function () {
-	  var head, last, notify;
-
-	  var flush = function () {
-	    var parent, fn;
-	    if (isNode && (parent = process$1.domain)) parent.exit();
-	    while (head) {
-	      fn = head.fn;
-	      head = head.next;
-	      try {
-	        fn();
-	      } catch (e) {
-	        if (head) notify();
-	        else last = undefined;
-	        throw e;
-	      }
-	    } last = undefined;
-	    if (parent) parent.enter();
-	  };
-
-	  // Node.js
-	  if (isNode) {
-	    notify = function () {
-	      process$1.nextTick(flush);
-	    };
-	  // browsers with MutationObserver, except iOS Safari - https://github.com/zloirock/core-js/issues/339
-	  } else if (Observer && !(_global.navigator && _global.navigator.standalone)) {
-	    var toggle = true;
-	    var node = document.createTextNode('');
-	    new Observer(flush).observe(node, { characterData: true }); // eslint-disable-line no-new
-	    notify = function () {
-	      node.data = toggle = !toggle;
-	    };
-	  // environments with maybe non-completely correct, but existent Promise
-	  } else if (Promise$1 && Promise$1.resolve) {
-	    var promise = Promise$1.resolve();
-	    notify = function () {
-	      promise.then(flush);
-	    };
-	  // for other environments - macrotask based on:
-	  // - setImmediate
-	  // - MessageChannel
-	  // - window.postMessag
-	  // - onreadystatechange
-	  // - setTimeout
-	  } else {
-	    notify = function () {
-	      // strange IE + webpack dev server bug - use .call(global)
-	      macrotask.call(_global, flush);
-	    };
-	  }
-
-	  return function (fn) {
-	    var task = { fn: fn, next: undefined };
-	    if (last) last.next = task;
-	    if (!head) {
-	      head = task;
-	      notify();
-	    } last = task;
-	  };
-	};
-
-	// 25.4.1.5 NewPromiseCapability(C)
-
-
-	function PromiseCapability(C) {
-	  var resolve, reject;
-	  this.promise = new C(function ($$resolve, $$reject) {
-	    if (resolve !== undefined || reject !== undefined) throw TypeError('Bad Promise constructor');
-	    resolve = $$resolve;
-	    reject = $$reject;
-	  });
-	  this.resolve = _aFunction(resolve);
-	  this.reject = _aFunction(reject);
-	}
-
-	var f$7 = function (C) {
-	  return new PromiseCapability(C);
-	};
-
-	var _newPromiseCapability = {
-		f: f$7
-	};
-
-	var _perform = function (exec) {
-	  try {
-	    return { e: false, v: exec() };
-	  } catch (e) {
-	    return { e: true, v: e };
-	  }
-	};
-
-	var _promiseResolve = function (C, x) {
-	  _anObject(C);
-	  if (_isObject(x) && x.constructor === C) return x;
-	  var promiseCapability = _newPromiseCapability.f(C);
-	  var resolve = promiseCapability.resolve;
-	  resolve(x);
-	  return promiseCapability.promise;
-	};
-
-	var _redefineAll = function (target, src, safe) {
-	  for (var key in src) {
-	    if (safe && target[key]) target[key] = src[key];
-	    else _hide(target, key, src[key]);
-	  } return target;
-	};
-
-	var SPECIES$1 = _wks('species');
-
-	var _setSpecies = function (KEY) {
-	  var C = typeof _core[KEY] == 'function' ? _core[KEY] : _global[KEY];
-	  if (_descriptors && C && !C[SPECIES$1]) _objectDp.f(C, SPECIES$1, {
-	    configurable: true,
-	    get: function () { return this; }
-	  });
-	};
-
-	var task = _task.set;
-	var microtask = _microtask();
-
-
-
-	var PROMISE = 'Promise';
-	var TypeError$1 = _global.TypeError;
-	var process$2 = _global.process;
-	var $Promise = _global[PROMISE];
-	var isNode$1 = _classof(process$2) == 'process';
-	var empty = function () { /* empty */ };
-	var Internal, newGenericPromiseCapability, OwnPromiseCapability, Wrapper;
-	var newPromiseCapability = newGenericPromiseCapability = _newPromiseCapability.f;
-
-	var USE_NATIVE$1 = !!function () {
-	  try {
-	    // correct subclassing with @@species support
-	    var promise = $Promise.resolve(1);
-	    var FakePromise = (promise.constructor = {})[_wks('species')] = function (exec) {
-	      exec(empty, empty);
-	    };
-	    // unhandled rejections tracking support, NodeJS Promise without it fails @@species test
-	    return (isNode$1 || typeof PromiseRejectionEvent == 'function') && promise.then(empty) instanceof FakePromise;
-	  } catch (e) { /* empty */ }
-	}();
-
-	// helpers
-	var isThenable = function (it) {
-	  var then;
-	  return _isObject(it) && typeof (then = it.then) == 'function' ? then : false;
-	};
-	var notify = function (promise, isReject) {
-	  if (promise._n) return;
-	  promise._n = true;
-	  var chain = promise._c;
-	  microtask(function () {
-	    var value = promise._v;
-	    var ok = promise._s == 1;
-	    var i = 0;
-	    var run = function (reaction) {
-	      var handler = ok ? reaction.ok : reaction.fail;
-	      var resolve = reaction.resolve;
-	      var reject = reaction.reject;
-	      var domain = reaction.domain;
-	      var result, then, exited;
-	      try {
-	        if (handler) {
-	          if (!ok) {
-	            if (promise._h == 2) onHandleUnhandled(promise);
-	            promise._h = 1;
-	          }
-	          if (handler === true) result = value;
-	          else {
-	            if (domain) domain.enter();
-	            result = handler(value); // may throw
-	            if (domain) {
-	              domain.exit();
-	              exited = true;
-	            }
-	          }
-	          if (result === reaction.promise) {
-	            reject(TypeError$1('Promise-chain cycle'));
-	          } else if (then = isThenable(result)) {
-	            then.call(result, resolve, reject);
-	          } else resolve(result);
-	        } else reject(value);
-	      } catch (e) {
-	        if (domain && !exited) domain.exit();
-	        reject(e);
-	      }
-	    };
-	    while (chain.length > i) run(chain[i++]); // variable length - can't use forEach
-	    promise._c = [];
-	    promise._n = false;
-	    if (isReject && !promise._h) onUnhandled(promise);
-	  });
-	};
-	var onUnhandled = function (promise) {
-	  task.call(_global, function () {
-	    var value = promise._v;
-	    var unhandled = isUnhandled(promise);
-	    var result, handler, console;
-	    if (unhandled) {
-	      result = _perform(function () {
-	        if (isNode$1) {
-	          process$2.emit('unhandledRejection', value, promise);
-	        } else if (handler = _global.onunhandledrejection) {
-	          handler({ promise: promise, reason: value });
-	        } else if ((console = _global.console) && console.error) {
-	          console.error('Unhandled promise rejection', value);
-	        }
-	      });
-	      // Browsers should not trigger `rejectionHandled` event if it was handled here, NodeJS - should
-	      promise._h = isNode$1 || isUnhandled(promise) ? 2 : 1;
-	    } promise._a = undefined;
-	    if (unhandled && result.e) throw result.v;
-	  });
-	};
-	var isUnhandled = function (promise) {
-	  return promise._h !== 1 && (promise._a || promise._c).length === 0;
-	};
-	var onHandleUnhandled = function (promise) {
-	  task.call(_global, function () {
-	    var handler;
-	    if (isNode$1) {
-	      process$2.emit('rejectionHandled', promise);
-	    } else if (handler = _global.onrejectionhandled) {
-	      handler({ promise: promise, reason: promise._v });
-	    }
-	  });
-	};
-	var $reject = function (value) {
-	  var promise = this;
-	  if (promise._d) return;
-	  promise._d = true;
-	  promise = promise._w || promise; // unwrap
-	  promise._v = value;
-	  promise._s = 2;
-	  if (!promise._a) promise._a = promise._c.slice();
-	  notify(promise, true);
-	};
-	var $resolve = function (value) {
-	  var promise = this;
-	  var then;
-	  if (promise._d) return;
-	  promise._d = true;
-	  promise = promise._w || promise; // unwrap
-	  try {
-	    if (promise === value) throw TypeError$1("Promise can't be resolved itself");
-	    if (then = isThenable(value)) {
-	      microtask(function () {
-	        var wrapper = { _w: promise, _d: false }; // wrap
-	        try {
-	          then.call(value, _ctx($resolve, wrapper, 1), _ctx($reject, wrapper, 1));
-	        } catch (e) {
-	          $reject.call(wrapper, e);
-	        }
-	      });
-	    } else {
-	      promise._v = value;
-	      promise._s = 1;
-	      notify(promise, false);
-	    }
-	  } catch (e) {
-	    $reject.call({ _w: promise, _d: false }, e); // wrap
-	  }
-	};
-
-	// constructor polyfill
-	if (!USE_NATIVE$1) {
-	  // 25.4.3.1 Promise(executor)
-	  $Promise = function Promise(executor) {
-	    _anInstance(this, $Promise, PROMISE, '_h');
-	    _aFunction(executor);
-	    Internal.call(this);
-	    try {
-	      executor(_ctx($resolve, this, 1), _ctx($reject, this, 1));
-	    } catch (err) {
-	      $reject.call(this, err);
-	    }
-	  };
-	  // eslint-disable-next-line no-unused-vars
-	  Internal = function Promise(executor) {
-	    this._c = [];             // <- awaiting reactions
-	    this._a = undefined;      // <- checked in isUnhandled reactions
-	    this._s = 0;              // <- state
-	    this._d = false;          // <- done
-	    this._v = undefined;      // <- value
-	    this._h = 0;              // <- rejection state, 0 - default, 1 - handled, 2 - unhandled
-	    this._n = false;          // <- notify
-	  };
-	  Internal.prototype = _redefineAll($Promise.prototype, {
-	    // 25.4.5.3 Promise.prototype.then(onFulfilled, onRejected)
-	    then: function then(onFulfilled, onRejected) {
-	      var reaction = newPromiseCapability(_speciesConstructor(this, $Promise));
-	      reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
-	      reaction.fail = typeof onRejected == 'function' && onRejected;
-	      reaction.domain = isNode$1 ? process$2.domain : undefined;
-	      this._c.push(reaction);
-	      if (this._a) this._a.push(reaction);
-	      if (this._s) notify(this, false);
-	      return reaction.promise;
-	    },
-	    // 25.4.5.1 Promise.prototype.catch(onRejected)
-	    'catch': function (onRejected) {
-	      return this.then(undefined, onRejected);
-	    }
-	  });
-	  OwnPromiseCapability = function () {
-	    var promise = new Internal();
-	    this.promise = promise;
-	    this.resolve = _ctx($resolve, promise, 1);
-	    this.reject = _ctx($reject, promise, 1);
-	  };
-	  _newPromiseCapability.f = newPromiseCapability = function (C) {
-	    return C === $Promise || C === Wrapper
-	      ? new OwnPromiseCapability(C)
-	      : newGenericPromiseCapability(C);
-	  };
-	}
-
-	_export(_export.G + _export.W + _export.F * !USE_NATIVE$1, { Promise: $Promise });
-	_setToStringTag($Promise, PROMISE);
-	_setSpecies(PROMISE);
-	Wrapper = _core[PROMISE];
-
-	// statics
-	_export(_export.S + _export.F * !USE_NATIVE$1, PROMISE, {
-	  // 25.4.4.5 Promise.reject(r)
-	  reject: function reject(r) {
-	    var capability = newPromiseCapability(this);
-	    var $$reject = capability.reject;
-	    $$reject(r);
-	    return capability.promise;
-	  }
-	});
-	_export(_export.S + _export.F * (_library || !USE_NATIVE$1), PROMISE, {
-	  // 25.4.4.6 Promise.resolve(x)
-	  resolve: function resolve(x) {
-	    return _promiseResolve(_library && this === Wrapper ? $Promise : this, x);
-	  }
-	});
-	_export(_export.S + _export.F * !(USE_NATIVE$1 && _iterDetect(function (iter) {
-	  $Promise.all(iter)['catch'](empty);
-	})), PROMISE, {
-	  // 25.4.4.1 Promise.all(iterable)
-	  all: function all(iterable) {
-	    var C = this;
-	    var capability = newPromiseCapability(C);
-	    var resolve = capability.resolve;
-	    var reject = capability.reject;
-	    var result = _perform(function () {
-	      var values = [];
-	      var index = 0;
-	      var remaining = 1;
-	      _forOf(iterable, false, function (promise) {
-	        var $index = index++;
-	        var alreadyCalled = false;
-	        values.push(undefined);
-	        remaining++;
-	        C.resolve(promise).then(function (value) {
-	          if (alreadyCalled) return;
-	          alreadyCalled = true;
-	          values[$index] = value;
-	          --remaining || resolve(values);
-	        }, reject);
-	      });
-	      --remaining || resolve(values);
-	    });
-	    if (result.e) reject(result.v);
-	    return capability.promise;
-	  },
-	  // 25.4.4.4 Promise.race(iterable)
-	  race: function race(iterable) {
-	    var C = this;
-	    var capability = newPromiseCapability(C);
-	    var reject = capability.reject;
-	    var result = _perform(function () {
-	      _forOf(iterable, false, function (promise) {
-	        C.resolve(promise).then(capability.resolve, reject);
-	      });
-	    });
-	    if (result.e) reject(result.v);
-	    return capability.promise;
-	  }
-	});
-
-	_export(_export.P + _export.R, 'Promise', { 'finally': function (onFinally) {
-	  var C = _speciesConstructor(this, _core.Promise || _global.Promise);
-	  var isFunction = typeof onFinally == 'function';
-	  return this.then(
-	    isFunction ? function (x) {
-	      return _promiseResolve(C, onFinally()).then(function () { return x; });
-	    } : onFinally,
-	    isFunction ? function (e) {
-	      return _promiseResolve(C, onFinally()).then(function () { throw e; });
-	    } : onFinally
-	  );
-	} });
-
-	// https://github.com/tc39/proposal-promise-try
-
-
-
-
-	_export(_export.S, 'Promise', { 'try': function (callbackfn) {
-	  var promiseCapability = _newPromiseCapability.f(this);
-	  var result = _perform(callbackfn);
-	  (result.e ? promiseCapability.reject : promiseCapability.resolve)(result.v);
-	  return promiseCapability.promise;
-	} });
-
-	var promise = _core.Promise;
-
-	var promise$1 = createCommonjsModule(function (module) {
-	module.exports = { "default": promise, __esModule: true };
-	});
-
-	var _Promise = unwrapExports(promise$1);
-
 	var asyncToGenerator = createCommonjsModule(function (module, exports) {
 
 	exports.__esModule = true;
@@ -3307,25 +3362,26 @@
 	  function SmartFetch(options) {
 	    _classCallCheck(this, SmartFetch);
 
-	    this._fetchSupportCheck();
-	    options && (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' && this.resetOpts(options);
+	    var opts = options && (typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object' ? options : null;
+	    opts && this.resetOpts(opts);
+	    this._fetchSupportCheck(opts && opts.forceAxios);
 	  }
 
 	  _createClass(SmartFetch, [{
 	    key: '_fetchSupportCheck',
-	    value: function _fetchSupportCheck() {
+	    value: function _fetchSupportCheck(forceAxios) {
 	      this._fetchEnable = typeof fetch === 'function';
-	      this._ajaxCoreSwitch(!this._fetchEnable);
+	      !forceAxios && this._ajaxCoreSwitch(!this._fetchEnable);
 	    }
 	  }, {
 	    key: '_ajaxCoreSwitch',
 	    value: function _ajaxCoreSwitch(useAxios) {
-	      _Object$assign(SmartFetch.SAinfos, useAxios ? {
+	      _Object$assign(SmartFetch.SFinfos, useAxios ? {
 	        useFetch: false,
 	        core: axios
 	      } : {
 	        useFetch: true,
-	        core: fetch.bind(window)
+	        core: fetch.bind(window || global)
 	      });
 	    }
 
@@ -3350,7 +3406,7 @@
 	    key: 'vueFetch',
 	    value: function vueFetch() {
 	      var config = SmartFetch.fetchArgsSwitch.apply(SmartFetch, arguments);
-	      return new SmartApiVue(SmartFetch.SAinfos, this, config);
+	      return new SmartApiVue(SmartFetch.SFinfos, this, config);
 	    }
 	  }, {
 	    key: 'fetch',
@@ -3358,7 +3414,7 @@
 	      var module = SmartFetch.checkContext(this);
 	      var config = SmartFetch.fetchArgsSwitch.apply(SmartFetch, arguments);
 	      !moduleMap[module] && (window.$SAKEYS = {});
-	      return moduleMap[module] ? new moduleMap[module](SmartFetch.SAinfos, this, config) : SmartApi(SmartFetch.SAinfos, window);
+	      return moduleMap[module] ? new moduleMap[module](SmartFetch.SFinfos, this, config) : SmartApi(SmartFetch.SFinfos, window);
 	    }
 	    // 获取配置信息
 
@@ -3366,17 +3422,17 @@
 	    key: 'modifyBaseConfigs',
 	    value: function modifyBaseConfigs(handler) {
 	      if (typeof handler !== 'function') return;
-	      handler(SmartFetch.SAinfos.userConfig.baseConfig);
-	      SmartFetch.fetchCoreSetup(SmartFetch.SAinfos.userConfig.baseConfig);
+	      handler(SmartFetch.SFinfos.userConfig.baseConfig);
+	      SmartFetch.fetchCoreSetup(SmartFetch.SFinfos.userConfig.baseConfig);
 	    }
 	    // reset options
 
 	  }, {
 	    key: 'resetOpts',
 	    value: function resetOpts(options) {
-	      var _SmartFetch$SAinfos = SmartFetch.SAinfos,
-	          userConfig = _SmartFetch$SAinfos.userConfig,
-	          statusMsgs = _SmartFetch$SAinfos.statusMsgs;
+	      var _SmartFetch$SFinfos = SmartFetch.SFinfos,
+	          userConfig = _SmartFetch$SFinfos.userConfig,
+	          statusMsgs = _SmartFetch$SFinfos.statusMsgs;
 
 	      _Object$assign(userConfig, options);
 	      options.statusWarn && _typeof(options.statusWarn) === 'object' && _Object$assign(statusMsgs, options.statusWarn);
@@ -3411,15 +3467,17 @@
 	  }, {
 	    key: 'fetchCoreSetup',
 	    value: function fetchCoreSetup(baseConfigs) {
-	      var SAinfos = this.SAinfos,
-	          _SAinfos = this.SAinfos,
-	          axiosCores = _SAinfos.axiosCores,
-	          baseCfgs = _SAinfos.baseCfgs,
-	          useFetch = _SAinfos.useFetch;
+	      var SFinfos = this.SFinfos,
+	          _SFinfos = this.SFinfos,
+	          axiosCores = _SFinfos.axiosCores,
+	          baseCfgs = _SFinfos.baseCfgs,
+	          useFetch = _SFinfos.useFetch,
+	          userConfig = _SFinfos.userConfig;
 
 	      var baseConfig = Array.isArray(baseConfigs) ? baseConfigs : [_extends$1({ key: 'default' }, baseConfigs)];
+	      var validateStatus = userConfig && typeof userConfig.validateStatus === 'function' ? userConfig.validateStatus : null;
 	      baseConfig.forEach(function (item) {
-	        var newItem = _Object$assign({}, item);
+	        var newItem = _Object$assign(validateStatus ? { validateStatus: validateStatus } : {}, item);
 	        var key = newItem.key;
 
 	        if (key) {
@@ -3428,25 +3486,22 @@
 	          !useFetch && (axiosCores[key] = axios.create(item));
 	        }
 	      });
-	      SAinfos.baseCfg = baseCfgs['default'];
-	      !useFetch && (SAinfos.core = axiosCores['default']);
+	      SFinfos.baseCfg = baseCfgs['default'];
+	      !useFetch && (SFinfos.core = axiosCores['default']);
 	    }
 	  }]);
 
 	  return SmartFetch;
 	}();
 
-	SmartFetch.SAinfos = {
+	SmartFetch.SFinfos = {
 	  useFetch: true,
 	  axiosCores: _Object$create(null),
 	  baseCfgs: _Object$create(null),
 	  userConfig: _Object$create(null),
-	  statusMsgs: {
-	    '404': '请求地址不存在',
-	    '500': '服务器维护中，请稍后再试'
-	  }
+	  statusMsgs: {}
 	};
-	var request = SARequest(SmartFetch.SAinfos);
+	var request = SARequest(SmartFetch.SFinfos);
 
 	var index = new SmartFetch();
 
