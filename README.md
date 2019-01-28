@@ -8,9 +8,9 @@ use npm
 $ npm install smartfetch
 ```
 
-# Example
+# 使用示例
 
-use in vuejs
+在vuejs中使用
 
 install the plugin in main.js
 
@@ -102,7 +102,7 @@ use in the component
 
 # API document
 
-## options
+## options 基础配置对象
 
 **baseConfig**: 基础配置对象. 可用来设置统一的 *baseURL* 、 *headers* 等. 接收对象或对象数组
 
@@ -147,12 +147,16 @@ baseData: () => {
 }
 ```
 **errorHandle**: 通用错误提示函数，用来显示/处理接口调用过程中的错误信息
-*参数：* msg：插件处理过后的错误提示,可直接使用插件显示
-        error： 错误对象，如果需要自己处理特定错误可使用，
-                error可能是TypeError（请求发送前失败，axios核心下是Error），SyntaxError(语法错误，比如接口返回json字符串格式错误)，RangeError(status值不在有效返回，有效范围通过配置项中的validateStatus参数设置)，CodeError(业务逻辑code检测失败)，CallbackSyntaxError(done或faile函数的回调函数中存在语法错误)等类型
-        response: 请求响应对象，可用于获取status具体值
+
+*参数：*
+
+* @message(string)：插件处理过后的错误提示,可直接使用插件显示
+* @error(Error)： 错误对象，如果需要自己处理特定错误可使用
+  > error可能是TypeError（请求发送前失败，axios核心下是Error），SyntaxError(语法错误，比如接口返回json字符串格式错误)，RangeError(status值不在有效返回，有效范围通过配置项中的validateStatus参数设置)，CodeError(业务逻辑code检测失败)，CallbackSyntaxError(done或faile函数的回调函数中存在语法错误)等类型
+* @response(HTTP response): 请求响应对象，可用于获取status具体值
 
 *示例：*
+
 ```
 errorHandle: (msg, error) => {
   alert(msg)
@@ -205,18 +209,21 @@ codeError: (resJson) => {
 
 插件导出的工具方法，用于简化请求参数和让接口定义更规范化
 
-*参数：*   @url(string)：接口路径，可使用完整路径，也可使用相对于baseUrl的相对路径
-          @data: 请求参数，仅支持plain object. formData
-          @method: 请求方式，支持所有请求方式，例如GET、POST等，全大写，默认`GET`
-          @returnLink：是否返回完整链接，仅对GET,HEAD方式有效，函数调用后不发起请求，会返回拼接好的携带参数的url地址。常用作下载或导出链接
-          @enctype：请求编码方式（content-type设定值），json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，默认为`json`
+*参数：*
+
+* @url(string)：接口路径，可使用完整路径，也可使用相对于baseUrl的相对路径
+* @data(object/FormData): 请求参数，仅支持plain object. formData  
+* @method(string): 请求方式，支持所有请求方式，例如GET、POST等，全大写，默认`GET`  
+* @returnLink(boolean)：是否返回完整链接，仅对GET,HEAD方式有效，函数调用后不发起请求，会返回拼接好的携带参数的url地址。常用作下载或导出链接  
+* @enctype(string)：请求编码方式（content-type设定值），json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，默认为`json`  
 
 ## request(config)
 用于设置request函数配置的高阶函数，会返回request函数
 
-*高阶函数参数：* @config(object) 用于配置request的对象
-                 config.useCore: 用于发送请求的配置项的key
+*高阶函数参数：*
 
+* @config(object) 用于配置request的对象
+  * useCore: 用于发送请求的配置项的key
 
 如何使用
 ```
@@ -308,14 +315,27 @@ this.$fetch
 以下为SmartFetch类示例方法列表
 
 **resetOpts**
+
 说明: 用来重置示例配置
 参数： @options(object)，配置对象，具体说明见上
 
 
 **fetch**
-说明: 请求发起函数
-参数： @config(object) 请求对象。 
-      或者 第一个参数非对象时会内部调用requset来得到config, 具体见request普通参数列表
+
+说明: 请求发起函数  
+参数
+
+*方式一*
+
+* @config(object) 请求对象
+
+*方式二*
+
+* 第一个参数非对象时会内部调用requset来得到config, 具体见request普通参数列表
+
+*方式三*
+
+* @requestFn(function)， 第一个参数为使用request封装的函数时，后续参数会按顺序传递给requestFn
 
 如何使用
 ```
@@ -344,7 +364,8 @@ this.$fetch(request1, {a: 1, b: 2})
 
 ```
 **modifyBaseConfigs**
-说明: 你可以使用此函数来修改基础配置项
+
+说明: 你可以使用此函数来修改基础配置项  
 参数： 基础配置项对象/数组
 
 如何使用
@@ -361,10 +382,12 @@ smartfetch.modifyBaseConfigs(baseConfigs => {
 
 ```
 
-#### fetch函数返回示例的方法列表
+## fetch函数返回示例的方法列表
+
 说明：调用fetch函数后会返回一个请求代理对象，对象会提供下列方法，方法调用后会返回对象本身（除promise外），可使用链式调用。在所有链式同步代码执行完后开始发起请求，链式调用无先后顺序。
 
 **lock**
+
 说明： 重要常用函数。用来锁住当前实例上下文中指定key的变量，在发起请求前设置成true，请求完成后设置为false。可用来处理loading状态和防多点需求
 params: @key(string): 实例上指定属性名，支持`.`写法写法，如a.b
 
@@ -410,11 +433,13 @@ params: @key(string): baseConfig key
 说明: 不进行业务逻辑检测，适用于调用第三方接口
 
 **done**
+
 说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数
 
 params: @callback(function) 回调函数，参数为返回数据中指定key对应内容 @data(any)
         
 **fail**
+
 说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数
 
 params: @callback(function) 回调函数，参数为错误对象error
@@ -431,5 +456,5 @@ params: @callback(function) 回调函数，无参数
 
 说明: 调用函数后会将请求的promise对象返回。
 
-警告： 调用此方法后无法继续链式调用
+> 警告： 调用此方法后无法继续链式调用
 
