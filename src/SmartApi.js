@@ -33,6 +33,7 @@ export default class SmartApi {
   _useCore = 'default';
   _faileHandle = null;
   _successHandle = null;
+  _finallyHandle = null;
   _returnPromise = false;
   _SFinfos = {};
   constructor (ajaxCore, context) {
@@ -50,7 +51,7 @@ export default class SmartApi {
     this._reqPromise = Promise.resolve().then(() => {
       if (!this._checkLock()) {
         this._lock();
-        return this._request(config).then(this._codeCheck).then(this._handleResData).catch(this._handleError);;
+        return this._request(config).then(this._codeCheck).then(this._handleResData).catch(this._handleError).finally(this._handleFinally);
       }
     })
   }
@@ -145,7 +146,6 @@ export default class SmartApi {
     throw new RangeError(response.status);
   }
   _handleError = (error) => {
-    this._unlock();
     try {
       this._faileHandle && this._faileHandle(error);
     } catch (e) {}
@@ -173,6 +173,12 @@ export default class SmartApi {
       (typeof alert === 'function') ? alert(msg) : console.log(error);
     }
   }
+  _handleFinally = () => {
+    this._unlock();
+    try {
+      this._finallyHandle && this._finallyHandle()
+    } catch (e) {}
+  }
   _resOkCheck (resjson) {
     let result = false;
     const { resCheck } = this.userConfig;
@@ -186,7 +192,6 @@ export default class SmartApi {
     return result;
   }
   _codeCheck = (resjson) => {
-    this._unlock();
     if (this._needCodeCheck && !this._resOkCheck(resjson)) {
       throw new CodeError('code checked failed')
     } else {
@@ -216,8 +221,15 @@ export default class SmartApi {
     this._returnPromise = true;
     return this._reqPromise;
   }
+  fail (faileHandle) {
+    return this.faile(faileHandle)
+  }
   faile (faileHandle) {
     typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
+    return this;
+  }
+  finally (finallyHandle) {
+    typeof finallyHandle === 'function' && (this._finallyHandle = finallyHandle);
     return this;
   }
   silence () {

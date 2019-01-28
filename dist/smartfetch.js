@@ -2052,6 +2052,7 @@
 	    this._useCore = 'default';
 	    this._faileHandle = null;
 	    this._successHandle = null;
+	    this._finallyHandle = null;
 	    this._returnPromise = false;
 	    this._SFinfos = {};
 
@@ -2091,7 +2092,6 @@
 	    };
 
 	    this._handleError = function (error) {
-	      _this3._unlock();
 	      try {
 	        _this3._faileHandle && _this3._faileHandle(error);
 	      } catch (e) {}
@@ -2123,8 +2123,14 @@
 	      }
 	    };
 
-	    this._codeCheck = function (resjson) {
+	    this._handleFinally = function () {
 	      _this3._unlock();
+	      try {
+	        _this3._finallyHandle && _this3._finallyHandle();
+	      } catch (e) {}
+	    };
+
+	    this._codeCheck = function (resjson) {
 	      if (_this3._needCodeCheck && !_this3._resOkCheck(resjson)) {
 	        throw new CodeError('code checked failed');
 	      } else {
@@ -2153,7 +2159,8 @@
 	      this._reqPromise = _Promise.resolve().then(function () {
 	        if (!_this4._checkLock()) {
 	          _this4._lock();
-	          return _this4._request(config).then(_this4._codeCheck).then(_this4._handleResData).catch(_this4._handleError);        }
+	          return _this4._request(config).then(_this4._codeCheck).then(_this4._handleResData).catch(_this4._handleError).finally(_this4._handleFinally);
+	        }
 	      });
 	    }
 	  }, {
@@ -2282,9 +2289,20 @@
 	      return this._reqPromise;
 	    }
 	  }, {
+	    key: 'fail',
+	    value: function fail(faileHandle) {
+	      return this.faile(faileHandle);
+	    }
+	  }, {
 	    key: 'faile',
 	    value: function faile(faileHandle) {
 	      typeof faileHandle === 'function' && (this._faileHandle = faileHandle);
+	      return this;
+	    }
+	  }, {
+	    key: 'finally',
+	    value: function _finally(finallyHandle) {
+	      typeof finallyHandle === 'function' && (this._finallyHandle = finallyHandle);
 	      return this;
 	    }
 	  }, {
