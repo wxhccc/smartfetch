@@ -16,11 +16,15 @@ const { hasOwnProperty } = Object.prototype
 class CodeError extends Error {
   constructor (...args) {
     super(...args)
+    this.name = 'CodeError'
+    Error.captureStackTrace(this, this.constructor)
   }
 }
 class CallbackSyntaxError extends Error {
   constructor (...args) {
     super(...args)
+    this.name = 'CallbackSyntaxError'
+    Error.captureStackTrace(this, this.constructor)
   }
 }
 

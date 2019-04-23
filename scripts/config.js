@@ -15,7 +15,7 @@ function genConfig (env) {
     output: Object.assign({}, {
       file: 'dist/smartfetch.js',
       name: 'smartfetch',
-      format: 'umd'
+      format: 'es'
     }, outputs[env]),
     plugins: [ 
       node({

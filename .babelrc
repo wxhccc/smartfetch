@@ -11,5 +11,11 @@
     }],
     "stage-2"
   ],
-  "plugins": ["transform-runtime"]
+  "plugins": [
+		"transform-runtime",
+		["babel-plugin-transform-builtin-extend", {
+			"globals": ["Error"],
+			"approximate": true
+		}]
+	]
 }
