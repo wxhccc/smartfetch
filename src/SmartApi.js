@@ -40,10 +40,12 @@ export default class SmartApi {
   _finallyHandle = null;
   _returnPromise = false;
   _SFinfos = {};
-  constructor (ajaxCore, context) {
+  constructor (ajaxCore, context, config, stateKey = '$SAKEYS') {
     Object.assign(this, ajaxCore);
     this._ajaxCoreMixin(ajaxCore)
     this._context = context;
+    this._contextState = stateKey ? this._context[stateKey] : this._context;
+    this._createRequest(config);
     return this;
   }
   _ajaxCoreMixin (ajaxCore) {
@@ -101,16 +103,15 @@ export default class SmartApi {
     return this._lockKey && this._getLockValue();
   }
   _stateLock (unlock) {
-    const { _lockKey, _context } = this;
-    this._setValue(_context, _lockKey, !unlock)
+    const { _lockKey, _contextState } = this;
+    this._setValue(_contextState, _lockKey, !unlock)
   }
   _getLockValue () {
-    const {_context, _lockKey, _useSAkeys} = this;
-    return this._getValue(_useSAkeys ? _context.SAKEYS : _context, _lockKey);
+    const {_contextState, _lockKey} = this;
+    return this._getValue(_contextState, _lockKey);
   }
   _getValue (obj, path) {
     let result = false;
-    const hasOwnProperty = Object.prototype.hasOwnProperty
     if (obj && typeof obj === 'object' && Array.isArray(path)) {
       let curObj = obj;
       for (let i = 0; i < path.length; i++) {
@@ -125,11 +126,15 @@ export default class SmartApi {
     return result
   }
   _setValue (obj, path, value) {
-    let curObj = obj.SAKEYS
+    let curObj = obj
     for(let i = 0; i < path.length; i++) {
       const key = path[i]
-      !hasOwnProperty.call(curObj, key) && (curObj[key] = i === path.length - 1 ? value : {})
-      curObj = curObj[key]
+      if (i === path.length - 1) {
+        curObj[key] = value
+      } else {
+        typeof curObj === 'object' && !hasOwnProperty.call(curObj, key) && (curObj[key] = {})
+        curObj = curObj[key]
+      }
     }
   }
 
@@ -214,6 +219,7 @@ export default class SmartApi {
   lock (key) {
     if (key && typeof key === 'string') {
       this._lockKey = key.split('.');
+      this._checkOrSetVueSAkeys && this._checkOrSetVueSAkeys()
     }
     return this;
   }

@@ -1,18 +1,24 @@
 import SmartApi from './SmartApi'
+
 const { hasOwnProperty } = Object.prototype
 
 export default class SmartApiVue extends SmartApi {
   _useSAkeys = false;
   constructor (ajaxCore, context, config) {
-    super(ajaxCore, context);
-    this._createRequest(config);
+    super(ajaxCore, context, config, null);
     return this;
   }
+  _checkOrSetVueSAkeys () {
+    const { context, _lockKey } = this;
+    this._useSAkeys = !hasOwnProperty.call(context, _lockKey[0]);
+    if (this._useSAkeys) {
+      !hasOwnProperty.call(context, 'SAKEYS') && context.$set('SAKEYS', {})
+      this._contextState = context['SAKEYS']
+    }
+  }
   _setValue (obj, path, value) {
-    const { SAKEYS } = obj;
-    const { $set } = this._context
-    this._useSAkeys = !hasOwnProperty.call(obj, path[0])
-    let curObj = this._useSAkeys ? SAKEYS : obj;
+    const { $set } = this._context;
+    let curObj = obj;
     for(let i = 0; i < path.length; i++) {
       const key = path[i];
       const hasKey = hasOwnProperty.call(curObj, key)

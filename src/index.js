@@ -5,9 +5,13 @@ import SmartApiReact from './SmartApiReact';
 import SARequest from './Request';
 
 const moduleMap = {
+  'default': SmartApi,
   'vue': SmartApiVue,
   'react': SmartApiReact
 };
+
+const { hasOwnProperty } = Object.prototype
+
 // an export function for easier use
 
 export class SmartFetch {
@@ -24,10 +28,13 @@ export class SmartFetch {
     statusMsgs: {}
   };
   static checkContext (context) {
-    if (context.hasOwnProperty('_isVue')) {
+    if (!context) {
+      return;
+    }
+    else if (hasOwnProperty.call(context, '_isVue')) {
       return 'vue';
     }
-    else if (context.hasOwnProperty('state') || context.hasOwnProperty('setState')) {
+    else if ('setState' in context) {
       return 'react';
     }
   }
@@ -88,8 +95,8 @@ export class SmartFetch {
   fetch (...args) {
     const module = SmartFetch.checkContext(this);
     const config = SmartFetch.fetchArgsSwitch(...args);
-    !moduleMap[module] && (window.$SAKEYS = {})
-    return moduleMap[module] ? new moduleMap[module](SmartFetch.SFinfos, this, config) : SmartApi(SmartFetch.SFinfos, window);
+    !moduleMap[module] && !hasOwnProperty.call(window, '$SAKEYS') && (window.$SAKEYS = {})
+    return new moduleMap[moduleMap[module] ? module : 'default'](SmartFetch.SFinfos, this || window, config);
   }
   // 获取配置信息
   modifyBaseConfigs (handler) {
