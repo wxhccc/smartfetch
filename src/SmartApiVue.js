@@ -4,16 +4,16 @@ const { hasOwnProperty } = Object.prototype
 
 export default class SmartApiVue extends SmartApi {
   _useSAkeys = false;
-  constructor (ajaxCore, context, config) {
-    super(ajaxCore, context, config, null);
+  constructor (ajaxCore, context, config, isInstance) {
+    super(ajaxCore, context, config, isInstance);
     return this;
   }
   _checkOrSetVueSAkeys () {
-    const { context, _lockKey } = this;
-    this._useSAkeys = !hasOwnProperty.call(context, _lockKey[0]);
-    if (this._useSAkeys) {
-      !hasOwnProperty.call(context, 'SAKEYS') && context.$set('SAKEYS', {})
-      this._contextState = context['SAKEYS']
+    const { _context, _lockKey, _isInstance } = this;
+    this._useSAkeys = !hasOwnProperty.call(_context, _lockKey[0]);
+    if (_isInstance && this._useSAkeys) {
+      !hasOwnProperty.call(_context, 'SF_KEYS') && _context.$set('SF_KEYS', {})
+      this._contextState = _context['SF_KEYS']
     }
   }
   _setValue (obj, path, value) {

@@ -2,7 +2,7 @@ import axios from 'axios';
 import SmartApi from './SmartApi';
 import SmartApiVue from './SmartApiVue';
 import SmartApiReact from './SmartApiReact';
-import SARequest from './Request';
+import SFRequest from './Request';
 
 const moduleMap = {
   'default': SmartApi,
@@ -28,15 +28,13 @@ export class SmartFetch {
     statusMsgs: {}
   };
   static checkContext (context) {
-    if (!context) {
-      return;
-    }
-    else if (hasOwnProperty.call(context, '_isVue')) {
+    if (hasOwnProperty.call(context, '_isVue')) {
       return 'vue';
     }
     else if ('setState' in context) {
       return 'react';
     }
+    return ''
   }
   static fetchArgsSwitch (...args) {
     let config = args[0];
@@ -81,24 +79,25 @@ export class SmartFetch {
 
   // for Vue.use method of vuejs 
   install (Vue, options) {
-    options && (typeof options === 'object') && this.resetOpts(options);
-    Vue.prototype.$fetch = this.vueFetch;
+    options && (options instanceof Object) && this.resetOpts(options);
+    Vue.prototype.$fetch = this.fetch;
     Vue.mixin({
-      data: () => ({ SAKEYS: {} })
+      data: () => ({ SF_KEYS: {} })
     });
   }
   // a special method of fetch for vue
-  vueFetch (...args) {
-    const config = SmartFetch.fetchArgsSwitch(...args);
-    return new SmartApiVue(SmartFetch.SFinfos, this, config);
+  static fetchCore (Cls, ...args) {
+    return new Cls(...args)
   }
   fetch (...args) {
-    const module = SmartFetch.checkContext(this);
+    const instanceType = SmartFetch.checkContext(this);
     const config = SmartFetch.fetchArgsSwitch(...args);
-    !moduleMap[module] && !hasOwnProperty.call(window, '$SAKEYS') && (window.$SAKEYS = {})
-    return new moduleMap[moduleMap[module] ? module : 'default'](SmartFetch.SFinfos, this || window, config);
+    const context = instanceType ? this : (self || window || global)
+    !moduleMap[instanceType] && !hasOwnProperty.call(context, '$_SF_KEYS') && (context.$_SF_KEYS = {});
+    const apiClass = moduleMap[instanceType] || moduleMap['default'];
+    return new apiClass(SmartFetch.SFinfos, context, config, instanceType);
   }
-  // 获取配置信息
+  // modify base configs
   modifyBaseConfigs (handler) {
     if (typeof handler !== 'function') return
     handler(SmartFetch.SFinfos.userConfig.baseConfig)
@@ -116,7 +115,7 @@ export class SmartFetch {
 
 }
 
-const request = SARequest(SmartFetch.SFinfos);
+const request = SFRequest(SmartFetch.SFinfos);
 
 export { request }
  

@@ -1,21 +1,13 @@
 {
   "presets": [
-    ["env", {
-    	"modules": false,
-    	"targets": {
-    		"browsers": [
-    			"last 2 versions"
-    		],
-    		"node": "current"
-    	}
-    }],
-    "stage-2"
+    ["@babel/env", {
+      "targets": {
+        "browsers": "last 2 versions, ie >= 11",
+      },
+    	"modules": false
+    }]
   ],
   "plugins": [
-		"transform-runtime",
-		["babel-plugin-transform-builtin-extend", {
-			"globals": ["Error"],
-			"approximate": true
-		}]
+		["@babel/plugin-proposal-class-properties", { "loose": true }]
 	]
 }

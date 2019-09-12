@@ -13,19 +13,11 @@ const responseMixin = {
 
 const { hasOwnProperty } = Object.prototype
 
-class CodeError extends Error {
-  constructor (...args) {
-    super(...args)
-    this.name = 'CodeError'
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
-class CallbackSyntaxError extends Error {
-  constructor (...args) {
-    super(...args)
-    this.name = 'CallbackSyntaxError'
-    Error.captureStackTrace(this, this.constructor)
-  }
+function createError(name, error, message) {
+  error = error instanceof Error ? error : new Error()
+  error.name = name
+  message && (error.message = message)
+  return error
 }
 
 export default class SmartApi {
@@ -40,10 +32,13 @@ export default class SmartApi {
   _finallyHandle = null;
   _returnPromise = false;
   _SFinfos = {};
-  constructor (ajaxCore, context, config, stateKey = '$SAKEYS') {
+  constructor (ajaxCore, context, config, instanceType) {
     Object.assign(this, ajaxCore);
     this._ajaxCoreMixin(ajaxCore)
     this._context = context;
+    this._instanceType = instanceType;
+    this._isInstance = Boolean(instanceType)
+    const stateKey = instanceType ? (instanceType === 'react' ? 'state' : '') : '$_SF_KEYS';
     this._contextState = stateKey ? this._context[stateKey] : this._context;
     this._createRequest(config);
     return this;
@@ -52,7 +47,9 @@ export default class SmartApi {
     !ajaxCore.useFetch && AxiosCore.call(this);
   }
   _createRequest (config) {
-    if(!config || typeof config.url !== 'string') return;
+    if(!config || typeof config.url !== 'string') {
+      return console.error('smartfetch: no valid url');
+    }
     this._checkRequestCore(config)
     this._reqPromise = Promise.resolve().then(() => {
       if (!this._checkLock()) {
@@ -90,7 +87,7 @@ export default class SmartApi {
       }
       return data
     } catch (e) {
-      throw new CallbackSyntaxError(e)
+      throw createError('CallbackSyntaxError', e)
     }
   }
   _lock () {
@@ -107,7 +104,7 @@ export default class SmartApi {
     this._setValue(_contextState, _lockKey, !unlock)
   }
   _getLockValue () {
-    const {_contextState, _lockKey} = this;
+    const { _contextState, _lockKey } = this;
     return this._getValue(_contextState, _lockKey);
   }
   _getValue (obj, path) {
@@ -172,14 +169,14 @@ export default class SmartApi {
       const { status } = this.__response
       msg = statusMsgs[status] || '请求失败';
     }
-    if (error instanceof CodeError && typeof codeError === 'function') {
+    if (error.name === 'CodeError' && typeof codeError === 'function') {
       codeError(this.__response.data)
-    } else if (error instanceof CallbackSyntaxError) {
+    } else if (error.name === 'CallbackSyntaxError') {
       // 回调函数内的语法错误默认静默
     } else if (typeof errorHandle === 'function') {
       errorHandle(msg, error, this.__response);
     } else {
-      (typeof alert === 'function') ? alert(msg) : console.log(error);
+      (typeof alert === 'function') ? alert(msg) : console.error(error);
     }
   }
   _handleFinally = () => {
@@ -202,7 +199,7 @@ export default class SmartApi {
   }
   _codeCheck = (resjson) => {
     if (this._needCodeCheck && !this._resOkCheck(resjson)) {
-      throw new CodeError('code checked failed')
+      throw createError('CodeError', null, 'code checked failed')
     } else {
       return resjson;
     }

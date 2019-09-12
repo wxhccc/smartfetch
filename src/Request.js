@@ -1,5 +1,4 @@
-import qs from 'qs';
-import axios from 'axios'
+import { stringify } from 'qs';
 
 const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
 const enctypeType = {
@@ -29,16 +28,16 @@ export default function (config = {}) {
     !data && (data = {});
     if (canUseLink) {
       trueBaseData && Object.assign(data, trueBaseData);
-      useFetch ? (result.url += qs.stringify(data, { addQueryPrefix: true })) : (result.params = data);
+      useFetch ? (result.url += stringify(data, { addQueryPrefix: true })) : (result.params = data);
     }
     else {
       let isFormData = data instanceof FormData;
       trueBaseData && (isFormData ? appendDataToForm(data, trueBaseData) : Object.assign(data, trueBaseData));
       if (useFetch) {
         result.headers = Object.assign(result.headers || {}, {'Content-Type': enctypeType[enctype] ? enctypeType[enctype] : enctypeType['json'] })
-        result.body = isFormData ? data : (enctype === 'json' ? JSON.stringify(data) : qs.stringify(data));
+        result.body = isFormData ? data : (enctype === 'json' ? JSON.stringify(data) : stringify(data));
       } else {
-        result.data = (isFormData || enctype === 'json') ? data : qs.stringify(data);
+        result.data = (isFormData || enctype === 'json') ? data : stringify(data);
       }
     }
     return result;
@@ -60,7 +59,7 @@ export default function (config = {}) {
 };
 function returnRequestLink (baseCfg, url, data, baseData) {
   baseData && Object.assign(data, baseData);
-  const paramsStr = qs.stringify(data, { addQueryPrefix: true })
+  const paramsStr = stringify(data, { addQueryPrefix: true })
   if (url.indexOf('http') >= 0) {
     return url + paramsStr;
   }

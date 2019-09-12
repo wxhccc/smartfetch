@@ -1,8 +1,8 @@
 import SmartApi from './SmartApi';
 
 export default class SmartApiReact extends SmartApi {
-  constructor (ajaxCore, context, config) {
-    super(ajaxCore, context, config, 'state');
+  constructor (ajaxCore, context, config, isInstance) {
+    super(ajaxCore, context, config, isInstance, 'state');
     return this;
   }
   _setValue (obj, path, value) {

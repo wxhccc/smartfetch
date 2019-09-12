@@ -1,12 +1,13 @@
 {
-  "name": "smartfetch",
-  "version": "0.7.0",
+  "name": "@wxhccc/smartfetch",
+  "version": "1.0.0",
   "description": "an easy use api plugin for vue and react",
-  "main": "dist/smartfetch.common.js",
+  "main": "lib/smartfetch.common.js",
+  "module": "lib/smartfetch.esm.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "rollup -w -c scripts/config.js --environment NODE_ENV:development",
-    "build": "rollup -c scripts/config.js --environment NODE_ENV:production && rollup -c scripts/config.js -f umd -o dist/smartfetch.min.js --environment NODE_ENV:production",
+    "dev": "rollup -w -c --environment NODE_ENV:development",
+    "build": "rollup -c --environment NODE_ENV:production",
     "start": "npm run dev"
   },
   "repository": {
@@ -16,30 +17,33 @@
   "keywords": [
     "api",
     "request",
-    "mvvm"
+    "mvvm",
+    "fetch"
   ],
-  "author": "gavinhe",
+  "author": "wxhccc",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/wxhccc/smartfetch/issues"
   },
   "homepage": "https://github.com/wxhccc/smartfetch#readme",
   "devDependencies": {
-    "babel-core": "^6.26.3",
-    "babel-plugin-external-helpers": "^6.22.0",
-    "babel-plugin-transform-builtin-extend": "^1.1.2",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-preset-stage-2": "^6.24.1",
-    "rollup": "^0.58.2",
-    "rollup-plugin-babel": "^3.0.7",
-    "rollup-plugin-commonjs": "^9.2.0",
-    "rollup-plugin-json": "^2.3.0",
-    "rollup-plugin-node-resolve": "^3.4.0",
-    "rollup-plugin-uglify": "^3.0.0"
-  },
-  "dependencies": {
+    "@babel/core": "^7.6.0",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/preset-env": "^7.6.0",
     "axios": "^0.19.0",
-    "qs": "^6.6.0"
+    "babel-plugin-transform-builtin-extend": "^1.1.2",
+    "qs": "^6.8.0",
+    "rollup": "^1.21.2",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^2.3.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-uglify": "^6.0.3"
+  },
+  "dependencies": {},
+  "files": ["lib", "src"],
+  "peerDependencies": {
+    "qs": ">5.0.0",
+    "axios": ">0.1.0"
   }
 }

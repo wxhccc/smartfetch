@@ -1,6 +1,7 @@
 *.log
 npm-debug.log*
 node_modules/
+lib
 .npm
 .eslintcache
 *.map
