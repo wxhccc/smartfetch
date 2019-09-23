@@ -5,8 +5,12 @@ an easy use api plugin for vue and react.
 
 use npm 
 ```
-$ npm install smartfetch
+$ npm install @wxhccc/smartfetch -S
 ```
+# documents
+
+* [english](README.en.md)
+* [中文文档](README.md)
 
 # Example
 
@@ -17,7 +21,7 @@ install the plugin in main.js
 ```
 import Vue from 'vue'
 ...
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 
 /** those code can be import from config file **/
 
@@ -213,7 +217,7 @@ this.$fetch(args)
 how to use
 **use class name**
 ```
-import {SmartFetch} from 'smartfetch'
+import {SmartFetch} from '@wxhccc/smartfetch'
 
 const options = {
   // configs
@@ -225,7 +229,7 @@ const smartfetch = SmartFetch(options)
 use Vue.use in main
 ```
 ...
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 const options = {
   // configs
 }
@@ -275,7 +279,7 @@ explain: you can use this method to modify "baseConfig" when you need
 
 how to use
 ```
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 smartfetch.modifyBaseConfigs(baseConfigs => {
   // single config
   baseConfigs.headers.token = 'xxx'

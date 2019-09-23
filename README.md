@@ -5,8 +5,13 @@ an easy use api plugin for vue and react.
 
 use npm 
 ```
-$ npm install smartfetch
+$ npm install @wxhccc/smartfetch -S
 ```
+
+# documents
+
+* [english](./README.en.md)
+* [中文文档](./README.md)
 
 # 使用示例
 
@@ -17,7 +22,7 @@ install the plugin in main.js
 ```
 import Vue from 'vue'
 ...
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 
 /** 配置文件推荐使用独立文件 **/
 
@@ -227,7 +232,7 @@ codeError: (resJson) => {
 
 如何使用
 ```
-import { request } from 'smartfetch'
+import { request } from '@wxhccc/smartfetch'
 //// 例 1:
 // 正常请求
 const args = request('api/getxxx', {a: 1, b: 2}, 'GET')
@@ -250,7 +255,7 @@ this.$fetch(args)
 
 在独立文件中定义接口函数
 ```
-import { request } from 'smartfetch'
+import { request } from '@wxhccc/smartfetch'
 
 export function getUserList (data) {
   return request('api/users', data)
@@ -281,7 +286,7 @@ this.$fetch(getUserList, { xxx: 'xxx' }).lock('loading').done(data => {
 
 **使用实例方式，无依赖环境**
 ```
-import { SmartFetch } from 'smartfetch'
+import { SmartFetch } from '@wxhccc/smartfetch'
 
 const options = {
   // configs
@@ -299,7 +304,7 @@ smartfetch.fetch({
 在main.js中安装
 ```
 ...
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 const options = {
   // configs
 }
@@ -370,7 +375,7 @@ this.$fetch(request1, {a: 1, b: 2})
 
 如何使用
 ```
-import smartfetch from 'smartfetch'
+import smartfetch from '@wxhccc/smartfetch'
 smartfetch.modifyBaseConfigs(baseConfigs => {
   // single config
   baseConfigs.headers.token = 'xxx'
