@@ -8,6 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "rollup -w -c --environment NODE_ENV:development",
     "build": "rollup -c --environment NODE_ENV:production",
+    "pub": "npm run build && npm publish",
     "start": "npm run dev"
   },
   "repository": {
@@ -27,21 +28,24 @@
   },
   "homepage": "https://github.com/wxhccc/smartfetch#readme",
   "devDependencies": {
-    "@babel/core": "^7.6.0",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/preset-env": "^7.6.0",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "@babel/preset-env": "^7.7.6",
     "axios": "^0.19.0",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
-    "qs": "^6.8.0",
-    "rollup": "^1.21.2",
+    "qs": "^6.9.1",
+    "rollup": "^1.27.13",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^2.3.0",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-uglify": "^6.0.3"
+    "rollup-plugin-uglify": "^6.0.4"
   },
   "dependencies": {},
-  "files": ["lib", "src"],
+  "files": [
+    "lib",
+    "src"
+  ],
   "peerDependencies": {
     "qs": ">5.0.0",
     "axios": ">0.1.0"

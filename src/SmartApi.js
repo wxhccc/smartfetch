@@ -101,7 +101,7 @@ export default class SmartApi {
   }
   _stateLock (unlock) {
     const { _lockKey, _contextState } = this;
-    this._setValue(_contextState, _lockKey, !unlock)
+    _lockKey && this._setValue(_contextState, _lockKey, !unlock)
   }
   _getLockValue () {
     const { _contextState, _lockKey } = this;
