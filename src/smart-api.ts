@@ -1,11 +1,11 @@
-import { AxiosError, AxiosInstance, AxiosResponse, ResponseType } from 'axios';
-import { SmartFetch } from 'src';
-import { BaseConfig, ContentType, FetchCore, FetchResponse, PromiseWithMethods, RequestConfig, SerializableObject, WinFetch } from './types';
+import { AxiosError, AxiosInstance, AxiosResponse, ResponseType } from 'axios'
+import { SmartFetch } from './index'
+import { ContextType, FaileHandle, FetchResponse, LockSwitchHook, PromiseWithMethods, RequestConfig, SerializableObject, SyncRefHandle, WinFetch } from './types'
 
 const defOpts = {
   credentitals: 'same-origin',
   responseType: 'json'
-};
+}
 
 type ResponseBodyMixin = 'json' | 'text' | 'blob' | 'arrayBuffer'
 const responseMixin: Partial<Record<ResponseType, ResponseBodyMixin>> = {
@@ -15,7 +15,8 @@ const responseMixin: Partial<Record<ResponseType, ResponseBodyMixin>> = {
   arraybuffer: 'arrayBuffer'
 }
 
-const { hasOwnProperty } = Object.prototype
+const { hasOwnProperty, toString } = Object.prototype
+const isObj = (obj: unknown) => toString.call(obj) === '[object Object]'
 
 function createError(name: string, error?: Error, message?: string) {
   error = error instanceof Error ? error : new Error()
@@ -24,150 +25,141 @@ function createError(name: string, error?: Error, message?: string) {
   return error
 }
 
-type FaileHandle  = (e: Error) => unknown
+export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch, context: any, config: RequestConfig, contextType: ContextType) {
+  const $root: SmartFetch = rootInstance
+  const isReactiveIns = contextType !== 'unknown'
+  let usingCore = rootInstance.$core
+  let useBaseCfg = rootInstance.$curCfg
+  let _response: FetchResponse | null = null
+  let _resJson: SerializableObject | null = null
+  let needCodeCheck = !!rootInstance.options.responseCheck
+  const stateKey = isReactiveIns ? (contextType === 'react' ? 'state' : '') : '$_SF_KEYS'
+  let contextState = stateKey ? context[stateKey] : context
 
-export default class SmartFetchCore {
-  private $root: SmartFetch;
-  private _context;
-  private _contentType: ContentType;
-  private _isReactiveIns: boolean;
-  private __response: FetchResponse | null = null;
-  private __resJson: SerializableObject | null = null;
-  private _silence = false;
-  private _needCodeCheck: boolean;
-  private _codeCheckResult = false;
-  private _lockKey: string[] = [];
-  private _useCoreKey = 'default';
-  private _useCore: FetchCore;
-  private _useBaseCfg: BaseConfig;
-  private _contextState: any = {};
-  private _fetchConfig: RequestConfig = {};
-  private _reqPromise: PromiseWithMethods<any>;
-  private _failHandler?: FaileHandle;
-  get $promise () { return this._reqPromise }
+  let asyncLocking = false
+  let fetchConfig: RequestConfig = {}
+  let silence = false
+  let useCoreKey = 'default'
+  let lockSwitchHook: LockSwitchHook
+  let lockRefHandle: SyncRefHandle
+  let lockKey: string[] = []
+  let failHandler: FaileHandle
 
-  constructor (rootInstance: SmartFetch, context: any, config: RequestConfig, contentType: ContentType) {
-    this.$root = rootInstance
-    this._context = context;
-    this._useCore = rootInstance.$core
-    this._useBaseCfg = rootInstance.$curCfg
-    this._contentType = contentType;
-    this._needCodeCheck = !!rootInstance.options.responseCheck
-    this._isReactiveIns = contentType !== 'default';
-    const stateKey = contentType ? (contentType === 'react' ? 'state' : '') : '$_SF_KEYS';
-    this._contextState = stateKey ? this._context[stateKey] : this._context;
-    this._reqPromise = this._createRequest(config);
+
+  const axiosRequest = (config: RequestConfig) => {
+    const axiosInstanc = $root.$core as AxiosInstance
+    return axiosInstanc(config).then(axiosResStatusCheck)
+  }
+  const axiosResStatusCheck = (response: AxiosResponse) => {
+    _response = response
+    return response.data
   }
 
-  private _axiosRequest (config: RequestConfig) {
-    const axiosInstanc = this.$root.$core as AxiosInstance
-    return axiosInstanc(config).then(this._axiosResStatusCheck);
-  }
-  private _axiosResStatusCheck (response: AxiosResponse) {
-    this.__response = response
-    return response.data;
-  }
-
-  
-
-  private _createRequest (config: RequestConfig) {
-    if(!config || typeof config.url !== 'string') {
-      return Promise.reject(new Error('smartfetch: no valid url'))
+  const switchUseCore = (corekey: string) => {
+    if (corekey && typeof corekey === 'string' && $root.baseConfigs[corekey]) {
+      useCoreKey = corekey
+      useBaseCfg = $root.baseConfigs[corekey]
+      !$root.useFetch && (usingCore = $root.axiosCores[corekey])
     }
-    this._checkRequestCore(config)
-    const thenQueue: any[]= []
-    const customeCatch = () => undefined
-    const reqPromise = Promise.resolve().then(() => {
-      if (!this._checkLock()) {
-        this._lock();
-        const promise = (this.$root.useFetch ? this._request(config) : this._axiosRequest(config))
-          .then(this._codeCheck)
-          .then(this._handleResData)
-        const customPro = thenQueue.reduce((acc, item) => acc.then(item), promise)
-        return customPro.catch(this._handleError).finally(this._handleFinally);
-      }
-    })
-    const proxyPromise = Object.assign({}, reqPromise, {
-      then: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => {
+  }
+
+  const createRequest = (config: RequestConfig): PromiseWithMethods<DataType | [null, DataType] | [Error, undefined]> => {
+    let reqPromise: Promise<any>
+    const thenQueue: any[] = []
+    if (!config || typeof config.url !== 'string') {
+      reqPromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError)
+    } else {
+      checkRequestCore(config)
+      reqPromise = Promise.resolve().then(() => {
+        if (!checkLock()) {
+          stateLock(true)
+          const promise = ($root.useFetch ? request(config) : axiosRequest(config))
+            .then(codeCheck)
+            .then(handleResData)
+          const customPro = thenQueue.length ? thenQueue.reduce((acc, item) => acc.then(item), promise) : promise.then((data) => [null, data])
+          return customPro.catch(handleError).finally(() => stateLock(false))
+        }
+      })
+    }
+    const proxyPromise: PromiseWithMethods<any> = Object.assign(reqPromise, {
+      done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => {
         thenQueue.push(onfulfilled)
         return proxyPromise
       },
-      catch: (handler: FaileHandle) => {
-        this._failHandler = handler
+      faile: (handler: FaileHandle) => {
+        failHandler = handler
         return reqPromise
       },
-      useCore: this.useCore.bind(this),
-      lock: (key: string) => {
-        if (key && typeof key === 'string') {
-          this._lockKey = key.split('.');
-          this._contentType === 'vue' && this._checkOrSetVueSAkeys()
+      useCore: (corekey: string) => {
+        corekey && switchUseCore(corekey)
+        return proxyPromise
+      },
+      lock: <HT extends LockSwitchHook>(keyOrHookOrHandle: string | HT | SyncRefHandle, syncRefHandle?: SyncRefHandle) => {
+        const isRefHandle = (val: unknown): val is SyncRefHandle => (Array.isArray(val) && val.length === 2)
+        if (typeof keyOrHookOrHandle === 'string') {
+          lockKey = keyOrHookOrHandle.split('.')
+        } else if (isRefHandle(keyOrHookOrHandle)) {
+          lockRefHandle = keyOrHookOrHandle
+        } else if (typeof keyOrHookOrHandle === 'function') {
+          lockSwitchHook = keyOrHookOrHandle
+          if (isRefHandle(syncRefHandle)) {
+            lockRefHandle = syncRefHandle
+          }
         }
-        return proxyPromise;
+        return proxyPromise
       },
       silence: () => {
-        this._silence = true;
-        return proxyPromise;
+        silence = true
+        return proxyPromise
       },
       notCheckCode: () => {
-        this._needCodeCheck = false;
+        needCodeCheck = false
         return proxyPromise
       }
     })
-    return proxyPromise as PromiseWithMethods<any>
+    return proxyPromise
   }
-  private _checkRequestCore (config: RequestConfig) {
-    if (!config.useCore || typeof config.useCore !== 'string') return;
-    this.useCore(config.useCore);
-    delete config.useCore;
+  const checkRequestCore = (config: RequestConfig) => {
+    if (!config.useCore || typeof config.useCore !== 'string') return
+    switchUseCore(config.useCore)
+    delete config.useCore
   }
-  private _request (config: RequestConfig) {
-    const { baseURL, headers } = this._useBaseCfg || {};
+  const request = (config: RequestConfig) => {
+    const { baseURL, headers } = useBaseCfg || {}
     if (!config.url) config.url = ''
     if (baseURL && (config.url || '').indexOf('http') < 0) {
       config.url = baseURL + config.url
     }
     headers && (config.headers = { ...config.headers, ...headers })
-    this._fetchConfig = Object.assign({}, defOpts, config)
-    return (this.$root.$core as WinFetch)(config.url, this._fetchConfig)
-      .then(this._resStatusCheck)
-      .then(this._typeHandle);
+    fetchConfig = Object.assign({}, defOpts, config)
+    return ($root.$core as WinFetch)(config.url, fetchConfig)
+      .then(resStatusCheck)
+      .then(typeHandle)
   }
-  private _handleResData = (resjson: Record<string, SerializableObject>) => {
-    let data: Record<string, SerializableObject> | SerializableObject = resjson
-    try {
-      const { dataKey } = this.$root.options;
-      return dataKey ? resjson[dataKey] : data
-    } catch (e) {
-      throw createError('CallbackSyntaxError', e)
-    }
-  }
-  private _lock () {
-    this._stateLock();
-  }
-  private _unlock () {
-    this._stateLock(true);
-  }
-  private _checkLock () {
-    return this._lockKey && this._getLockValue();
-  }
-  private _stateLock (unlock?: boolean) {
-    const { _lockKey, _contextState, _contentType } = this;
-    if (!_lockKey.length) return
-    this[_contentType === 'vue' ? '_setVueValue' : '_setAsyncValue'](_contextState, _lockKey, !unlock)
-  }
-  private _getLockValue () {
-    const { _contextState, _lockKey } = this;
-    return this._getValue(_contextState, _lockKey);
+  const handleResData = (resjson: SerializableObject) => {
+    const { dataKey } = $root.options
+    return dataKey ? resjson[dataKey] : resjson
   }
 
-  private _getValue (obj: any, path: string[]) {
-    let result = false;
-    if (obj && typeof obj === 'object' && Array.isArray(path)) {
-      let curObj = obj;
+  const checkLock = () => {
+    return lockKey.length > 0 && getValue(contextState, lockKey)
+  }
+  const stateLock = (bool: boolean) => {
+    if (lockKey.length) return setValue<boolean>(contextState, lockKey, bool)
+    if (lockRefHandle) lockRefHandle[0][lockRefHandle[1]] = bool
+    if (lockSwitchHook) lockSwitchHook(bool)
+  }
+
+  const getValue = (obj: any, path: string[]) => {
+    // use refHandle if contextState not update sync
+    if (lockRefHandle) return lockRefHandle[0][lockRefHandle[1]]
+    let result = false
+    if (obj && isObj(obj) && Array.isArray(path)) {
+      let curObj = obj
       for (let i = 0; i < path.length; i++) {
         const key = path[i]
         if (typeof curObj !== 'object' || !hasOwnProperty.call(curObj, key)) {
-          break;
+          break
         }
         curObj = curObj[key]
         i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false)
@@ -176,121 +168,93 @@ export default class SmartFetchCore {
     return result
   }
 
-  private _typeHandle = (response: Response) => {
-    const { responseType } = this._fetchConfig;
-    const mixFn = responseMixin[responseType as ResponseType];
-    console.log(111, responseType, mixFn)
-    return mixFn && (typeof response[mixFn] === 'function') ? response[mixFn]() : undefined;
+  const typeHandle = (response: Response) => {
+    const { responseType } = fetchConfig
+    const mixFn = responseMixin[responseType as ResponseType]
+    return mixFn && (typeof response[mixFn] === 'function') ? response[mixFn]() : undefined
   }
 
-  private _resStatusCheck = (response: Response) => {
-    this.__response = response;
-    const { validateStatus } = this.$root.options;
+  const resStatusCheck = (response: Response) => {
+    _response = response
+    const { validateStatus } = $root.options
     if (validateStatus ? validateStatus(response.status) : response.ok) {
-      return response;
+      return response
     }
-    throw new RangeError(String(response.status));
+    throw new Error(`Request failed with status code ${response.status}`)
   }
 
-  private _handleError = (error: Error & AxiosError) => {
-    if (!this._silence) {
-      let msg = '';
-      const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = this.$root;
-      if ((useFetch && error instanceof TypeError) || error.message === 'Network Error') {
-        msg = '服务器未响应';
-      } else if (error instanceof SyntaxError) {
-        msg = '数据解析失败';
-      } else if (error instanceof RangeError || error.response) {
-        error.response && (this.__response = error.response);
-        const { status } = this.__response as Response;
-        msg = (status && statusMsgs[status]) || '请求失败';
-      }
-      if (error.name === 'CodeError' && typeof codeErrorHandler === 'function') {
-        codeErrorHandler(this.__resJson as SerializableObject)
-      } else if (error.name === 'CallbackSyntaxError') {
-        // 回调函数内的语法错误默认静默
-      } else if (typeof errorHandler === 'function') {
-        errorHandler(msg, error, this.__response || undefined);
-      } else {
-        (typeof alert === 'function') ? alert(msg) : console.error(error);
-      }
+  const handleError = (error: Error & AxiosError) => {
+    if (typeof failHandler === 'function') failHandler(error)
+    if (silence) return [error, undefined]
+
+
+    let msg = ''
+    const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root
+    if ((useFetch && error instanceof TypeError) || error.message === 'Network Error') {
+      msg = '服务器未响应'
+    } else if (error instanceof SyntaxError) {
+      msg = '数据解析失败'
+    } else if (error instanceof RangeError || error.response) {
+      error.response && (_response = error.response)
+      const { status } = _response as Response
+      msg = (status && statusMsgs[status]) || '请求失败'
     }
-    const hasFail = typeof this._failHandler === 'function'
-    if (hasFail) return (this._failHandler as FaileHandle)(error)
-    if (hasFail) return error
-    else throw error;
-  }
-  private _handleFinally = () => {
-    this._unlock();
+    if (error.name === 'CodeError' && typeof codeErrorHandler === 'function') {
+      codeErrorHandler(_resJson as SerializableObject)
+    } else if (typeof errorHandler === 'function') {
+      errorHandler(msg, error, _response || undefined)
+    } else {
+      (typeof alert === 'function') ? alert(msg) : console.error(error)
+    }
+    return [error, undefined]
   }
 
-  private _resOkCheck (resjson: Record<string, SerializableObject>) {
-    let result = false;
-    const { responseCheck } = this.$root.options;
+  const resOkCheck = (resjson: SerializableObject) => {
+    let result = false
+    const { responseCheck } = $root.options
     if (typeof responseCheck === 'function') {
-      result = responseCheck(resjson);
+      result = responseCheck(resjson)
     } else if (typeof responseCheck === 'string') {
-      result = !!resjson[responseCheck];
+      result = !!resjson[responseCheck]
     }
-    this._codeCheckResult = result;
-    return result;
+    return result
   }
-  private _codeCheck = (resjson: Record<string, SerializableObject>) => {
-    if (this._needCodeCheck && !this._resOkCheck(resjson)) {
-      this.__resJson = resjson
+  const codeCheck = (resjson: SerializableObject) => {
+    if (needCodeCheck && !resOkCheck(resjson)) {
+      _resJson = resjson
       throw createError('CodeError', undefined, 'code checked failed')
     } else {
-      return resjson;
+      return resjson
     }
   }
-  private _checkOrSetVueSAkeys () {
-    const { _context, _lockKey, _isReactiveIns } = this;
-    const useSAkeys = !hasOwnProperty.call(_context, _lockKey[0]);
-    if (_isReactiveIns && useSAkeys) {
-      !hasOwnProperty.call(_context, 'SF_KEYS') && _context.$set('SF_KEYS', {})
-      this._contextState = _context['SF_KEYS']
-    }
-  }
-  private _setVueValue (obj: any, path: string[], value: boolean) {
-    const { $set = (o: any, key: string, val: unknown) => { o[key] = val } } = this._context;
-    let curObj = obj;
-    for(let i = 0; i < path.length; i++) {
-      const key = path[i];
-      const hasKey = hasOwnProperty.call(curObj, key)
-      const isObj = hasKey && typeof curObj[key] === 'object' && curObj[key]
-      if (i === path.length - 1) {
-        hasKey ? (!isObj && (curObj[key] = value)) : $set(curObj, key, value)
-      } else {
-        !hasKey && $set(curObj, key, {})
-      }
-      curObj = curObj[key]
-      if (typeof curObj !== 'object') {
-        break;
-      }
-    }
-  }
-  private _setAsyncValue (obj: any, path: string[], value: boolean) {
-    let curObj = obj
-    for(let i = 0; i < path.length; i++) {
+
+  const setValue = <T>(obj: any, path: string[], value: T) => {
+    // if vue2 and path[0] not defined, do nothing
+    if (contextType === 'vue' && context.$set && !hasOwnProperty.call(obj, path[0])) return
+
+    const { $set = (o: any, key: string, val: unknown) => { o[key] = val } } = context
+    const isStateRect = contextType === 'react'
+    const originObj = isStateRect ? { ...obj } : obj
+    let curObj = originObj
+    let canSet = false
+    for (let i = 0; i < path.length; i++) {
       const key = path[i]
+      const keyExist = hasOwnProperty.call(curObj, key)
       if (i === path.length - 1) {
-        curObj[key] = value
+        const isBool = typeof curObj[key] === 'boolean'
+        canSet = !keyExist || isBool
+        canSet && $set(curObj, key, value)
       } else {
-        typeof curObj === 'object' && !hasOwnProperty.call(curObj, key) && (curObj[key] = {})
+        !keyExist && $set(curObj, key, {})
+        if (!isObj(curObj[key])) break
+        isStateRect && (curObj[key] = { ...curObj[key] })
         curObj = curObj[key]
       }
     }
-    path.length && this._contentType === 'react' && this._context.setState({ [path[0]]: this._contextState[path[0]] })
+    // trigger setState when run in react class component
+    isStateRect && canSet && context.setState({ [path[0]]: originObj[path[0]] })
   }
 
-  // public apis throght
-  private useCore (corekey: string) {
-    if (corekey && typeof corekey === 'string' && this.$root.baseConfigs[corekey]) {
-      this._useCoreKey = corekey;
-      this._useBaseCfg = this.$root.baseConfigs[corekey]
-      !this.$root.useFetch && (this._useCore = this.$root.axiosCores[corekey]);
-    }
-    return this._reqPromise;
-  }
-
+  const reqPromise = createRequest(config)
+  return reqPromise
 }

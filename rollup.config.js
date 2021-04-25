@@ -1,21 +1,28 @@
 import resolve from "@rollup/plugin-node-resolve";
 import { babel } from "@rollup/plugin-babel";
 import commonjs from "@rollup/plugin-commonjs";
-import typescript from "@rollup/plugin-typescript";
+import typescript from "rollup-plugin-typescript2";
 import { terser } from "rollup-plugin-terser";
 import pkg from "./package.json";
 
+let tsChecked = true
+
 function createConfig(config, plugins) {
-  const nodePlugin = [resolve(), commonjs()];
   const tsPlugin = typescript({
-    emitDeclarationOnly: false
+    tsconfigOverride: {
+      declaration: tsChecked,
+      emitDeclarationOnly: false
+    },
+    useTsconfigDeclarationDir: true
   });
+
+  tsChecked && (tsChecked = false)
 
   const output = Object.assign(
     {
       globals: {
         axios: 'axios'
-      },
+      }
     },
     "output" in config ? config.output : {}
   );
@@ -27,7 +34,7 @@ function createConfig(config, plugins) {
     {
       output,
       external: ['axios'],
-      plugins: [nodePlugin, tsPlugin].concat(plugins),
+      plugins: [resolve(), commonjs(), tsPlugin].concat(plugins),
     }
   );
 }
@@ -35,39 +42,42 @@ function createConfig(config, plugins) {
 function getConfig(env) {
   const babelPlugin = babel({
     babelHelpers: 'bundled',
-    exclude: "node_modules/**", // 只编译我们的源代码
+    exclude: 'node_modules/**'
+  });
+  const esCfg = createConfig({
+    output: {
+      file: pkg.module,
+      format: 'es',
+    },
   });
   const cjsCfg = createConfig(
     {
       output: {
         file: pkg.main,
-        format: "cjs",
-        exports: "named",
+        format: 'cjs',
+        exports: 'named',
       },
       watch: {
-        include: "src/**",
+        include: 'src/**',
       },
     },
     [babelPlugin]
   );
-  const esCfg = createConfig({
-    output: {
-      file: pkg.module,
-      format: "es",
-    },
-  });
+  
+  if (env === 'development') return [esCfg, cjsCfg]
+
   const umdMinCfg = createConfig(
     {
       output: {
         file: pkg.unpkg,
-        name: "Smartfetch",
-        format: "umd",
-        exports: "named",
+        name: 'Smartfetch',
+        format: 'umd',
+        exports: 'named',
       },
     },
     [babelPlugin, terser()]
   );
-  return env === "development" ? esCfg : [cjsCfg, esCfg, umdMinCfg];
+  return [cjsCfg, esCfg, umdMinCfg];
 }
 
 export default getConfig(process.env.NODE_ENV);

@@ -1,4 +1,4 @@
-{
+module.exports = {
   "presets": [
     ["@babel/env", {
       "targets": {
@@ -13,7 +13,15 @@
   "exclude": "node_module/**",
   "env": {
     "test": {
-      "presets": ["@babel/env"]
+      "presets": [
+        [
+          "@babel/env",
+          { targets: { node: true } }
+        ],
+        [
+          '@babel/preset-react'
+        ]
+      ]
     }
   }
 }

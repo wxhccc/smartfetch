@@ -5,12 +5,13 @@ module.exports = {
     es6: true,
     node: true
   },
-  extends: [
-    'plugin:@typescript-eslint/recommended'
-  ],
   plugins: ['@typescript-eslint'],
   parserOptions: {
     sourceType: 'module',
     ecmaVersion: 2018
-  }
+  },
+  extends: [
+    'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended'
+  ]
 }

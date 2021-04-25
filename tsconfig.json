@@ -3,7 +3,7 @@
     "baseUrl": ".",
     "declaration": true,
     "declarationDir": "types",
-    "emitDeclarationOnly": true,
+    "noEmit": true,
 
     "target": "esnext",
     "module": "esnext",

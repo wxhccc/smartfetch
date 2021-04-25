@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 export declare type SerializableObject = {
-    [x: string]: SerializableObject | number | string | [];
+    [x: string]: SerializableObject | number | string | [] | Date;
 };
 export declare type RequestData = SerializableObject | FormData;
 export interface BaseConfig extends AxiosRequestConfig {
@@ -39,11 +39,21 @@ export interface SfRequestConfig {
     options: SmartFetchOptions;
     baseConfigs: MappedBaseConfigs;
 }
-export interface PromiseWithMethods<T> extends Promise<T> {
-    useCore?: (corekey: string) => PromiseWithMethods<T>;
-    lock?: (key: string) => PromiseWithMethods<T>;
-    silence?: () => PromiseWithMethods<T>;
-    notCheckCode?: () => PromiseWithMethods<T>;
+export declare type FaileHandle = (e: Error) => unknown;
+export declare type SyncRefHandle = [Record<string, boolean>, string];
+export declare type LockSwitchHook = (val: boolean) => unknown;
+export interface LockMethod<T> {
+    (key: string): PromiseWithMethods<T>;
+    (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>;
+    (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>;
 }
-export declare type ContentType = 'default' | 'vue' | 'react';
+export interface PromiseWithMethods<T> extends Promise<T> {
+    done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>;
+    faile: (handler: FaileHandle) => Promise<T>;
+    useCore: (corekey: string) => PromiseWithMethods<T>;
+    lock: LockMethod<T>;
+    silence: () => PromiseWithMethods<T>;
+    notCheckCode: () => PromiseWithMethods<T>;
+}
+export declare type ContextType = 'unknown' | 'vue' | 'react';
 export {};

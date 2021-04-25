@@ -1,11 +1,11 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
 
-export type SerializableObject = { [x: string]: SerializableObject | number | string | [] };
+export type SerializableObject = { [x: string]: SerializableObject | number | string | [] | Date }
 
 export type RequestData = SerializableObject | FormData
 
 export interface BaseConfig extends AxiosRequestConfig {
-  key?: string;
+  key?: string
 }
 
 export type WinFetch = (input: RequestInfo, init?: RequestInit) => Promise<Response>
@@ -31,28 +31,40 @@ interface CodeErrorHandler {
 }
 
 export interface SmartFetchOptions {
-  baseConfigs?: BaseConfigs;
-  baseData?: SerializableObject | ((coreKey: string) => SerializableObject);
-  errorHandler?: ErrorHandler;
-  statusWarn?: { [key: number]: string };
-  validateStatus?: (status: number) => boolean;
-  responseCheck?: string | ((responseJson: SerializableObject) => boolean);
-  forceAxios?: boolean;
-  dataKey?: string;
-  codeErrorHandler?: CodeErrorHandler;
+  baseConfigs?: BaseConfigs
+  baseData?: SerializableObject | ((coreKey: string) => SerializableObject)
+  errorHandler?: ErrorHandler
+  statusWarn?: { [key: number]: string }
+  validateStatus?: (status: number) => boolean
+  responseCheck?: string | ((responseJson: SerializableObject) => boolean)
+  forceAxios?: boolean
+  dataKey?: string
+  codeErrorHandler?: CodeErrorHandler
 }
 
 export interface SfRequestConfig {
-  useFetch: boolean;
-  options: SmartFetchOptions;
+  useFetch: boolean
+  options: SmartFetchOptions
   baseConfigs: MappedBaseConfigs
 }
 
+export type FaileHandle = (e: Error) => unknown
+export type SyncRefHandle = [Record<string, boolean>, string]
+export type LockSwitchHook = (val: boolean) => unknown
+
+export interface LockMethod<T> {
+  (key: string): PromiseWithMethods<T>
+  (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>
+  (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>
+} 
+
 export interface PromiseWithMethods<T> extends Promise<T> {
-  useCore?: (corekey: string) => PromiseWithMethods<T>;
-  lock?: (key: string) => PromiseWithMethods<T>;
-  silence?: () => PromiseWithMethods<T>;
-  notCheckCode?: () => PromiseWithMethods<T>;
+  done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>
+  faile: (handler: FaileHandle) => Promise<T>
+  useCore: (corekey: string) => PromiseWithMethods<T>
+  lock: LockMethod<T>
+  silence: () => PromiseWithMethods<T>
+  notCheckCode: () => PromiseWithMethods<T>
 }
 
-export type ContentType = 'default' | 'vue' | 'react'
+export type ContextType = 'unknown' | 'vue' | 'react'
