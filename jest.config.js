@@ -125,7 +125,7 @@ module.exports = {
   // runner: "jest-runner",
 
   // The paths to modules that run some code to configure or set up the testing environment before each test
-  setupFiles: ['jest-fetch-mock'],
+  setupFiles: ['jest-fetch-mock']
 
   // A list of paths to modules that run some code to configure or set up the testing framework before each test
   // setupFilesAfterEnv: [],
@@ -191,4 +191,4 @@ module.exports = {
 
   // Whether to use watchman for file crawling
   // watchman: true
-};
+}

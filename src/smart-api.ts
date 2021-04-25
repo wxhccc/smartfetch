@@ -1,6 +1,16 @@
 import { AxiosError, AxiosInstance, AxiosResponse, ResponseType } from 'axios'
 import { SmartFetch } from './index'
-import { ContextType, FaileHandle, FetchResponse, LockSwitchHook, PromiseWithMethods, RequestConfig, SerializableObject, SyncRefHandle, WinFetch } from './types'
+import {
+  ContextType,
+  FaileHandle,
+  FetchResponse,
+  LockSwitchHook,
+  PromiseWithMethods,
+  RequestConfig,
+  SerializableObject,
+  SyncRefHandle,
+  WinFetch
+} from './types'
 
 const defOpts = {
   credentitals: 'same-origin',
@@ -25,7 +35,12 @@ function createError(name: string, error?: Error, message?: string) {
   return error
 }
 
-export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch, context: any, config: RequestConfig, contextType: ContextType) {
+export default function smartFetchCore<DataType = any>(
+  rootInstance: SmartFetch,
+  context: any,
+  config: RequestConfig,
+  contextType: ContextType
+) {
   const $root: SmartFetch = rootInstance
   const isReactiveIns = contextType !== 'unknown'
   let usingCore = rootInstance.$core
@@ -33,10 +48,14 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
   let _response: FetchResponse | null = null
   let _resJson: SerializableObject | null = null
   let needCodeCheck = !!rootInstance.options.responseCheck
-  const stateKey = isReactiveIns ? (contextType === 'react' ? 'state' : '') : '$_SF_KEYS'
-  let contextState = stateKey ? context[stateKey] : context
+  const stateKey = isReactiveIns
+    ? contextType === 'react'
+      ? 'state'
+      : ''
+    : '$_SF_KEYS'
+  const contextState = stateKey ? context[stateKey] : context
 
-  let asyncLocking = false
+  const asyncLocking = false
   let fetchConfig: RequestConfig = {}
   let silence = false
   let useCoreKey = 'default'
@@ -44,7 +63,6 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
   let lockRefHandle: SyncRefHandle
   let lockKey: string[] = []
   let failHandler: FaileHandle
-
 
   const axiosRequest = (config: RequestConfig) => {
     const axiosInstanc = $root.$core as AxiosInstance
@@ -63,26 +81,37 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
     }
   }
 
-  const createRequest = (config: RequestConfig): PromiseWithMethods<DataType | [null, DataType] | [Error, undefined]> => {
+  const createRequest = (
+    config: RequestConfig
+  ): PromiseWithMethods<DataType | [null, DataType] | [Error, undefined]> => {
     let reqPromise: Promise<any>
     const thenQueue: any[] = []
     if (!config || typeof config.url !== 'string') {
-      reqPromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError)
+      reqPromise = Promise.reject(new Error('smartfetch: no valid url')).catch(
+        handleError
+      )
     } else {
       checkRequestCore(config)
       reqPromise = Promise.resolve().then(() => {
         if (!checkLock()) {
           stateLock(true)
-          const promise = ($root.useFetch ? request(config) : axiosRequest(config))
+          const promise = ($root.useFetch
+            ? request(config)
+            : axiosRequest(config)
+          )
             .then(codeCheck)
             .then(handleResData)
-          const customPro = thenQueue.length ? thenQueue.reduce((acc, item) => acc.then(item), promise) : promise.then((data) => [null, data])
+          const customPro = thenQueue.length
+            ? thenQueue.reduce((acc, item) => acc.then(item), promise)
+            : promise.then((data) => [null, data])
           return customPro.catch(handleError).finally(() => stateLock(false))
         }
       })
     }
     const proxyPromise: PromiseWithMethods<any> = Object.assign(reqPromise, {
-      done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => {
+      done: <T>(
+        onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
+      ) => {
         thenQueue.push(onfulfilled)
         return proxyPromise
       },
@@ -94,8 +123,12 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
         corekey && switchUseCore(corekey)
         return proxyPromise
       },
-      lock: <HT extends LockSwitchHook>(keyOrHookOrHandle: string | HT | SyncRefHandle, syncRefHandle?: SyncRefHandle) => {
-        const isRefHandle = (val: unknown): val is SyncRefHandle => (Array.isArray(val) && val.length === 2)
+      lock: <HT extends LockSwitchHook>(
+        keyOrHookOrHandle: string | HT | SyncRefHandle,
+        syncRefHandle?: SyncRefHandle
+      ) => {
+        const isRefHandle = (val: unknown): val is SyncRefHandle =>
+          Array.isArray(val) && val.length === 2
         if (typeof keyOrHookOrHandle === 'string') {
           lockKey = keyOrHookOrHandle.split('.')
         } else if (isRefHandle(keyOrHookOrHandle)) {
@@ -162,7 +195,8 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
           break
         }
         curObj = curObj[key]
-        i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false)
+        i === path.length - 1 &&
+          (result = typeof curObj === 'boolean' ? curObj : false)
       }
     }
     return result
@@ -171,7 +205,9 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
   const typeHandle = (response: Response) => {
     const { responseType } = fetchConfig
     const mixFn = responseMixin[responseType as ResponseType]
-    return mixFn && (typeof response[mixFn] === 'function') ? response[mixFn]() : undefined
+    return mixFn && typeof response[mixFn] === 'function'
+      ? response[mixFn]()
+      : undefined
   }
 
   const resStatusCheck = (response: Response) => {
@@ -187,10 +223,16 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
     if (typeof failHandler === 'function') failHandler(error)
     if (silence) return [error, undefined]
 
-
     let msg = ''
-    const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root
-    if ((useFetch && error instanceof TypeError) || error.message === 'Network Error') {
+    const {
+      statusMsgs,
+      options: { errorHandler, codeErrorHandler },
+      useFetch
+    } = $root
+    if (
+      (useFetch && error instanceof TypeError) ||
+      error.message === 'Network Error'
+    ) {
       msg = '服务器未响应'
     } else if (error instanceof SyntaxError) {
       msg = '数据解析失败'
@@ -204,7 +246,7 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
     } else if (typeof errorHandler === 'function') {
       errorHandler(msg, error, _response || undefined)
     } else {
-      (typeof alert === 'function') ? alert(msg) : console.error(error)
+      typeof alert === 'function' ? alert(msg) : console.error(error)
     }
     return [error, undefined]
   }
@@ -230,9 +272,18 @@ export default function smartFetchCore<DataType = any>(rootInstance: SmartFetch,
 
   const setValue = <T>(obj: any, path: string[], value: T) => {
     // if vue2 and path[0] not defined, do nothing
-    if (contextType === 'vue' && context.$set && !hasOwnProperty.call(obj, path[0])) return
+    if (
+      contextType === 'vue' &&
+      context.$set &&
+      !hasOwnProperty.call(obj, path[0])
+    )
+      return
 
-    const { $set = (o: any, key: string, val: unknown) => { o[key] = val } } = context
+    const {
+      $set = (o: any, key: string, val: unknown) => {
+        o[key] = val
+      }
+    } = context
     const isStateRect = contextType === 'react'
     const originObj = isStateRect ? { ...obj } : obj
     let curObj = originObj

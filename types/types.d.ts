@@ -1,4 +1,4 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 export declare type SerializableObject = {
     [x: string]: SerializableObject | number | string | [] | Date;
 };

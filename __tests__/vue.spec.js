@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import smartfetch from '../'
 
-window.alert = jest.fn();
+window.alert = jest.fn()
 
 const SubmitBtns = {
   template: `<div>
@@ -25,9 +25,10 @@ const SubmitBtns = {
   }
 }
 
-const flushFetch = (time = 0) => new Promise((resolve) => {
-  setTimeout(resolve, time)
-})
+const flushFetch = (time = 0) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, time)
+  })
 
 describe('test lock method in vue3 component', () => {
   it('test lock root property of vue instance', async () => {
@@ -46,7 +47,7 @@ describe('test lock method in vue3 component', () => {
     expect(btn.text()).toBe('false')
   })
 
-  it('test lock nested object\'s property(whether may no exists) of vue instance', async () => {
+  it("test lock nested object's property(whether may no exists) of vue instance", async () => {
     const wrapper = mount(SubmitBtns)
     /** before button click */
     const btn = wrapper.get('#btn2')
@@ -61,5 +62,4 @@ describe('test lock method in vue3 component', () => {
     expect(wrapper.vm.a.loading).toBe(false)
     expect(btn.text()).toBe('false')
   })
-
 })

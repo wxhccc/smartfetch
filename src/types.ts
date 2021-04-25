@@ -1,6 +1,8 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios"
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
-export type SerializableObject = { [x: string]: SerializableObject | number | string | [] | Date }
+export type SerializableObject = {
+  [x: string]: SerializableObject | number | string | [] | Date
+}
 
 export type RequestData = SerializableObject | FormData
 
@@ -8,10 +10,15 @@ export interface BaseConfig extends AxiosRequestConfig {
   key?: string
 }
 
-export type WinFetch = (input: RequestInfo, init?: RequestInit) => Promise<Response>
+export type WinFetch = (
+  input: RequestInfo,
+  init?: RequestInit
+) => Promise<Response>
 export type FetchCore = AxiosInstance | WinFetch
 
-export interface RequestConfig<UseCore = 'default'> extends Omit<AxiosRequestConfig, 'headers'>, Omit<RequestInit, 'method'> {
+export interface RequestConfig<UseCore = 'default'>
+  extends Omit<AxiosRequestConfig, 'headers'>,
+    Omit<RequestInit, 'method'> {
   useCore?: UseCore
 }
 
@@ -55,11 +62,16 @@ export type LockSwitchHook = (val: boolean) => unknown
 export interface LockMethod<T> {
   (key: string): PromiseWithMethods<T>
   (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>
-  (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>
-} 
+  (
+    switchHook: LockSwitchHook,
+    syncRefHandle?: [Record<string, boolean>, string]
+  ): PromiseWithMethods<T>
+}
 
 export interface PromiseWithMethods<T> extends Promise<T> {
-  done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>
+  done: <T>(
+    onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
+  ) => PromiseWithMethods<T>
   faile: (handler: FaileHandle) => Promise<T>
   useCore: (corekey: string) => PromiseWithMethods<T>
   lock: LockMethod<T>

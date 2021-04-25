@@ -34,8 +34,12 @@ function smartFetchCore(rootInstance, context, config, contextType) {
     let _response = null;
     let _resJson = null;
     let needCodeCheck = !!rootInstance.options.responseCheck;
-    const stateKey = isReactiveIns ? (contextType === 'react' ? 'state' : '') : '$_SF_KEYS';
-    let contextState = stateKey ? context[stateKey] : context;
+    const stateKey = isReactiveIns
+        ? contextType === 'react'
+            ? 'state'
+            : ''
+        : '$_SF_KEYS';
+    const contextState = stateKey ? context[stateKey] : context;
     let fetchConfig = {};
     let silence = false;
     let lockSwitchHook;
@@ -67,10 +71,14 @@ function smartFetchCore(rootInstance, context, config, contextType) {
             reqPromise = Promise.resolve().then(() => {
                 if (!checkLock()) {
                     stateLock(true);
-                    const promise = ($root.useFetch ? request(config) : axiosRequest(config))
+                    const promise = ($root.useFetch
+                        ? request(config)
+                        : axiosRequest(config))
                         .then(codeCheck)
                         .then(handleResData);
-                    const customPro = thenQueue.length ? thenQueue.reduce((acc, item) => acc.then(item), promise) : promise.then((data) => [null, data]);
+                    const customPro = thenQueue.length
+                        ? thenQueue.reduce((acc, item) => acc.then(item), promise)
+                        : promise.then((data) => [null, data]);
                     return customPro.catch(handleError).finally(() => stateLock(false));
                 }
             });
@@ -89,7 +97,7 @@ function smartFetchCore(rootInstance, context, config, contextType) {
                 return proxyPromise;
             },
             lock: (keyOrHookOrHandle, syncRefHandle) => {
-                const isRefHandle = (val) => (Array.isArray(val) && val.length === 2);
+                const isRefHandle = (val) => Array.isArray(val) && val.length === 2;
                 if (typeof keyOrHookOrHandle === 'string') {
                     lockKey = keyOrHookOrHandle.split('.');
                 }
@@ -162,7 +170,8 @@ function smartFetchCore(rootInstance, context, config, contextType) {
                     break;
                 }
                 curObj = curObj[key];
-                i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false);
+                i === path.length - 1 &&
+                    (result = typeof curObj === 'boolean' ? curObj : false);
             }
         }
         return result;
@@ -170,7 +179,9 @@ function smartFetchCore(rootInstance, context, config, contextType) {
     const typeHandle = (response) => {
         const { responseType } = fetchConfig;
         const mixFn = responseMixin[responseType];
-        return mixFn && (typeof response[mixFn] === 'function') ? response[mixFn]() : undefined;
+        return mixFn && typeof response[mixFn] === 'function'
+            ? response[mixFn]()
+            : undefined;
     };
     const resStatusCheck = (response) => {
         _response = response;
@@ -187,7 +198,8 @@ function smartFetchCore(rootInstance, context, config, contextType) {
             return [error, undefined];
         let msg = '';
         const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root;
-        if ((useFetch && error instanceof TypeError) || error.message === 'Network Error') {
+        if ((useFetch && error instanceof TypeError) ||
+            error.message === 'Network Error') {
             msg = '服务器未响应';
         }
         else if (error instanceof SyntaxError) {
@@ -205,7 +217,7 @@ function smartFetchCore(rootInstance, context, config, contextType) {
             errorHandler(msg, error, _response || undefined);
         }
         else {
-            (typeof alert === 'function') ? alert(msg) : console.error(error);
+            typeof alert === 'function' ? alert(msg) : console.error(error);
         }
         return [error, undefined];
     };
@@ -231,9 +243,13 @@ function smartFetchCore(rootInstance, context, config, contextType) {
     };
     const setValue = (obj, path, value) => {
         // if vue2 and path[0] not defined, do nothing
-        if (contextType === 'vue' && context.$set && !hasOwnProperty$1.call(obj, path[0]))
+        if (contextType === 'vue' &&
+            context.$set &&
+            !hasOwnProperty$1.call(obj, path[0]))
             return;
-        const { $set = (o, key, val) => { o[key] = val; } } = context;
+        const { $set = (o, key, val) => {
+            o[key] = val;
+        } } = context;
         const isStateRect = contextType === 'react';
         const originObj = isStateRect ? { ...obj } : obj;
         let curObj = originObj;
@@ -268,7 +284,15 @@ const objType = (val) => {
     return typeKeys ? typeKeys[1] : '';
 };
 
-const urlMethod = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
+const urlMethod = [
+    'GET',
+    'HEAD',
+    'POST',
+    'PUT',
+    'DELETE',
+    'OPTIONS',
+    'PATCH'
+];
 const enctypeType = {
     json: 'application/json',
     urlencode: 'application/x-www-form-urlencoded',
@@ -276,21 +300,21 @@ const enctypeType = {
 };
 function stringify(params) {
     const parts = [];
-    const encode = (val) => encodeURIComponent(val).
-        replace(/%3A/gi, ':').
-        replace(/%24/g, '$').
-        replace(/%2C/gi, ',').
-        replace(/%20/g, '+').
-        replace(/%5B/gi, '[').
-        replace(/%5D/gi, ']');
+    const encode = (val) => encodeURIComponent(val)
+        .replace(/%3A/gi, ':')
+        .replace(/%24/g, '$')
+        .replace(/%2C/gi, ',')
+        .replace(/%20/g, '+')
+        .replace(/%5B/gi, '[')
+        .replace(/%5D/gi, ']');
     Object.keys(params).forEach((key) => {
-        let val = params[key];
+        const val = params[key];
         if (val === null || typeof val === 'undefined')
             return;
         const arrVal = Array.isArray(val) ? val : [val];
         if (Array.isArray(val))
             key = key + '[]';
-        arrVal.forEach(v => {
+        arrVal.forEach((v) => {
             if (v instanceof Date) {
                 v = v.toISOString();
             }
@@ -332,7 +356,7 @@ function returnRequestLink(url, data, baseCfg) {
 function appendDataToForm(formdata, data) {
     if (!data || !(formdata instanceof FormData))
         return;
-    for (let i in data) {
+    for (const i in data) {
         if (formdata.has(i))
             continue;
         const item = data[i];
@@ -356,8 +380,15 @@ function SFRequest (config) {
         const { baseData } = options;
         const trueBaseData = typeof baseData === 'function' ? baseData(useCore) : baseData;
         const isFormData = data instanceof FormData;
-        const handleData = { ...trueBaseData, ...(isFormData ? {} : data) };
-        const { returnLink, enctype } = { returnLink: false, enctype: 'json', ...extra };
+        const handleData = {
+            ...trueBaseData,
+            ...(isFormData ? {} : data)
+        };
+        const { returnLink, enctype } = {
+            returnLink: false,
+            enctype: 'json',
+            ...extra
+        };
         // return link url
         if (returnLink && isNoBody) {
             const baseCfg = baseConfigs && baseConfigs[useCore] ? baseConfigs[useCore] : undefined;
@@ -369,24 +400,37 @@ function SFRequest (config) {
             useCore
         };
         if (enctype !== 'none')
-            result.headers = { 'Content-Type': (enctypeType[enctype] ? enctypeType[enctype] : enctypeType['json']) };
+            result.headers = {
+                'Content-Type': (enctypeType[enctype]
+                    ? enctypeType[enctype]
+                    : enctypeType['json'])
+            };
         if (useFetch && enctype !== 'json')
             result.responseType = 'blob';
         if (!Object.keys(handleData).length)
             return result;
         // query methods
         if (isNoBody) {
-            useFetch ? (result.url += `?${stringify(handleData)}`) : (result.params = data);
+            useFetch
+                ? (result.url += `?${stringify(handleData)}`)
+                : (result.params = data);
             return result;
         }
         // request body methods
         // append baseData to formData if data is FormData
         trueBaseData && isFormData && appendDataToForm(data, handleData);
         if (useFetch) {
-            result.body = isFormData ? data : (enctype === 'json' ? JSON.stringify(data) : stringify(data));
+            result.body = isFormData
+                ? data
+                : enctype === 'json'
+                    ? JSON.stringify(data)
+                    : stringify(data);
         }
         else {
-            result.data = (isFormData || enctype === 'json') ? data : stringify(data);
+            result.data =
+                isFormData || enctype === 'json'
+                    ? data
+                    : stringify(data);
         }
         return result;
     }
@@ -396,7 +440,9 @@ function SFRequest (config) {
         if (typeof firstArg === 'string') {
             return createRequestConfig(...args);
         }
-        else if (firstArg && (typeof firstArg.useCore === 'string') && baseConfigs[firstArg.useCore]) {
+        else if (firstArg &&
+            typeof firstArg.useCore === 'string' &&
+            baseConfigs[firstArg.useCore]) {
             useCore = firstArg.useCore;
             return createRequestConfig;
         }
@@ -422,9 +468,14 @@ function fetchContextMethod(instance) {
     return function (...args) {
         const instanceType = checkContext(this);
         const firstArg = args[0];
-        const config = typeof firstArg === 'string' ? request(...args) : (firstArg || {});
-        const context = instanceType !== 'unknown' ? this : (self || window || global);
-        context && instanceType === 'unknown' && !has(context, '$_SF_KEYS') && (context.$_SF_KEYS = {});
+        const config = typeof firstArg === 'string'
+            ? request(...args)
+            : firstArg || {};
+        const context = instanceType !== 'unknown' ? this : self || window || global;
+        context &&
+            instanceType === 'unknown' &&
+            !has(context, '$_SF_KEYS') &&
+            (context.$_SF_KEYS = {});
         return smartFetchCore(instance, context, config, instanceType);
     };
 }
@@ -441,13 +492,23 @@ class SmartFetch {
         this.resetOptions(options);
         this._fetchCoreChoose(!!(options && options.forceAxios));
     }
-    get useFetch() { return this._useFetch; }
-    get axiosCores() { return this._axiosCores; }
-    get baseConfigs() { return this._baseCfgs; }
-    get statusMsgs() { return this._statusMsgs; }
-    get options() { return this._options; }
+    get useFetch() {
+        return this._useFetch;
+    }
+    get axiosCores() {
+        return this._axiosCores;
+    }
+    get baseConfigs() {
+        return this._baseCfgs;
+    }
+    get statusMsgs() {
+        return this._statusMsgs;
+    }
+    get options() {
+        return this._options;
+    }
     _fetchCoreChoose(forceAxios) {
-        this._fetchEnable = (typeof fetch === 'function');
+        this._fetchEnable = typeof fetch === 'function';
         this._ajaxCoreSwitch(forceAxios || !this._fetchEnable);
     }
     _ajaxCoreSwitch(useAxios) {
@@ -459,9 +520,11 @@ class SmartFetch {
     _fetchCoreSetup(baseConfigs) {
         const { _axiosCores, _baseCfgs, _useFetch } = this;
         const configs = Array.isArray(baseConfigs)
-            ? baseConfigs.length ? baseConfigs : [{ key: 'default' }]
+            ? baseConfigs.length
+                ? baseConfigs
+                : [{ key: 'default' }]
             : [{ key: 'default', ...baseConfigs }];
-        configs.forEach(item => {
+        configs.forEach((item) => {
             const newItem = Object.assign({}, item);
             const { key } = newItem;
             if (key) {
@@ -474,9 +537,9 @@ class SmartFetch {
         !_useFetch && (this.$core = _axiosCores['default']);
     }
     // init the core of ajax, set default config
-    // for Vue.use method of vuejs 
+    // for Vue.use method of vuejs
     install(appOrVue, options) {
-        options && (options instanceof Object) && this.resetOptions(options);
+        options && options instanceof Object && this.resetOptions(options);
         if ('globalProperties' in appOrVue.config) {
             appOrVue.config.globalProperties.$fetch = this.fetch;
         }
