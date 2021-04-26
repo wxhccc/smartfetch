@@ -1,6 +1,6 @@
 {
   "name": "@wxhccc/smartfetch",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "an easy use api plugin for vue and react",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
