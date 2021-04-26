@@ -457,12 +457,11 @@ function checkContext(context) {
     return 'unknown';
 }
 function fetchContextMethod(instance) {
-    return function (...args) {
+    const fetch = function (configOrUrl, data, method) {
         const instanceType = checkContext(this);
-        const firstArg = args[0];
-        const config = typeof firstArg === 'string'
-            ? request(...args)
-            : firstArg || {};
+        const config = typeof configOrUrl === 'string'
+            ? request(configOrUrl, data, method)
+            : configOrUrl || {};
         const context = instanceType !== 'unknown' ? this : self || window || global;
         context &&
             instanceType === 'unknown' &&
@@ -470,6 +469,7 @@ function fetchContextMethod(instance) {
             (context.$_SF_KEYS = {});
         return smartFetchCore(instance, context, config, instanceType);
     };
+    return fetch;
 }
 class SmartFetch {
     constructor(options) {

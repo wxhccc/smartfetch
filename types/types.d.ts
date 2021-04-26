@@ -1,4 +1,4 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 export declare type SerializableObject = {
     [x: string]: SerializableObject | number | string | [] | Date;
 };
@@ -11,7 +11,10 @@ export declare type FetchCore = AxiosInstance | WinFetch;
 export interface RequestConfig<UseCore = 'default'> extends Omit<AxiosRequestConfig, 'headers'>, Omit<RequestInit, 'method'> {
     useCore?: UseCore;
 }
-export declare type BaseConfigs = BaseConfig | BaseConfig[];
+export declare type BaseConfigWithKey = BaseConfig & {
+    key: string;
+};
+export declare type BaseConfigs = BaseConfig | BaseConfigWithKey[];
 export declare type MappedBaseConfigs = Record<string, BaseConfig>;
 export declare type BaseData = Record<string, any> | (() => Record<string, any>);
 export declare type FetchResponse = Response | AxiosResponse;
@@ -56,4 +59,8 @@ export interface PromiseWithMethods<T> extends Promise<T> {
     notCheckCode: () => PromiseWithMethods<T>;
 }
 export declare type ContextType = 'unknown' | 'vue' | 'react';
+export interface SFetch {
+    <T>(config: RequestConfig): PromiseWithMethods<T>;
+    <T>(url: string, data?: RequestData, method?: Method): PromiseWithMethods<T>;
+}
 export {};

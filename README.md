@@ -1,11 +1,19 @@
 # smartfetch
-an easy use api plugin for vue and react.
+
+基于fetch和axios封装的通用接口处理插件，可以处理非常通用的接口使用情况，提供多个不同域名基础地址切换能力
+
+> support vue3 and react hook from 2.0
+
 
 # Installing
 
 use npm 
 ```
 $ npm install @wxhccc/smartfetch -S
+```
+use yarn
+```
+$ yarn add @wxhccc/smartfetch
 ```
 
 # documents
@@ -15,7 +23,7 @@ $ npm install @wxhccc/smartfetch -S
 
 # 使用示例
 
-在vuejs中使用
+> 在vue2中使用
 
 install the plugin in main.js
 
@@ -35,10 +43,10 @@ const codeMsgs = {
   'E001': '未登录'
 };
 const useConfig = {
-  baseConfig: {  // 基础配置对象，多份配置可使用数组
+  baseConfigs: {  // 基础配置对象，多份配置可使用数组
     baseURL: ''
   },
-  /*baseConfig: [  // 多配置时key是必须的，用来切换配置
+  /*baseConfigs: [  // 多配置时key是必须的，用来切换配置
     {
       key: 'default',  // 'default' 是默认配置的key
       baseURL: 'url1'
@@ -49,12 +57,12 @@ const useConfig = {
     }
   ]*/
   baseData: {},  // 基础数据，会随着所有请求发送，适合无法再header里添加token的场景。 可以为数据对象，或者函数
-  errorHandle: notifyMsg, // 统一错误处理，优先级低于codeError
+  errorHandler: notifyMsg, // 统一错误处理，优先级低于codeError
   statusWarn: statusMsgs, // response对象status值转换对象，用于自定义status文案
-  resCheck: 'success', // 返回值检测，用于过滤通用接口数据， 可以为函数
+  responseCheck: 'success', // 返回值检测，用于过滤通用接口数据， 可以为函数
   forceAxios: true, // 是否强制使用axios核心发送请求，默认false
   dataKey: 'data',  // 数据字段，默认'data'
-  codeError: (resjson) => { /* 业务逻辑错误码处理函数, resCheck检测未通过时会执行 */ 
+  codeErrorHandler: (resjson) => { /* 业务逻辑错误码处理函数, resCheck检测未通过时会执行 */ 
     let {errorCode, errorMsg} = resjson;
     let msg = errorMsg || '请求失败';
     if (codeMsgs.hasOwnProperty(errorCode)) {
@@ -74,7 +82,28 @@ const useConfig = {
 Vue.use(smartfetch, useConfig);
 ...
 ```
-use in the component 
+
+>在vue3中使用
+
+install the plugin in main.js
+
+```
+...
+const app = createApp(App)
+...
+import smartfetch from '@wxhccc/smartfetch'
+
+const useConfig = {
+  ...
+}
+
+app.use(smartfetch, useConfig);
+...
+```
+
+
+then use in the component 
+
 ```
 	<button :disabled="loading">{loading ? 'sending' : 'send'}</buttom>
 ...
@@ -105,16 +134,75 @@ use in the component
 ...
 ```
 
+> react 中使用
+
+在utils或其他目录下创建文件
+```
+// xxx/xxxx.js
+import smartfetch from '@wxhccc/smartfetch'
+
+const useConfig = {
+  ...
+}
+
+smartfetch.resetOptions(useConfig);
+
+export smartfetch.fetch
+...
+```
+
+
+then use in the (Class Component)
+
+```
+import { fetch } from 'xxx/xxxx.js'
+...
+	this.state = { loading: false }
+  this.$fetch = fetch.bind(this)
+...
+
+...
+	getDataList = () => {
+	  this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock('loading')
+	}
+...
+```
+
+then use in the Hook Component
+
+```
+import { fetch } from 'xxx/xxxx.js'
+...
+	const [loading, setLoading] = useState(false)
+
+...
+
+	const getDataList = () => {
+	  this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock(setLoading)
+	}
+  /*
+    state更新可能是异步的，lock可能无法阻止同时触发的接口调用。可以使用lock的第二个参数，以hook为例，class类似
+  */
+  const locking = useRef(false)
+  const getDataListLock = () => {
+    this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock(setLoading, [locking, 'value'])
+  }
+...
+```
+
 # API document
 
 ## options 基础配置对象
 
-**baseConfig**: 基础配置对象. 可用来设置统一的 *baseURL* 、 *headers* 等. 接收对象或对象数组
+**baseConfigs**: 基础配置对象. 可用来设置统一的 *baseURL* 、 *headers* 等.(fetch方式只处理这两个属性) 接收对象或对象数组
 
 *示例：*
 ```
 // 使用对象方式，单一配置项
-baseConfig: {
+baseConfigs: {
   baseURL: 'http://a.b.com',
   headers: {x-token: 'xxxxxxx'}
 }
@@ -122,7 +210,7 @@ baseConfig: {
 ** *default* 是key的特殊值, key为default的配置项为默认配置项
 ** 可以使用 **useCore(key)** 方法切换配置项
 */
-baseConfig: [
+baseConfigs: [
   {
     key: 'default',  
     baseURL: 'http://a.b.com'
@@ -132,7 +220,7 @@ baseConfig: [
   }
 ]
 ```
-ps: 在一些场景下，你可能在初始化之后才能获取基础配置信息，比如登录后才能获取token。这时你可以使用示例上的 "modifyBaseConfigs" 方法来修改基础配置（详细用法后面介绍）
+ps: 在一些场景下，你可能在初始化之后才能获取基础配置信息，比如登录后才能获取token。这时你可以使用实例上的 "modifyBaseConfigs" 方法来修改基础配置（详细用法后面介绍）
 
 **baseData**: 基础请求数据，会合并到所有请求中。适用于特殊情况无法通过headers附带的数据，比如未支持特定header的cors接口。可支持对象或函数
 
@@ -151,7 +239,7 @@ baseData: () => {
   }
 }
 ```
-**errorHandle**: 通用错误提示函数，用来显示/处理接口调用过程中的错误信息
+**errorHandler**: 通用错误提示函数，用来显示/处理接口调用过程中的错误信息
 
 *参数：*
 
@@ -163,7 +251,7 @@ baseData: () => {
 *示例：*
 
 ```
-errorHandle: (msg, error) => {
+errorHandler: (msg, error) => {
   alert(msg)
   /* or 
   Notification.error({
@@ -185,12 +273,12 @@ statusWarn: {
 }
 ```
 
-**resCheck**: 业务逻辑检测,适用于接口有统一数据结构，例如`{ success: true, code: 200, message: '', data: {} }`。接受字符串或函数，为字符串时或判断对象里指定key对应value值是否为真值
+**responseCheck**: 业务逻辑检测,适用于接口有统一数据结构，例如`{ success: true, code: 200, message: '', data: {} }`。接受字符串或函数，为字符串时或判断对象里指定key对应value值是否为真值
 
 *示例：*
 ```
 // 使用字符串时，会检查responseData[resCheck]是否是真值
-resCheck: 'success'
+responseCheck: 'success'
 
 // 使用函数，参数为请求响应对象中的数据对象
 resCheck: (responseData) => {
@@ -202,11 +290,11 @@ resCheck: (responseData) => {
 
 **forceAxios**: 是否强制使用axios为请求核心，默认为`false`
 
-**codeError**: 业务逻辑检测失败时的处理函数，resCheck检测失败时触发，优先级高于errorHandle处理函数
+**codeErrorHandler**: 业务逻辑检测失败时的处理函数，resCheck检测失败时触发，优先级高于errorHandle处理函数. 可以处理登录失效等情况
 
 *示例：*
 ```
-codeError: (resJson) => {
+codeErrorHandler: (resJson) => {
   // to do
 }
 ```
@@ -219,8 +307,9 @@ codeError: (resJson) => {
 * @url(string)：接口路径，可使用完整路径，也可使用相对于baseUrl的相对路径
 * @data(object/FormData): 请求参数，仅支持plain object. formData  
 * @method(string): 请求方式，支持所有请求方式，例如GET、POST等，全大写，默认`GET`  
-* @returnLink(boolean)：是否返回完整链接，仅对GET,HEAD方式有效，函数调用后不发起请求，会返回拼接好的携带参数的url地址。常用作下载或导出链接  
-* @enctype(string)：请求编码方式（content-type设定值），json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，默认为`json`  
+* @extra(object) 额外的参数
+  * @returnLink(boolean)：是否返回完整链接，仅对GET,HEAD方式有效，函数调用后不发起请求，会返回拼接好的携带参数的url地址。常用作下载或导出链接  
+  * @enctype(string)：请求编码方式（content-type设定值），json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，默认为`json`  
 
 ## request(config)
 用于设置request函数配置的高阶函数，会返回request函数
@@ -240,7 +329,7 @@ this.$fetch(args)
 
 //// 例 2:
 // 返回链接
-const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', true)
+const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', { returnLink: true })
 // linkUrl: http://a.b.com/api/getxxx?a=1&b=2
 
 //// 例 3:
@@ -272,7 +361,7 @@ export function addUser (data) {
 import { getUserList } from '@/api/xxxx'
 ...
 
-this.$fetch(getUserList, { xxx: 'xxx' }).lock('loading').done(data => {
+this.$fetch(getUserList({ xxx: 'xxx' })).lock('loading').done(data => {
   // to do
 })
 
@@ -291,7 +380,7 @@ import { SmartFetch } from '@wxhccc/smartfetch'
 const options = {
   // configs
 }
-const smartfetch = SmartFetch(options)
+const smartfetch = new SmartFetch(options)
 
 smartfetch.fetch({
   url: 'api/getxxx',
@@ -299,25 +388,9 @@ smartfetch.fetch({
 })
 
 ```
-**在vuejs中使用**
 
-在main.js中安装
-```
-...
-import smartfetch from '@wxhccc/smartfetch'
-const options = {
-  // configs
-}
-Vue.use(smartfetch, options)
-```
-```
-// 之后再各组件中使用$fetch发起请求
-this.$fetch
-...
-```
-
-### Smartfetch实例方法
-以下为SmartFetch类示例方法列表
+### smartfetch实例方法
+以下为smartFetch类示例方法列表
 
 **resetOpts**
 
@@ -338,9 +411,6 @@ this.$fetch
 
 * 第一个参数非对象时会内部调用requset来得到config, 具体见request普通参数列表
 
-*方式三*
-
-* @requestFn(function)， 第一个参数为使用request封装的函数时，后续参数会按顺序传递给requestFn
 
 如何使用
 ```
@@ -358,13 +428,6 @@ smartfetch.fetch(args)
 //// 例 2:
 // if the first argument is a string , fetch will use *request* to handle arguments
 this.$fetch('api/getxxx', {a: 1, b: 2}, 'GET')
-
-//// 例 3:
-// if the first argument is a function , fetch will put rest arguments to the function, can use with request to make apis more clear
-const request1 = function(data) {
-  return request('api/getxxx', data, 'GET')
-}
-this.$fetch(request1, {a: 1, b: 2})
 
 
 ```
@@ -389,12 +452,12 @@ smartfetch.modifyBaseConfigs(baseConfigs => {
 
 ## fetch函数返回示例的方法列表
 
-说明：调用fetch函数后会返回一个请求代理对象，对象会提供下列方法，方法调用后会返回对象本身（除promise外），可使用链式调用。在所有链式同步代码执行完后开始发起请求，链式调用无先后顺序。
+> 说明：fetch 会返回一个扩展了特定方法的promise对象，实例内会有内置的错误处理逻辑，所以promise不会reject。
 
 **lock**
 
 说明： 重要常用函数。用来锁住当前实例上下文中指定key的变量，在发起请求前设置成true，请求完成后设置为false。可用来处理loading状态和防多点需求
-params: @key(string): 实例上指定属性名，支持`.`写法写法，如a.b
+params: @key(string|function|[refObject, string], [refObject, string]): 实例上指定属性名，支持`.`写法写法，如a.b
 
 如何使用
 ```
@@ -408,14 +471,14 @@ data: () {
 ...
   this.$fetch('api/getxxx', data).lock('loading')
 
-// use in react
-...
-this.state = {
-  loading: false
-}
-    
-...
-  smartfetch.fetch('api/getxxx', data).lock('loading')
+  setLoading = (lock) => { ... }
+  this.$fetch('api/getxxx', data).lock(setLoading)
+
+  const refs = { loading: false }
+  this.$fetch('api/getxxx', data).lock([refs, 'loading'])
+
+  // for async state update like react
+  this.$fetch('api/getxxx', data).lock(setLoading, [refs, 'loading'])
 
 ```
 
@@ -439,27 +502,14 @@ params: @key(string): baseConfig key
 
 **done**
 
-说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数
+说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数, 可以链式连接多个
 
 params: @callback(function) 回调函数，参数为返回数据中指定key对应内容 @data(any)
         
-**fail**
+**faile**
 
-说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数
+说明: 请求成功后，并且通过业务逻辑检测（如果有的话）后会执行参数传入的回调函数，只能有一个
 
 params: @callback(function) 回调函数，参数为错误对象error
 
-
-**finally**
-
-说明: 无论请求成功或失败都会调用。适用于特定场景下变量锁
-
-params: @callback(function) 回调函数，无参数
-
-
-**promise**
-
-说明: 调用函数后会将请求的promise对象返回。
-
-> 警告： 调用此方法后无法继续链式调用
 

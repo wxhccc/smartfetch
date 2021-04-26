@@ -1,4 +1,4 @@
-import { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 
 export type SerializableObject = {
   [x: string]: SerializableObject | number | string | [] | Date
@@ -22,7 +22,9 @@ export interface RequestConfig<UseCore = 'default'>
   useCore?: UseCore
 }
 
-export type BaseConfigs = BaseConfig | BaseConfig[]
+export type BaseConfigWithKey = BaseConfig & { key: string }
+
+export type BaseConfigs = BaseConfig | BaseConfigWithKey[]
 export type MappedBaseConfigs = Record<string, BaseConfig>
 
 export type BaseData = Record<string, any> | (() => Record<string, any>)
@@ -80,3 +82,8 @@ export interface PromiseWithMethods<T> extends Promise<T> {
 }
 
 export type ContextType = 'unknown' | 'vue' | 'react'
+
+export interface SFetch {
+  <T>(config: RequestConfig): PromiseWithMethods<T>
+  <T>(url: string, data?: RequestData, method?: Method): PromiseWithMethods<T>
+}

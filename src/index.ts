@@ -1,14 +1,17 @@
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, Method } from 'axios'
 import smartFetchCore from './smart-api'
-import SFRequest, { CreateRequestConfig } from './request'
+import SFRequest from './request'
 import {
   BaseConfig,
   BaseConfigs,
   ContextType,
   FetchCore,
   RequestConfig,
+  RequestData,
+  SFetch,
   SmartFetchOptions
 } from './types'
+export * from './types'
 import { has, objType } from './utils'
 
 function checkContext(context?: any): ContextType {
@@ -22,18 +25,17 @@ function checkContext(context?: any): ContextType {
 }
 
 function fetchContextMethod(instance: SmartFetch) {
-  return function (
+  const fetch: SFetch = function (
     this: any,
-    ...args: [RequestConfig] | Parameters<CreateRequestConfig>
+    configOrUrl: RequestConfig | string,
+    data?: RequestData,
+    method?: Method
   ) {
     const instanceType = checkContext(this)
-    const firstArg = args[0]
     const config =
-      typeof firstArg === 'string'
-        ? (request(
-            ...(args as Parameters<CreateRequestConfig>)
-          ) as RequestConfig)
-        : firstArg || {}
+      typeof configOrUrl === 'string'
+        ? (request(configOrUrl, data, method) as BaseConfig)
+        : configOrUrl || {}
     const context = instanceType !== 'unknown' ? this : self || window || global
     context &&
       instanceType === 'unknown' &&
@@ -41,6 +43,7 @@ function fetchContextMethod(instance: SmartFetch) {
       (context.$_SF_KEYS = {})
     return smartFetchCore(instance, context, config, instanceType)
   }
+  return fetch
 }
 
 export class SmartFetch {
@@ -98,7 +101,7 @@ export class SmartFetch {
       const newItem = Object.assign({}, item)
       const { key } = newItem
       if (key) {
-        delete newItem.key
+        delete (newItem as BaseConfig).key
         _baseCfgs[key] = newItem
         !_useFetch && (_axiosCores[key] = axios.create(item))
       }
