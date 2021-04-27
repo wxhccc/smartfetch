@@ -1,7 +1,14 @@
 *.log
 npm-debug.log*
 node_modules/
-lib
+dist/
 .npm
 .eslintcache
 *.map
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

@@ -1,14 +1,19 @@
 {
   "name": "@wxhccc/smartfetch",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "an easy use api plugin for vue and react",
-  "main": "lib/smartfetch.common.js",
-  "module": "lib/smartfetch.esm.js",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "types/index.d.ts",
+  "unpkg": "dist/index.min.js",
+  "sideEffects": false,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm run dev",
     "dev": "rollup -w -c --environment NODE_ENV:development",
-    "build": "rollup -c --environment NODE_ENV:production",
-    "start": "npm run dev"
+    "build": "rollup -c",
+    "pub": "npm run build && npm publish",
+    "test": "jest",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -27,23 +32,55 @@
   },
   "homepage": "https://github.com/wxhccc/smartfetch#readme",
   "devDependencies": {
-    "@babel/core": "^7.6.0",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/preset-env": "^7.6.0",
-    "axios": "^0.19.0",
+    "@babel/core": "^7.7.5",
+    "@babel/plugin-proposal-class-properties": "^7.7.4",
+    "@babel/preset-env": "^7.7.6",
+    "@babel/preset-react": "^7.13.13",
+    "@rollup/plugin-babel": "^5.3.0",
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@types/jest": "^26.0.22",
+    "@types/react": "^17.0.3",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.18.0",
+    "@vue/test-utils": "^2.0.0-rc.6",
+    "axios": "^0.21.1",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
-    "qs": "^6.8.0",
-    "rollup": "^1.21.2",
-    "rollup-plugin-babel": "^4.3.3",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-json": "^2.3.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-uglify": "^6.0.3"
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.6",
+    "eslint": "^7.22.0",
+    "eslint-config-prettier": "^8.2.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "husky": ">=6",
+    "jest": "^26.6.3",
+    "jest-fetch-mock": "^3.0.3",
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.2.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "rollup": "^2.42.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.30.0",
+    "typescript": "^4.2.3",
+    "vue": "^3.0.11"
   },
   "dependencies": {},
-  "files": ["lib", "src"],
+  "files": [
+    "dist",
+    "types"
+  ],
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.js": "eslint --cache --fix",
+    "*.ts?(x)": [
+      "prettier --parser=typescript --write"
+    ],
+    "*.{js,css,md}": "prettier --write"
+  },
   "peerDependencies": {
-    "qs": ">5.0.0",
-    "axios": ">0.1.0"
+    "axios": "^0.21.1"
   }
 }

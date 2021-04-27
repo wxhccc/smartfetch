@@ -1,5 +1,9 @@
 # smartfetch
-an easy use api plugin for vue and react.
+
+Based on the fetch and axios encapsulate common interface processing plug-in, can handle very generic interface usage, provide different domain based address switching capacity
+
+> support vue3 and react hook from 2.0
+
 
 # Installing
 
@@ -7,14 +11,19 @@ use npm
 ```
 $ npm install @wxhccc/smartfetch -S
 ```
+use yarn
+```
+$ yarn add @wxhccc/smartfetch
+```
+
 # documents
 
-* [english](README.en.md)
-* [中文文档](README.md)
+* [english](./README.en.md)
+* [中文文档](./README.md)
 
-# Example
+# 使用示例
 
-use in vuejs
+> use in vue2
 
 install the plugin in main.js
 
@@ -23,23 +32,23 @@ import Vue from 'vue'
 ...
 import smartfetch from '@wxhccc/smartfetch'
 
-/** those code can be import from config file **/
+/** The configuration is recommended to write in a file **/
 
-import { Notification } from 'element-ui';  // you can use the ui component you like
+import { Notification } from 'element-ui';  // you can use other UI library
 const statusMsgs = {
-  '404': '请求地址不存在',
-  '500': '服务器维护中，请稍后再试'
+  '404': 'URL not find',
+  '500': 'Server maintenance, please try again later'
 };
 const codeMsgs = {
-  'E001': '未登录'
+  'E001': 'No login'
 };
 const useConfig = {
-  baseConfig: {  //baseConfig for all request ,can be an array to set multiple
+  baseConfigs: {
     baseURL: ''
   },
-  /*baseConfig: [  // key is necessary to switch
+  /*baseConfigs: [  // key is required when muilt configs
     {
-      key: 'default',  // 'default' will be the default baseConfig set
+      key: 'default',  // 'default' is default key
       baseURL: 'url1'
     },
     {
@@ -47,15 +56,15 @@ const useConfig = {
       baseURL: 'url2'
     }
   ]*/
-  baseData: {},  // the data will append to all request, accept an object or a function
-  errorHandle: notifyMsg, // the http error handler
-  statusWarn: statusMsgs, // status warning text map
-  resCheck: 'success', // the api success check key, can be a function
-  forceAxios: true, // force to use axios to request, default fetch 
-  dataKey: 'data',  // the api data key, default 'data'
-  codeError: (resjson) => { /* the web system error code handler, you can use api error message or use code switch to message you want */ 
+  baseData: {}, 
+  errorHandler: notifyMsg,
+  statusWarn: statusMsgs,
+  responseCheck: 'success',
+  forceAxios: true,
+  dataKey: 'data',
+  codeErrorHandler: (resjson) => {
     let {errorCode, errorMsg} = resjson;
-    let msg = errorMsg || '请求失败';
+    let msg = errorMsg || 'request fail';
     if (codeMsgs.hasOwnProperty(errorCode)) {
       let valType = typeof codeMsgs[errorCode];
       if (valType === 'string') {
@@ -73,7 +82,28 @@ const useConfig = {
 Vue.use(smartfetch, useConfig);
 ...
 ```
-use in the component 
+
+> use in vue3
+
+install the plugin in main.js
+
+```
+...
+const app = createApp(App)
+...
+import smartfetch from '@wxhccc/smartfetch'
+
+const useConfig = {
+  ...
+}
+
+app.use(smartfetch, useConfig);
+...
+```
+
+
+then use in the component 
+
 ```
 	<button :disabled="loading">{loading ? 'sending' : 'send'}</buttom>
 ...
@@ -85,16 +115,77 @@ use in the component
 ...
 	mounted() {
 	  this.$fetch({url: 'api/test', data: {user: 'aaa'}})
-	  	  .lock('loading')  // lock the loading before request send and unlock when response back
-	  	  .done((data) => { /* if the request is success and has no system error, this will run with back data */
+	  	  .lock('loading') 
+	  	  .done((data) => { 
 	  	  	// todo
 	  	  })
-	  	  .silence() /* if you api have not deploy on server, you can use silence mode to prevent warn, in this way you can get some functionality online ahead of time  ,when api is ok, data will back. */
+	  	  .silence() 
 	  	  .faile((error)=>{
-
-	  	  }) /* if you want do something when error generated, you can use this method */
-	  	  .notCheckCode() /* if you use this plugin to get some data from others api, and the have different format api, you can use this method, when response back will send to done immediate */
+         
+	  	  }) 
+	  	  .notCheckCode()
+        .finally(() => {
+        })
 	}
+...
+```
+
+> use in react
+
+
+```
+// xxx/xxxx.js
+import smartfetch from '@wxhccc/smartfetch'
+
+const useConfig = {
+  ...
+}
+
+smartfetch.resetOptions(useConfig);
+
+export smartfetch.fetch
+...
+```
+
+
+then use in the (Class Component)
+
+```
+import { fetch } from 'xxx/xxxx.js'
+...
+	this.state = { loading: false }
+  this.$fetch = fetch.bind(this)
+...
+
+...
+	getDataList = () => {
+	  this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock('loading')
+	}
+...
+```
+
+then use in the Hook Component
+
+```
+import { fetch } from 'xxx/xxxx.js'
+...
+	const [loading, setLoading] = useState(false)
+
+...
+
+	const getDataList = () => {
+	  this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock(setLoading)
+	}
+  /*
+    state may update async，lock can't stop repeat send。
+  */
+  const locking = useRef(false)
+  const getDataListLock = () => {
+    this.$fetch({url: 'api/test', data: {user: 'aaa'}})
+	  	  .lock(setLoading, [locking, 'value'])
+  }
 ...
 ```
 
@@ -102,20 +193,17 @@ use in the component
 
 ## options
 
-**baseConfig**: the config will work on all request. you can set *baseURL* and *headers* by use this item. receive object or array
+**baseConfigs**:
 
-*for example：*
+
 ```
-// use object
-baseConfig: {
+
+baseConfigs: {
   baseURL: 'http://a.b.com',
   headers: {x-token: 'xxxxxxx'}
 }
-/* use array, this key in array items is necessary. 
-** *default* is special, the item with default will be the default config
-** you can use the **useCore(key)** method to change config when you want to send a request
-*/
-baseConfig: [
+or
+baseConfigs: [
   {
     key: 'default',  
     baseURL: 'http://a.b.com'
@@ -125,17 +213,18 @@ baseConfig: [
   }
 ]
 ```
-ps: if you want to modify baseConfig after plugin init, you can use "modifyBaseConfigs" method
 
-**baseData**: the data will merge to all request peyload, receive object or function
 
-*for example：*
+**baseData**: 
+
+
 ```
-// use object
+
 baseData: {
   token: 'xxxxxxxxxxx',
 }
-// use function
+
+or
 
 baseData: () => {
   const token = Math.random();
@@ -144,113 +233,151 @@ baseData: () => {
   }
 }
 ```
-**errorHandle**: the handle method for http request error, usually use ui message component to show the error message
+**errorHandler**: 
 
-*for example：*
+*params：*
+
+* @message(string)
+* @error(Error)：
+* @response(HTTP response): 
+
 ```
-errorHandle: (msg, error) => {
+errorHandler: (msg, error) => {
   alert(msg)
-  // you can handle the *error* yourself
+  /* or 
+  Notification.error({
+    title: 'System Info',
+    message: msg
+  })
+  */
 }
 ```
 
-**statusWarn**: the http status code message map, you can use this to show different tips of status such as *404*, *500*
+**statusWarn**: 
 
-*for example：*
 ```
 statusWarn: {
-  '401': 'xxxx',
-  '402': 'xxxxxxx'
+  '401': 'No Auth',
+  '404': 'Not found'
   ....
 }
 ```
 
-**resCheck**: the method to check whether operation success , receive string or function
+**responseCheck**: if you api is like `{ success: true, code: 200, message: '', data: {} }`。you can use `success` to check api is success
 
-*for example：*
+*示例：*
 ```
-// use string, will check response[resCheck] is *true*
-resCheck: 'success'
+// when use string, will check responseData[resCheck]
+responseCheck: 'success'
 
-// use function
-resCheck: (response) => {
-  return response.code === 200
+
+resCheck: (responseData) => {
+  return responseData.code === 200
 }
 ```
 
-**dataKey**: decide which key will be used to get data when operation success, receive string, default *data*
+**dataKey**: default `data`
 
-**forceAxios**: force to use axios to request, default use *fetch* to send it fetch can work
+**forceAxios**: default `false`
 
-**codeError**: the method to handle operation faile , receive function
+**codeErrorHandler**: 
 
-*for example：*
 ```
-codeError: (resJson) => {
+codeErrorHandler: (resJson) => {
   // to do
 }
 ```
 ## request
 
-you can import this method from smartfetch, the method will make you request more easier
+* @url(string)
+* @data(object/FormData)
+* @method(string)
+* @extra(object)
+  * @returnLink(boolean)
+  * @enctype(string) json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，default `json`  
+
+## request(config)
+Configuration of higher-order functions is used to set the request，return request method
+
+* @config(object) 
+  * useCore: 
 
 how to use
 ```
-//// example 1:
+import { request } from '@wxhccc/smartfetch'
+//// eg. 1:
+
 const args = request('api/getxxx', {a: 1, b: 2}, 'GET')
 this.$fetch(args)
 
-//// example 2:
-// you can get a url link for download
-const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', true)
+//// eg. 2:
+// return link
+const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', { returnLink: true })
 // linkUrl: http://a.b.com/api/getxxx?a=1&b=2
 
-//// example 3:
-// if the first argument is object, the method will return a function, you can use the object to switch the baseconfig
+//// eg. 3:
+
 const args = request({useCore: 'upload'})('api/getxxx', {a: 1, b: 2}, 'GET')
 this.$fetch(args)
-// request url will use upload baseconfig, such as 'http://a.bcd.com/api/getxxx'
+
 
 ```
+
+### Recommon Mode
+
+define method in files
+```
+import { request } from '@wxhccc/smartfetch'
+
+export function getUserList (data) {
+  return request('api/users', data)
+}
+export function addUser (data) {
+  return request('api/users', data, 'PUT')
+}
+```
+
+```
+...
+import { getUserList } from '@/api/xxxx'
+...
+
+this.$fetch(getUserList({ xxx: 'xxx' })).lock('loading').done(data => {
+  // to do
+})
+
+```
+
 
 ## fetch
+
 how to use
-**use class name**
+
 ```
-import {SmartFetch} from '@wxhccc/smartfetch'
+import { SmartFetch } from '@wxhccc/smartfetch'
 
 const options = {
   // configs
 }
-const smartfetch = SmartFetch(options)
+const smartfetch = new SmartFetch(options)
+
+smartfetch.fetch({
+  url: 'api/getxxx',
+  data: { a: 1 }
+})
 
 ```
-**in vuejs**
-use Vue.use in main
-```
-...
-import smartfetch from '@wxhccc/smartfetch'
-const options = {
-  // configs
-}
-Vue.use(smartfetch, options)
 
-this.$fetch
-...
-```
+### smartfetch
+methods of smartfetch
 
-### methods
- list the methods of instance of SmartFetch
 **resetOpts**
-explain: you can use this method to reset options
-
 
 **fetch**
-explain: you can use this method to send a request, the request will send after all sync methods (such as lock) running
 
 how to use
 ```
-//// example 1:
+//// eg. 1:
 // if the first argument is object
 const args = {
   url: 'api/getxxx',
@@ -261,23 +388,17 @@ this.$fetch(args)
 // or
 smartfetch.fetch(args)
 
-//// example 2:
+//// eg. 2:
 // if the first argument is a string , fetch will use *request* to handle arguments
 this.$fetch('api/getxxx', {a: 1, b: 2}, 'GET')
-
-//// example 3:
-// if the first argument is a function , fetch will put rest arguments to the function, can use with request to make apis more clear
-const request1 = function(data) {
-  return request('api/getxxx', data, 'GET')
-}
-this.$fetch(request1, {a: 1, b: 2})
 
 
 ```
 **modifyBaseConfigs**
-explain: you can use this method to modify "baseConfig" when you need
+
 
 how to use
+
 ```
 import smartfetch from '@wxhccc/smartfetch'
 smartfetch.modifyBaseConfigs(baseConfigs => {
@@ -291,14 +412,12 @@ smartfetch.modifyBaseConfigs(baseConfigs => {
 
 ```
 
-#### list the methods of the return of fetch function
+## fetch
+
 
 **lock**
 
-explain: you can use this method to lock a state/data variable before request send and unlock after response back
 
-
-how to use
 ```
 // use in vuejs
 ...
@@ -310,33 +429,37 @@ data: () {
 ...
   this.$fetch('api/getxxx', data).lock('loading')
 
-// use in react
-...
-this.state = {
-  loading: false
-}
-    
-...
-  smartfetch.fetch('api/getxxx', data).lock('loading')
+  setLoading = (lock) => { ... }
+  this.$fetch('api/getxxx', data).lock(setLoading)
+
+  const refs = { loading: false }
+  this.$fetch('api/getxxx', data).lock([refs, 'loading'])
+
+  // for async state update like react
+  this.$fetch('api/getxxx', data).lock(setLoading, [refs, 'loading'])
 
 ```
 
 **useCore**
 
-params: @key(string): baseconfig key
 
-explain: you can use this method to switch baseconfig
+params: @key(string): baseConfig key
+
+```
+  this.$fetch(arg).useCore('upload')
+```
 
 **silence**
 
-explain: you can use this method to shut down all error handle functions
-
-**done**
-
-params: @data(any): data
-
-explain: you can use this method to handle data when operation success
 
 **notCheckCode**
 
-explain: you can use this method to shut down all check process, when you request thirdparty api you can use this , all response object will pass to done function 
+
+**done**
+
+params: @callback(function) 
+        
+**faile**
+params: @callback(function)
+
+
