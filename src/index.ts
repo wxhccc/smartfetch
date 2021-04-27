@@ -11,7 +11,6 @@ import {
   SFetch,
   SmartFetchOptions
 } from './types'
-export * from './types'
 import { has, objType } from './utils'
 
 function checkContext(context?: any): ContextType {
@@ -144,3 +143,7 @@ const rootInstance = new SmartFetch()
 export const request = SFRequest(rootInstance)
 
 export default rootInstance
+
+export * from './types'
+
+export * from './vue-plugin'

@@ -1,6 +1,5 @@
 import { AxiosInstance, Method } from 'axios';
 import { BaseConfig, FetchCore, RequestConfig, RequestData, SFetch, SmartFetchOptions } from './types';
-export * from './types';
 export declare class SmartFetch {
     private _fetchEnable;
     private _useFetch;
@@ -34,3 +33,5 @@ export declare const request: {
     }): (url: string, data?: RequestData, method?: Method, extra?: import("./request").RequestExtraArgs | undefined) => string | RequestConfig<string>;
 };
 export default rootInstance;
+export * from './types';
+export * from './vue-plugin';
