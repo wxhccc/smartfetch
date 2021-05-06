@@ -1,94 +1,125 @@
 import axios from 'axios';
 
-const defOpts = {
-    credentitals: 'same-origin',
-    responseType: 'json'
-};
-const responseMixin = {
-    json: 'json',
-    text: 'text',
-    blob: 'blob',
-    arraybuffer: 'arrayBuffer'
-};
+/*!
+  * @wxhccc/es-util v1.3.0
+  * (c) 2021 wxhccc
+  * @license MIT
+  */
+
 const { hasOwnProperty: hasOwnProperty$1, toString: toString$1 } = Object.prototype;
-const isObj = (obj) => toString$1.call(obj) === '[object Object]';
-function createError(name, error, message) {
-    error = error instanceof Error ? error : new Error();
-    error.name = name;
-    message && (error.message = message);
-    return error;
+const objType$1 = (val) => {
+    const typeKeys = toString$1.call(val).match(/^\[object (.*)\]$/);
+    return typeKeys ? typeKeys[1] : '';
+};
+/**
+ * wrap promise and handle reject or err by return an array like [error, undefined]
+ * @param promise promise
+ * @returns Promise<[K, undefined] | [null, T]>
+ */
+async function awaitWrapper(promise) {
+    try {
+        const data = await promise;
+        return [null, data];
+    }
+    catch (err) {
+        return [err, undefined];
+    }
 }
-function smartFetchCore(rootInstance, context, config, contextType) {
-    const $root = rootInstance;
+function checkContext(context) {
+    if (!context)
+        return 'unknown';
+    if (context._isVue || (context.$ && context.$.vnode)) {
+        return 'vue';
+    }
+    else if ('setState' in context) {
+        return 'react';
+    }
+    return 'unknown';
+}
+/**
+ * wrap promise with lock, support reactive environment like react or vue
+ * @param promise promise
+ * @param wrap whether use awaitWrap to wrap result
+ */
+const lockCtx = {};
+function wp(promise, wrap) {
+    const contextType = checkContext(this);
     const isReactiveIns = contextType !== 'unknown';
-    rootInstance.$core;
-    let useBaseCfg = rootInstance.$curCfg;
-    let _response = null;
-    let _resJson = null;
-    let needCodeCheck = !!rootInstance.options.responseCheck;
-    const stateKey = isReactiveIns
-        ? contextType === 'react'
-            ? 'state'
-            : ''
-        : '$_SF_KEYS';
+    const context = isReactiveIns ? this : lockCtx;
+    const stateKey = contextType === 'react' ? 'state' : '';
     const contextState = stateKey ? context[stateKey] : context;
-    let fetchConfig = {};
-    let silence = false;
+    const has = (val, key) => !!val && hasOwnProperty$1.call(val, key);
+    const isObj = (obj) => objType$1(obj) === 'Object';
+    const setValue = (obj, path, value) => {
+        // if vue2 and path[0] not defined, do nothing
+        if (contextType === 'vue' && context.$set && !has(obj, path[0]))
+            return;
+        const { $set = (o, key, val) => { o[key] = val; } } = context;
+        const isStateRect = contextType === 'react';
+        const originObj = isStateRect ? { ...obj } : obj;
+        let curObj = originObj;
+        let canSet = false;
+        for (let i = 0; i < path.length; i++) {
+            const key = path[i];
+            const keyExist = has(curObj, key);
+            if (i === path.length - 1) {
+                const isBool = typeof curObj[key] === 'boolean';
+                canSet = !keyExist || isBool;
+                canSet && $set(curObj, key, value);
+            }
+            else {
+                !keyExist && $set(curObj, key, {});
+                if (!isObj(curObj[key]))
+                    break;
+                isStateRect && (curObj[key] = { ...curObj[key] });
+                curObj = curObj[key];
+            }
+        }
+        // trigger setState when run in react class component
+        isStateRect && canSet && context.setState({ [path[0]]: originObj[path[0]] });
+    };
+    const getValue = (obj, path) => {
+        // use refHandle if contextState not update sync
+        if (lockRefHandle)
+            return lockRefHandle[0][lockRefHandle[1]];
+        let result = false;
+        if (obj && isObj(obj) && Array.isArray(path)) {
+            let curObj = obj;
+            for (let i = 0; i < path.length; i++) {
+                const key = path[i];
+                if (typeof curObj !== 'object' || !has(curObj, key)) {
+                    break;
+                }
+                curObj = curObj[key];
+                i === path.length - 1 &&
+                    (result = typeof curObj === 'boolean' ? curObj : false);
+            }
+        }
+        return result;
+    };
+    const stateLock = (bool) => {
+        if (lockKey.length)
+            return setValue(contextState, lockKey, bool);
+        if (lockRefHandle)
+            lockRefHandle[0][lockRefHandle[1]] = bool;
+        if (lockSwitchHook)
+            lockSwitchHook(bool);
+    };
+    const checkLock = () => getValue(contextState, lockKey);
     let lockSwitchHook;
     let lockRefHandle;
     let lockKey = [];
-    let failHandler;
-    const axiosRequest = (config) => {
-        const axiosInstanc = $root.$core;
-        return axiosInstanc(config).then(axiosResStatusCheck);
-    };
-    const axiosResStatusCheck = (response) => {
-        _response = response;
-        return response.data;
-    };
-    const switchUseCore = (corekey) => {
-        if (corekey && typeof corekey === 'string' && $root.baseConfigs[corekey]) {
-            useBaseCfg = $root.baseConfigs[corekey];
-            !$root.useFetch && ($root.axiosCores[corekey]);
-        }
-    };
-    const createRequest = (config) => {
-        let reqPromise;
-        const thenQueue = [];
-        if (!config || typeof config.url !== 'string') {
-            reqPromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError);
-        }
-        else {
-            checkRequestCore(config);
-            reqPromise = Promise.resolve().then(() => {
-                if (!checkLock()) {
-                    stateLock(true);
-                    const promise = ($root.useFetch
-                        ? request(config)
-                        : axiosRequest(config))
-                        .then(codeCheck)
-                        .then(handleResData);
-                    const customPro = thenQueue.length
-                        ? thenQueue.reduce((acc, item) => acc.then(item), promise)
-                        : promise.then((data) => [null, data]);
-                    return customPro.catch(handleError).finally(() => stateLock(false));
-                }
-            });
-        }
-        const proxyPromise = Object.assign(reqPromise, {
-            done: (onfulfilled) => {
-                thenQueue.push(onfulfilled);
-                return proxyPromise;
-            },
-            faile: (handler) => {
-                failHandler = handler;
-                return reqPromise;
-            },
-            useCore: (corekey) => {
-                corekey && switchUseCore(corekey);
-                return proxyPromise;
-            },
-            lock: (keyOrHookOrHandle, syncRefHandle) => {
+    let corePromsie;
+    if (typeof promise === 'function') {
+        corePromsie = checkLock() ? Promise.reject(new Error('you can\'t recall promise method when it\'s locking')).catch(() => undefined) : wrap ? awaitWrapper(promise()) : promise();
+    }
+    else {
+        corePromsie = wrap ? awaitWrapper(promise) : promise;
+    }
+    Object.defineProperties(corePromsie, {
+        __lockValue: { get: checkLock },
+        lock: {
+            value: (keyOrHookOrHandle, syncRefHandle) => {
                 const isRefHandle = (val) => Array.isArray(val) && val.length === 2;
                 if (typeof keyOrHookOrHandle === 'string') {
                     lockKey = keyOrHookOrHandle.split('.');
@@ -102,14 +133,97 @@ function smartFetchCore(rootInstance, context, config, contextType) {
                         lockRefHandle = syncRefHandle;
                     }
                 }
+                stateLock(true);
+                return corePromsie;
+            }
+        }
+    });
+    corePromsie.finally(() => stateLock(false));
+    return corePromsie;
+}
+
+const defOpts = {
+    credentitals: 'same-origin',
+    responseType: 'json'
+};
+const responseMixin = {
+    json: 'json',
+    text: 'text',
+    blob: 'blob',
+    arraybuffer: 'arrayBuffer'
+};
+function createError(name, error, message) {
+    error = error instanceof Error ? error : new Error();
+    error.name = name;
+    message && (error.message = message);
+    return error;
+}
+function smartFetchCore(rootInstance, context, config, options) {
+    const $root = rootInstance;
+    let usingCore = rootInstance.$core;
+    let useBaseCfg = rootInstance.$curCfg;
+    let _response = null;
+    let _resJson = null;
+    const opts = {
+        needCodeCheck: !!rootInstance.options.responseCheck,
+        silence: false,
+        ...options
+    };
+    let fetchConfig = {};
+    const axiosRequest = (config) => {
+        const axiosInstanc = usingCore;
+        return axiosInstanc(config).then(axiosResStatusCheck);
+    };
+    const axiosResStatusCheck = (response) => {
+        _response = response;
+        return response.data;
+    };
+    const switchUseCore = (corekey) => {
+        if (corekey && typeof corekey === 'string' && $root.baseConfigs[corekey]) {
+            useBaseCfg = $root.baseConfigs[corekey];
+            !$root.useFetch && (usingCore = $root.getAxiosCore(corekey));
+        }
+    };
+    const createRequest = (config) => {
+        let reqCorePromise;
+        const thenQueue = [];
+        if (!config || typeof config.url !== 'string') {
+            reqCorePromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError);
+        }
+        else {
+            checkRequestCore(config);
+            reqCorePromise = () => Promise.resolve().then(() => {
+                const promise = ($root.useFetch
+                    ? request(config)
+                    : axiosRequest(config))
+                    .then(codeCheck)
+                    .then(handleResData);
+                const customPro = thenQueue.length
+                    ? thenQueue.reduce((acc, item) => acc.then(item), promise)
+                    : promise.then((data) => [null, data]);
+                return customPro.catch(handleError);
+            });
+        }
+        const reqPromise = wp(reqCorePromise);
+        const proxyPromise = Object.assign(reqPromise, {
+            done: (onfulfilled) => {
+                thenQueue.push(onfulfilled);
+                return proxyPromise;
+            },
+            faile: (handler) => {
+                opts.failHandler = handler;
+                return reqPromise;
+            },
+            useCore: (corekey) => {
+                corekey && switchUseCore(corekey);
                 return proxyPromise;
             },
             silence: () => {
-                silence = true;
+                opts.silence = true;
                 return proxyPromise;
             },
             notCheckCode: () => {
-                needCodeCheck = false;
+                opts.needCodeCheck = false;
                 return proxyPromise;
             }
         });
@@ -138,36 +252,6 @@ function smartFetchCore(rootInstance, context, config, contextType) {
         const { dataKey } = $root.options;
         return dataKey ? resjson[dataKey] : resjson;
     };
-    const checkLock = () => {
-        return lockKey.length > 0 && getValue(contextState, lockKey);
-    };
-    const stateLock = (bool) => {
-        if (lockKey.length)
-            return setValue(contextState, lockKey, bool);
-        if (lockRefHandle)
-            lockRefHandle[0][lockRefHandle[1]] = bool;
-        if (lockSwitchHook)
-            lockSwitchHook(bool);
-    };
-    const getValue = (obj, path) => {
-        // use refHandle if contextState not update sync
-        if (lockRefHandle)
-            return lockRefHandle[0][lockRefHandle[1]];
-        let result = false;
-        if (obj && isObj(obj) && Array.isArray(path)) {
-            let curObj = obj;
-            for (let i = 0; i < path.length; i++) {
-                const key = path[i];
-                if (typeof curObj !== 'object' || !hasOwnProperty$1.call(curObj, key)) {
-                    break;
-                }
-                curObj = curObj[key];
-                i === path.length - 1 &&
-                    (result = typeof curObj === 'boolean' ? curObj : false);
-            }
-        }
-        return result;
-    };
     const typeHandle = (response) => {
         const { responseType } = fetchConfig;
         const mixFn = responseMixin[responseType];
@@ -184,10 +268,6 @@ function smartFetchCore(rootInstance, context, config, contextType) {
         throw new Error(`Request failed with status code ${response.status}`);
     };
     const handleError = (error) => {
-        if (typeof failHandler === 'function')
-            failHandler(error);
-        if (silence)
-            return [error, undefined];
         let msg = '';
         const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root;
         if ((useFetch && error instanceof TypeError) ||
@@ -225,45 +305,13 @@ function smartFetchCore(rootInstance, context, config, contextType) {
         return result;
     };
     const codeCheck = (resjson) => {
-        if (needCodeCheck && !resOkCheck(resjson)) {
+        if (opts.needCodeCheck && !resOkCheck(resjson)) {
             _resJson = resjson;
             throw createError('CodeError', undefined, 'code checked failed');
         }
         else {
             return resjson;
         }
-    };
-    const setValue = (obj, path, value) => {
-        // if vue2 and path[0] not defined, do nothing
-        if (contextType === 'vue' &&
-            context.$set &&
-            !hasOwnProperty$1.call(obj, path[0]))
-            return;
-        const { $set = (o, key, val) => {
-            o[key] = val;
-        } } = context;
-        const isStateRect = contextType === 'react';
-        const originObj = isStateRect ? { ...obj } : obj;
-        let curObj = originObj;
-        let canSet = false;
-        for (let i = 0; i < path.length; i++) {
-            const key = path[i];
-            const keyExist = hasOwnProperty$1.call(curObj, key);
-            if (i === path.length - 1) {
-                const isBool = typeof curObj[key] === 'boolean';
-                canSet = !keyExist || isBool;
-                canSet && $set(curObj, key, value);
-            }
-            else {
-                !keyExist && $set(curObj, key, {});
-                if (!isObj(curObj[key]))
-                    break;
-                isStateRect && (curObj[key] = { ...curObj[key] });
-                curObj = curObj[key];
-            }
-        }
-        // trigger setState when run in react class component
-        isStateRect && canSet && context.setState({ [path[0]]: originObj[path[0]] });
     };
     const reqPromise = createRequest(config);
     return reqPromise;
@@ -445,29 +493,12 @@ function SFRequest (config) {
     return configGenerate;
 }
 
-function checkContext(context) {
-    if (!context)
-        return 'unknown';
-    if (context._isVue || (context.$ && context.$.vnode)) {
-        return 'vue';
-    }
-    else if ('setState' in context) {
-        return 'react';
-    }
-    return 'unknown';
-}
 function fetchContextMethod(instance) {
-    const fetch = function (configOrUrl, data, method) {
-        const instanceType = checkContext(this);
+    const fetch = function (configOrUrl, dataOrOptions, method, options) {
         const config = typeof configOrUrl === 'string'
-            ? request(configOrUrl, data, method)
+            ? request(configOrUrl, dataOrOptions, method)
             : configOrUrl || {};
-        const context = instanceType !== 'unknown' ? this : self || window || global;
-        context &&
-            instanceType === 'unknown' &&
-            !has(context, '$_SF_KEYS') &&
-            (context.$_SF_KEYS = {});
-        return smartFetchCore(instance, context, config, instanceType);
+        return smartFetchCore(instance, this, config, options);
     };
     return fetch;
 }
@@ -527,6 +558,9 @@ class SmartFetch {
         });
         this.$curCfg = _baseCfgs['default'];
         !_useFetch && (this.$core = _axiosCores['default']);
+    }
+    getAxiosCore(key) {
+        return has(this._axiosCores, key) ? this._axiosCores[key] : this.$core;
     }
     // init the core of ajax, set default config
     // for Vue.use method of vuejs

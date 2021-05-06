@@ -4,8 +4,8 @@ import SFRequest from './request'
 import {
   BaseConfig,
   BaseConfigs,
-  ContextType,
   FetchCore,
+  FetchOptions,
   RequestConfig,
   RequestData,
   SFetch,
@@ -13,34 +13,23 @@ import {
 } from './types'
 import { has, objType } from './utils'
 
-function checkContext(context?: any): ContextType {
-  if (!context) return 'unknown'
-  if (context._isVue || (context.$ && context.$.vnode)) {
-    return 'vue'
-  } else if ('setState' in context) {
-    return 'react'
-  }
-  return 'unknown'
-}
-
 function fetchContextMethod(instance: SmartFetch) {
   const fetch: SFetch = function (
     this: any,
     configOrUrl: RequestConfig | string,
-    data?: RequestData,
-    method?: Method
+    dataOrOptions?: RequestData | FetchOptions,
+    method?: Method,
+    options?: FetchOptions
   ) {
-    const instanceType = checkContext(this)
     const config =
       typeof configOrUrl === 'string'
-        ? (request(configOrUrl, data, method) as BaseConfig)
+        ? (request(
+            configOrUrl,
+            dataOrOptions as RequestData,
+            method
+          ) as BaseConfig)
         : configOrUrl || {}
-    const context = instanceType !== 'unknown' ? this : self || window || global
-    context &&
-      instanceType === 'unknown' &&
-      !has(context, '$_SF_KEYS') &&
-      (context.$_SF_KEYS = {})
-    return smartFetchCore(instance, context, config, instanceType)
+    return smartFetchCore(instance, this, config, options)
   }
   return fetch
 }
@@ -107,6 +96,10 @@ export class SmartFetch {
     })
     this.$curCfg = _baseCfgs['default']
     !_useFetch && (this.$core = _axiosCores['default'])
+  }
+
+  public getAxiosCore(key: string) {
+    return has(this._axiosCores, key) ? this._axiosCores[key] : this.$core
   }
 
   public fetch = fetchContextMethod(this)

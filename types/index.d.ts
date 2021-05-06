@@ -20,6 +20,7 @@ export declare class SmartFetch {
     private _fetchCoreChoose;
     private _ajaxCoreSwitch;
     private _fetchCoreSetup;
+    getAxiosCore(key: string): FetchCore;
     fetch: SFetch;
     install(appOrVue: any, options: SmartFetchOptions): void;
     modifyBaseConfigs(handler: (baseConfigs: Record<string, BaseConfig>) => never): void;

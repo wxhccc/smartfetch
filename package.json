@@ -65,7 +65,9 @@
     "typescript": "^4.2.3",
     "vue": "^3.0.11"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@wxhccc/es-util": "^1.3.1"
+  },
   "files": [
     "dist",
     "types"

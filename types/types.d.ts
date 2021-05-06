@@ -1,3 +1,4 @@
+import { PromiseWithLock } from '@wxhccc/es-util';
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 export declare type SerializableObject = {
     [x: string]: SerializableObject | number | string | [] | Date;
@@ -50,17 +51,21 @@ export interface LockMethod<T> {
     (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>;
     (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>;
 }
-export interface PromiseWithMethods<T> extends Promise<T> {
+export interface PromiseWithMethods<T> extends PromiseWithLock<T> {
     done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>;
     faile: (handler: FaileHandle) => Promise<T>;
     useCore: (corekey: string) => PromiseWithMethods<T>;
-    lock: LockMethod<T>;
     silence: () => PromiseWithMethods<T>;
     notCheckCode: () => PromiseWithMethods<T>;
 }
 export declare type ContextType = 'unknown' | 'vue' | 'react';
+export interface FetchOptions {
+    silence?: boolean;
+    needCodeCheck?: boolean;
+    failHandler?: FaileHandle;
+}
 export interface SFetch {
-    <T>(config: RequestConfig): PromiseWithMethods<T>;
-    <T>(url: string, data?: RequestData, method?: Method): PromiseWithMethods<T>;
+    <T>(config: RequestConfig, options?: FetchOptions): PromiseWithMethods<T>;
+    <T>(url: string, data?: RequestData, method?: Method, options?: FetchOptions): PromiseWithMethods<T>;
 }
 export {};
