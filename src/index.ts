@@ -13,8 +13,10 @@ import {
 } from './types'
 import { has, objType } from './utils'
 
+export { wp } from '@wxhccc/es-util'
+
 function fetchContextMethod(instance: SmartFetch) {
-  const fetch: SFetch = function (
+  const fetch: SFetch = function <T = any>(
     this: any,
     configOrUrl: RequestConfig | string,
     dataOrOptions?: RequestData | FetchOptions,
@@ -29,7 +31,7 @@ function fetchContextMethod(instance: SmartFetch) {
             method
           ) as BaseConfig)
         : configOrUrl || {}
-    return smartFetchCore(instance, this, config, options)
+    return smartFetchCore<T>(instance, this, config, options)
   }
   return fetch
 }

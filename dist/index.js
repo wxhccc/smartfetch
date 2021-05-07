@@ -8,147 +8,350 @@ function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'defau
 
 var axios__default = /*#__PURE__*/_interopDefaultLegacy(axios);
 
-/*!
-  * @wxhccc/es-util v1.3.0
-  * (c) 2021 wxhccc
-  * @license MIT
-  */
+function _typeof(obj) {
+  "@babel/helpers - typeof";
 
-const { hasOwnProperty: hasOwnProperty$1, toString: toString$1 } = Object.prototype;
-const objType$1 = (val) => {
-    const typeKeys = toString$1.call(val).match(/^\[object (.*)\]$/);
-    return typeKeys ? typeKeys[1] : '';
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function (obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function (obj) {
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    };
+  }
+
+  return _typeof(obj);
+}
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
+  try {
+    var info = gen[key](arg);
+    var value = info.value;
+  } catch (error) {
+    reject(error);
+    return;
+  }
+
+  if (info.done) {
+    resolve(value);
+  } else {
+    Promise.resolve(value).then(_next, _throw);
+  }
+}
+
+function _asyncToGenerator(fn) {
+  return function () {
+    var self = this,
+        args = arguments;
+    return new Promise(function (resolve, reject) {
+      var gen = fn.apply(self, args);
+
+      function _next(value) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
+      }
+
+      function _throw(err) {
+        asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
+      }
+
+      _next(undefined);
+    });
+  };
+}
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
+}
+
+var _Object$prototype = Object.prototype,
+    hasOwnProperty$1 = _Object$prototype.hasOwnProperty,
+    toString$1 = _Object$prototype.toString;
+
+var objType$1 = function objType(val) {
+  var typeKeys = toString$1.call(val).match(/^\[object (.*)\]$/);
+  return typeKeys ? typeKeys[1] : '';
 };
 /**
  * wrap promise and handle reject or err by return an array like [error, undefined]
  * @param promise promise
  * @returns Promise<[K, undefined] | [null, T]>
  */
-async function awaitWrapper(promise) {
-    try {
-        const data = await promise;
-        return [null, data];
-    }
-    catch (err) {
-        return [err, undefined];
-    }
+
+
+function awaitWrapper(_x) {
+  return _awaitWrapper.apply(this, arguments);
 }
+
+function _awaitWrapper() {
+  _awaitWrapper = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(promise) {
+    var data;
+    return regeneratorRuntime.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            _context.prev = 0;
+            _context.next = 3;
+            return promise;
+
+          case 3:
+            data = _context.sent;
+            return _context.abrupt("return", [null, data]);
+
+          case 7:
+            _context.prev = 7;
+            _context.t0 = _context["catch"](0);
+            return _context.abrupt("return", [_context.t0, undefined]);
+
+          case 10:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee, null, [[0, 7]]);
+  }));
+  return _awaitWrapper.apply(this, arguments);
+}
+
 function checkContext(context) {
-    if (!context)
-        return 'unknown';
-    if (context._isVue || (context.$ && context.$.vnode)) {
-        return 'vue';
-    }
-    else if ('setState' in context) {
-        return 'react';
-    }
-    return 'unknown';
+  if (!context) return 'unknown';
+
+  if (context._isVue || context.$ && context.$.vnode) {
+    return 'vue';
+  } else if ('setState' in context) {
+    return 'react';
+  }
+
+  return 'unknown';
 }
-/**
- * wrap promise with lock, support reactive environment like react or vue
- * @param promise promise
- * @param wrap whether use awaitWrap to wrap result
- */
-const lockCtx = {};
-function wp(promise, wrap) {
-    const contextType = checkContext(this);
-    const isReactiveIns = contextType !== 'unknown';
-    const context = isReactiveIns ? this : lockCtx;
-    const stateKey = contextType === 'react' ? 'state' : '';
-    const contextState = stateKey ? context[stateKey] : context;
-    const has = (val, key) => !!val && hasOwnProperty$1.call(val, key);
-    const isObj = (obj) => objType$1(obj) === 'Object';
-    const setValue = (obj, path, value) => {
-        // if vue2 and path[0] not defined, do nothing
-        if (contextType === 'vue' && context.$set && !has(obj, path[0]))
-            return;
-        const { $set = (o, key, val) => { o[key] = val; } } = context;
-        const isStateRect = contextType === 'react';
-        const originObj = isStateRect ? { ...obj } : obj;
-        let curObj = originObj;
-        let canSet = false;
-        for (let i = 0; i < path.length; i++) {
-            const key = path[i];
-            const keyExist = has(curObj, key);
-            if (i === path.length - 1) {
-                const isBool = typeof curObj[key] === 'boolean';
-                canSet = !keyExist || isBool;
-                canSet && $set(curObj, key, value);
-            }
-            else {
-                !keyExist && $set(curObj, key, {});
-                if (!isObj(curObj[key]))
-                    break;
-                isStateRect && (curObj[key] = { ...curObj[key] });
-                curObj = curObj[key];
-            }
-        }
-        // trigger setState when run in react class component
-        isStateRect && canSet && context.setState({ [path[0]]: originObj[path[0]] });
-    };
-    const getValue = (obj, path) => {
-        // use refHandle if contextState not update sync
-        if (lockRefHandle)
-            return lockRefHandle[0][lockRefHandle[1]];
-        let result = false;
-        if (obj && isObj(obj) && Array.isArray(path)) {
-            let curObj = obj;
-            for (let i = 0; i < path.length; i++) {
-                const key = path[i];
-                if (typeof curObj !== 'object' || !has(curObj, key)) {
-                    break;
-                }
-                curObj = curObj[key];
-                i === path.length - 1 &&
-                    (result = typeof curObj === 'boolean' ? curObj : false);
-            }
-        }
-        return result;
-    };
-    const stateLock = (bool) => {
-        if (lockKey.length)
-            return setValue(contextState, lockKey, bool);
-        if (lockRefHandle)
-            lockRefHandle[0][lockRefHandle[1]] = bool;
-        if (lockSwitchHook)
-            lockSwitchHook(bool);
-    };
-    const checkLock = () => getValue(contextState, lockKey);
-    let lockSwitchHook;
-    let lockRefHandle;
-    let lockKey = [];
-    let corePromsie;
-    if (typeof promise === 'function') {
-        corePromsie = checkLock() ? Promise.reject(new Error('you can\'t recall promise method when it\'s locking')).catch(() => undefined) : wrap ? awaitWrapper(promise()) : promise();
+
+var emptyPromise = function emptyPromise() {
+  var ep = Promise.resolve(undefined);
+  return Object.assign(ep, {
+    then: function then() {
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var onfulfilled = args[0]; // if then has be called by Promise.all, let ite pass
+
+      if (args.length === 2 && typeof onfulfilled === 'function') {
+        return onfulfilled(undefined);
+      }
+
+      return ep;
+    },
+    catch: function _catch(onrejected) {
+      return ep;
+    },
+    finally: function _finally() {
+      return ep;
     }
-    else {
-        corePromsie = wrap ? awaitWrapper(promise) : promise;
-    }
-    Object.defineProperties(corePromsie, {
-        __lockValue: { get: checkLock },
-        lock: {
-            value: (keyOrHookOrHandle, syncRefHandle) => {
-                const isRefHandle = (val) => Array.isArray(val) && val.length === 2;
-                if (typeof keyOrHookOrHandle === 'string') {
-                    lockKey = keyOrHookOrHandle.split('.');
-                }
-                else if (isRefHandle(keyOrHookOrHandle)) {
-                    lockRefHandle = keyOrHookOrHandle;
-                }
-                else if (typeof keyOrHookOrHandle === 'function') {
-                    lockSwitchHook = keyOrHookOrHandle;
-                    if (isRefHandle(syncRefHandle)) {
-                        lockRefHandle = syncRefHandle;
-                    }
-                }
-                stateLock(true);
-                return corePromsie;
-            }
+  });
+};
+
+var lockCtx = {};
+
+function wrapPromise(promise, wrapOrOptions) {
+  var contextType = checkContext(this);
+  var isReactiveIns = contextType !== 'unknown';
+  var context = isReactiveIns ? this : lockCtx;
+  var stateKey = contextType === 'react' ? 'state' : '';
+  var contextState = stateKey ? context[stateKey] : context;
+
+  var _ref5 = typeof wrapOrOptions === 'boolean' ? {
+    wrap: wrapOrOptions
+  } : _objectSpread2({}, wrapOrOptions),
+      wrap = _ref5.wrap,
+      lock = _ref5.lock,
+      syncRefHandle = _ref5.syncRefHandle,
+      manualUnlock = _ref5.manualUnlock;
+
+  var lockSwitchHook = undefined;
+  var lockRefHandle = undefined;
+  var lockKey = [];
+  var needLock = false;
+  var ignoreLock = false;
+
+  var has = function has(val, key) {
+    return !!val && hasOwnProperty$1.call(val, key);
+  };
+
+  var isObj = function isObj(obj) {
+    return objType$1(obj) === 'Object';
+  };
+
+  var getValue = function getValue(obj, path) {
+    var result = false;
+
+    if (obj && isObj(obj) && Array.isArray(path) && path.length) {
+      var curObj = obj;
+
+      for (var i = 0; i < path.length; i++) {
+        var key = path[i];
+
+        if (_typeof(curObj) !== 'object' || !has(curObj, key)) {
+          break;
         }
-    });
-    corePromsie.finally(() => stateLock(false));
-    return corePromsie;
+
+        curObj = curObj[key];
+        i === path.length - 1 && (result = typeof curObj === 'boolean' ? curObj : false);
+      }
+    }
+
+    return result;
+  };
+
+  var setValue = function setValue(obj, path, value) {
+    // if vue2 and path[0] not defined, do nothing
+    if (contextType === 'vue' && context.$set && !has(obj, path[0])) return;
+    var _context$$set = context.$set,
+        $set = _context$$set === void 0 ? function (o, key, val) {
+      o[key] = val;
+    } : _context$$set;
+    var isStateRect = contextType === 'react';
+    var originObj = isStateRect ? _objectSpread2({}, obj) : obj;
+    var curObj = originObj;
+    var canSet = false;
+
+    for (var i = 0; i < path.length; i++) {
+      var key = path[i];
+      var keyExist = has(curObj, key);
+
+      if (i === path.length - 1) {
+        var isBool = typeof curObj[key] === 'boolean';
+        canSet = !keyExist || isBool;
+        canSet && $set(curObj, key, value);
+      } else {
+        !keyExist && $set(curObj, key, {});
+        if (!isObj(curObj[key])) break;
+        isStateRect && (curObj[key] = _objectSpread2({}, curObj[key]));
+        curObj = curObj[key];
+      }
+    } // trigger setState when run in react class component
+
+
+    isStateRect && canSet && context.setState(_defineProperty({}, path[0], originObj[path[0]]));
+  };
+
+  var stateLock = function stateLock(bool) {
+    if (lockKey.length) {
+      // if not reactive instance, save lock key as string, no need to structure nested object
+      isReactiveIns ? setValue(contextState, lockKey, bool) : lockCtx[lock] = bool;
+      return;
+    }
+
+    if (lockRefHandle) lockRefHandle[0][lockRefHandle[1]] = bool;
+    if (lockSwitchHook) lockSwitchHook(bool);
+  };
+
+  var checkLock = function checkLock() {
+    // use refHandle if contextState not update sync
+    if (lockRefHandle) return lockRefHandle[0][lockRefHandle[1]];
+    if (!isReactiveIns && typeof lock === 'string') return contextState[lock];
+    return getValue(contextState, lockKey);
+  };
+
+  if (lock) {
+    var isRefHandle = function isRefHandle(val) {
+      return Array.isArray(val) && val.length === 2;
+    };
+
+    if (typeof lock === 'string') {
+      lockKey = lock.split('.');
+    } else if (isRefHandle(lock)) {
+      lockRefHandle = lock;
+    } else if (typeof lock === 'function') {
+      lockSwitchHook = lock;
+
+      if (isRefHandle(syncRefHandle)) {
+        lockRefHandle = syncRefHandle;
+      }
+    }
+
+    needLock = lockKey.length > 0 || !!lockRefHandle || !!lockSwitchHook;
+    needLock && (ignoreLock = checkLock());
+  }
+
+  var corePromsie; // if promise is a function, here need to call it in promise.then to use locking check to prevent next call
+
+  if (typeof promise === 'function') {
+    corePromsie = ignoreLock ? emptyPromise() : wrap ? awaitWrapper(promise()) : promise();
+  } else {
+    corePromsie = wrap ? awaitWrapper(promise) : promise;
+  }
+
+  var unlock = function unlock() {
+    return stateLock(false);
+  };
+
+  Object.defineProperties(corePromsie, {
+    '__lockValue': {
+      get: checkLock
+    },
+    unlock: {
+      value: unlock
+    }
+  });
+
+  if (needLock && !ignoreLock) {
+    stateLock(true);
+    !manualUnlock && corePromsie.finally(unlock);
+  }
+
+  return corePromsie;
 }
+
+var wp = Object.defineProperty(wrapPromise, '_checkLockKey', {
+  value: function value(key) {
+    return lockCtx[key];
+  }
+});
 
 const defOpts = {
     credentitals: 'same-origin',
@@ -166,7 +369,7 @@ function createError(name, error, message) {
     message && (error.message = message);
     return error;
 }
-function smartFetchCore(rootInstance, context, config, options) {
+function smartFetchCore(rootInstance, context, config, options = {}) {
     const $root = rootInstance;
     let usingCore = rootInstance.$core;
     let useBaseCfg = rootInstance.$curCfg;
@@ -193,37 +396,51 @@ function smartFetchCore(rootInstance, context, config, options) {
         }
     };
     const createRequest = (config) => {
-        let reqCorePromise;
         const thenQueue = [];
-        if (!config || typeof config.url !== 'string') {
-            reqCorePromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError);
-        }
-        else {
-            checkRequestCore(config);
-            reqCorePromise = () => Promise.resolve().then(() => {
-                const promise = ($root.useFetch
-                    ? request(config)
-                    : axiosRequest(config))
-                    .then(codeCheck)
-                    .then(handleResData);
-                const customPro = thenQueue.length
-                    ? thenQueue.reduce((acc, item) => acc.then(item), promise)
-                    : promise.then((data) => [null, data]);
-                return customPro.catch(handleError);
-            });
-        }
-        const reqPromise = wp(reqCorePromise);
-        const proxyPromise = Object.assign(reqPromise, {
+        const sendFetch = () => {
+            if (!config || typeof config.url !== 'string') {
+                throw createError('NoUrl', undefined, 'smartfetch: no valid url');
+            }
+            else {
+                checkRequestCore(config);
+                const reqPromise = () => {
+                    const promise = ($root.useFetch
+                        ? request(config)
+                        : axiosRequest(config))
+                        .then(codeCheck)
+                        .then(handleResData);
+                    const customPro = thenQueue.length
+                        ? thenQueue.reduce((acc, item) => acc.then(item), promise)
+                        : promise.then((data) => [null, data]);
+                    return customPro.catch((e) => {
+                        console.log(e);
+                    });
+                };
+                return wp.call(context, reqPromise, {
+                    lock: opts.lock
+                });
+            }
+        };
+        // if offer lock through options, will lock promise sync
+        const reqCorePromise = (options.lock
+            ? new Promise((resolve) => resolve(sendFetch()))
+            : Promise.resolve().then(sendFetch)).catch(handleError);
+        const proxyPromise = Object.assign(reqCorePromise, {
             done: (onfulfilled) => {
                 thenQueue.push(onfulfilled);
                 return proxyPromise;
             },
             faile: (handler) => {
                 opts.failHandler = handler;
-                return reqPromise;
+                return reqCorePromise;
             },
             useCore: (corekey) => {
                 corekey && switchUseCore(corekey);
+                return proxyPromise;
+            },
+            lock: (...args) => {
+                opts.lock = args[0];
+                args[1] && (opts.syncRefHandle = args[1]);
                 return proxyPromise;
             },
             silence: () => {
@@ -276,6 +493,11 @@ function smartFetchCore(rootInstance, context, config, options) {
         throw new Error(`Request failed with status code ${response.status}`);
     };
     const handleError = (error) => {
+        console.log(error);
+        if (typeof opts.failHandler === 'function')
+            opts.failHandler(error);
+        if (opts.silence)
+            return [error, undefined];
         let msg = '';
         const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root;
         if ((useFetch && error instanceof TypeError) ||
@@ -602,3 +824,4 @@ const request = SFRequest(rootInstance);
 exports.SmartFetch = SmartFetch;
 exports.default = rootInstance;
 exports.request = request;
+exports.wp = wp;

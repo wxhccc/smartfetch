@@ -16,11 +16,11 @@ const SubmitBtns = {
     }
   },
   methods: {
-    async onBtn1Click() {
-      smartfetch.fetch.call(this, 'https://asfasf.afsf').lock('loading')
+    onBtn1Click() {
+      smartfetch.fetch.call(this, 'http://fasfasfsfsdfa/dsafsf').lock('loading')
     },
-    async onBtn2Click() {
-      smartfetch.fetch.call(this, 'https://asfasf.afsf').lock('a.loading')
+    onBtn2Click() {
+      smartfetch.fetch.call(this, 'http://fasfasfsfsdfa/afsf').lock('a.loading')
     }
   }
 }
@@ -31,7 +31,7 @@ const flushFetch = (time = 0) =>
   })
 
 describe('test lock method in vue3 component', () => {
-  it('test lock root property of vue instance', async () => {
+  it.only('test lock root property of vue instance', async () => {
     const wrapper = mount(SubmitBtns)
     /** before button click */
     const btn = wrapper.get('#btn1')

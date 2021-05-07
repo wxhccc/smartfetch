@@ -1,4 +1,9 @@
-import { PromiseWithLock } from '@wxhccc/es-util'
+import {
+  PromiseWithLock,
+  WpOptions,
+  SyncRefHandle,
+  LockSwitchHook
+} from '@wxhccc/es-util'
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios'
 
 export type SerializableObject = {
@@ -59,8 +64,6 @@ export interface SfRequestConfig {
 }
 
 export type FaileHandle = (e: Error) => unknown
-export type SyncRefHandle = [Record<string, boolean>, string]
-export type LockSwitchHook = (val: boolean) => unknown
 
 export interface LockMethod<T> {
   (key: string): PromiseWithMethods<T>
@@ -75,6 +78,7 @@ export interface PromiseWithMethods<T> extends PromiseWithLock<T> {
   done: <T>(
     onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
   ) => PromiseWithMethods<T>
+  lock: LockMethod<T>
   faile: (handler: FaileHandle) => Promise<T>
   useCore: (corekey: string) => PromiseWithMethods<T>
   silence: () => PromiseWithMethods<T>
@@ -83,7 +87,7 @@ export interface PromiseWithMethods<T> extends PromiseWithLock<T> {
 
 export type ContextType = 'unknown' | 'vue' | 'react'
 
-export interface FetchOptions {
+export interface FetchOptions extends WpOptions {
   silence?: boolean
   needCodeCheck?: boolean
   failHandler?: FaileHandle

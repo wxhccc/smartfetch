@@ -1,16 +1,13 @@
 import { AxiosError, AxiosInstance, AxiosResponse, ResponseType } from 'axios'
-import { awaitWrapper, PromiseWithLock, wp } from '@wxhccc/es-util'
+import { PromiseWithLock, wp } from '@wxhccc/es-util'
 import { SmartFetch } from './index'
 import {
-  ContextType,
   FaileHandle,
   FetchOptions,
   FetchResponse,
-  LockSwitchHook,
   PromiseWithMethods,
   RequestConfig,
   SerializableObject,
-  SyncRefHandle,
   WinFetch
 } from './types'
 
@@ -38,7 +35,7 @@ export default function smartFetchCore<DataType = any>(
   rootInstance: SmartFetch,
   context: any,
   config: RequestConfig,
-  options?: FetchOptions
+  options: FetchOptions = {}
 ) {
   const $root: SmartFetch = rootInstance
   let usingCore = rootInstance.$core
@@ -52,8 +49,6 @@ export default function smartFetchCore<DataType = any>(
     ...options
   }
   let fetchConfig: RequestConfig = {}
-  const silence = false
-  let failHandler: FaileHandle
 
   const axiosRequest = (config: RequestConfig) => {
     const axiosInstanc = usingCore as AxiosInstance
@@ -74,16 +69,14 @@ export default function smartFetchCore<DataType = any>(
   const createRequest = (
     config: RequestConfig
   ): PromiseWithMethods<DataType | [null, DataType] | [Error, undefined]> => {
-    let reqCorePromise: Promise<any> | (() => Promise<any>)
     const thenQueue: any[] = []
-    if (!config || typeof config.url !== 'string') {
-      reqCorePromise = Promise.reject(
-        new Error('smartfetch: no valid url')
-      ).catch(handleError)
-    } else {
-      checkRequestCore(config)
-      reqCorePromise = () =>
-        Promise.resolve().then(() => {
+
+    const sendFetch = () => {
+      if (!config || typeof config.url !== 'string') {
+        throw createError('NoUrl', undefined, 'smartfetch: no valid url')
+      } else {
+        checkRequestCore(config)
+        const reqPromise = () => {
           const promise = ($root.useFetch
             ? request(config)
             : axiosRequest(config)
@@ -93,34 +86,55 @@ export default function smartFetchCore<DataType = any>(
           const customPro = thenQueue.length
             ? thenQueue.reduce((acc, item) => acc.then(item), promise)
             : promise.then((data) => [null, data])
-          return customPro.catch(handleError)
+          return customPro.catch((e: any) => {
+            console.log(e)
+          }) as Promise<DataType | [null, DataType]>
+        }
+        return wp.call(context, reqPromise, {
+          lock: opts.lock
         })
-    }
-    const reqPromise = wp(reqCorePromise) as PromiseWithLock<any>
-    const proxyPromise: PromiseWithMethods<any> = Object.assign(reqPromise, {
-      done: <T>(
-        onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
-      ) => {
-        thenQueue.push(onfulfilled)
-        return proxyPromise
-      },
-      faile: (handler: FaileHandle) => {
-        opts.failHandler = handler
-        return reqPromise
-      },
-      useCore: (corekey: string) => {
-        corekey && switchUseCore(corekey)
-        return proxyPromise
-      },
-      silence: () => {
-        opts.silence = true
-        return proxyPromise
-      },
-      notCheckCode: () => {
-        opts.needCodeCheck = false
-        return proxyPromise
       }
-    })
+    }
+    // if offer lock through options, will lock promise sync
+    const reqCorePromise = (options.lock
+      ? new Promise((resolve) => resolve(sendFetch()))
+      : Promise.resolve().then(sendFetch)
+    ).catch(handleError) as PromiseWithLock<
+      DataType | [null, DataType] | [Error, undefined]
+    >
+
+    const proxyPromise: PromiseWithMethods<any> = Object.assign(
+      reqCorePromise,
+      {
+        done: <T>(
+          onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
+        ) => {
+          thenQueue.push(onfulfilled)
+          return proxyPromise
+        },
+        faile: (handler: FaileHandle) => {
+          opts.failHandler = handler
+          return reqCorePromise
+        },
+        useCore: (corekey: string) => {
+          corekey && switchUseCore(corekey)
+          return proxyPromise
+        },
+        lock: (...args: any[]) => {
+          opts.lock = args[0]
+          args[1] && (opts.syncRefHandle = args[1])
+          return proxyPromise
+        },
+        silence: () => {
+          opts.silence = true
+          return proxyPromise
+        },
+        notCheckCode: () => {
+          opts.needCodeCheck = false
+          return proxyPromise
+        }
+      }
+    )
     return proxyPromise
   }
   const checkRequestCore = (config: RequestConfig) => {
@@ -163,8 +177,9 @@ export default function smartFetchCore<DataType = any>(
   }
 
   const handleError = (error: Error & AxiosError) => {
-    if (typeof failHandler === 'function') failHandler(error)
-    if (silence) return [error, undefined]
+    console.log(error)
+    if (typeof opts.failHandler === 'function') opts.failHandler(error)
+    if (opts.silence) return [error, undefined]
 
     let msg = ''
     const {

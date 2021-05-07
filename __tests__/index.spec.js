@@ -1,8 +1,10 @@
 /* eslint-env node, jest */
 import axios from 'axios'
-import smartfetch, { SmartFetch, request } from '../'
+import smartfetch, { SmartFetch, request, wp } from '../'
 
 window.alert = jest.fn()
+
+const testApi = 'https://api.github.com/repos/ant-design/ant-design'
 
 // 测试导出项是否正确
 describe('exports test', () => {
@@ -56,15 +58,13 @@ describe('test request method', () => {
   })
 
   describe('with baseConfigs set', () => {
-    smartfetch.resetOptions({
-      baseConfigs: { baseURL: 'https://aaa.aa' }
-    })
     it('test request return link url whick will concat baseURL', () => {
+      smartfetch.resetOptions({ baseConfigs: { baseURL: 'https://aaa.aa' } })
       expect(request('/aaa', { a: 1 }, 'GET', { returnLink: true })).toBe(
         'https://aaa.aa/aaa?a=1'
       )
+      smartfetch.resetOptions({}, true)
     })
-    smartfetch.resetOptions({}, true)
   })
 })
 
@@ -80,22 +80,18 @@ describe('test default export smartfetch object', () => {
       expect(res).toBe(undefined)
     })
     it('will return [null, data] if fetch success(without code check and custom done handlers)', async () => {
-      const [error, data] = await smartfetch.fetch(
-        'http://www.163.com',
-        null,
-        'GET',
-        { enctype: 'text' }
-      )
+      const [error, data] = await smartfetch.fetch({
+        url: 'http://www.163.com',
+        responseType: 'text'
+      })
       expect(error).toBe(null)
       expect(data).toBeTruthy()
     })
 
     it('will recieved json object in done handler if fetch success for json api', () => {
-      return smartfetch
-        .fetch('https://api.github.com/repos/ant-design/ant-design')
-        .done((data) => {
-          expect(data).toHaveProperty('id')
-        })
+      return smartfetch.fetch(testApi).done((data) => {
+        expect(data).toHaveProperty('id')
+      })
     })
 
     it('will recieved error object in faile handler if fetch failed', () => {
@@ -106,44 +102,38 @@ describe('test default export smartfetch object', () => {
 
     it('fetch method use axios core(default global.fetch if supported)', async () => {
       smartfetch.resetOptions({ forceAxios: true })
-      const [error, data] = await smartfetch.fetch(
-        'https://api.github.com/repos/ant-design/ant-design'
-      )
-      expect(data).toHaveProperty('id')
+      const [, data] = await smartfetch.fetch(testApi)
+      expect(data).toBeTruthy()
       smartfetch.resetOptions({}, true)
     })
   })
 
-  describe('Method: lock (test in global environment(eg. window, global))', () => {
-    it('test global lock object can work(eg. window.$_SF_KEYS)', async () => {
-      delete window.$_SF_KEYS
-      expect(window.$_SF_KEYS).toBeFalsy()
+  describe('Method: lock (test in global environment)', () => {
+    it('test inner lock object can work', async () => {
+      expect(wp._checkLockKey('locking')).toBeFalsy()
       await smartfetch
-        .fetch('https://api.github.com/repos/ant-design/ant-design')
+        .fetch(testApi)
         .lock('locking')
         .done(() => {
-          expect(window).toHaveProperty('$_SF_KEYS')
-          expect(window.$_SF_KEYS).toHaveProperty('locking', true)
+          expect(wp._checkLockKey('locking')).toBe(true)
         })
-      expect(window.$_SF_KEYS).toHaveProperty('locking', false)
+      expect(wp._checkLockKey('locking')).toBe(false)
     })
 
     it('test offer local object variable to lock', async () => {
       const lockKeys = {}
       await smartfetch
-        .fetch('https://api.github.com/repos/ant-design/ant-design')
-        .lock([lockKeys, 'locking'])
+        .fetch(testApi)
+        .lock([lockKeys, 'loading'])
         .done(() => {
-          expect(lockKeys).toHaveProperty('locking', true)
+          expect(lockKeys).toHaveProperty('loading', true)
         })
-      expect(lockKeys).toHaveProperty('locking', false)
+      expect(lockKeys).toHaveProperty('loading', false)
     })
 
     it('test offer a function to handle', async () => {
       const setLock = jest.fn()
-      await smartfetch
-        .fetch('https://api.github.com/repos/ant-design/ant-design')
-        .lock(setLock)
+      await smartfetch.fetch(testApi).lock(setLock)
       expect(setLock).toHaveBeenNthCalledWith(1, true)
       expect(setLock).toHaveBeenNthCalledWith(2, false)
     })
@@ -151,14 +141,8 @@ describe('test default export smartfetch object', () => {
     it('test whether lock can stop muilt fetch at same time', () => {
       const doneFn = jest.fn()
       return Promise.all([
-        smartfetch
-          .fetch('https://api.github.com/repos/ant-design/ant-design')
-          .lock('locking')
-          .done(doneFn),
-        smartfetch
-          .fetch('https://api.github.com/repos/ant-design/ant-design')
-          .lock('locking')
-          .done(doneFn)
+        smartfetch.fetch(testApi).lock('locking').done(doneFn),
+        smartfetch.fetch(testApi).lock('locking').done(doneFn)
       ]).then(() => {
         expect(doneFn).toBeCalledTimes(1)
       })
@@ -180,6 +164,7 @@ describe('test default export smartfetch object', () => {
       expect(smartfetch.$core).not.toHaveProperty('prototype')
       smartfetch.resetOptions({ forceAxios: true })
       expect(smartfetch.$core).toBe(axios)
+      smartfetch.resetOptions({}, true)
     })
   })
 })

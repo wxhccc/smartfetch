@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 /*!
-  * @wxhccc/es-util v1.3.0
+  * @wxhccc/es-util v1.3.1
   * (c) 2021 wxhccc
   * @license MIT
   */
@@ -36,20 +36,52 @@ function checkContext(context) {
     }
     return 'unknown';
 }
-/**
- * wrap promise with lock, support reactive environment like react or vue
- * @param promise promise
- * @param wrap whether use awaitWrap to wrap result
- */
+const emptyPromise = () => {
+    const ep = Promise.resolve(undefined);
+    return Object.assign(ep, {
+        then(...args) {
+            const [onfulfilled] = args;
+            // if then has be called by Promise.all, let ite pass
+            if (args.length === 2 && typeof onfulfilled === 'function') {
+                return onfulfilled(undefined);
+            }
+            return ep;
+        },
+        catch: (onrejected) => ep,
+        finally: () => ep
+    });
+};
 const lockCtx = {};
-function wp(promise, wrap) {
+function wrapPromise(promise, wrapOrOptions) {
     const contextType = checkContext(this);
     const isReactiveIns = contextType !== 'unknown';
     const context = isReactiveIns ? this : lockCtx;
     const stateKey = contextType === 'react' ? 'state' : '';
     const contextState = stateKey ? context[stateKey] : context;
+    const { wrap, lock, syncRefHandle, manualUnlock } = typeof wrapOrOptions === 'boolean' ? { wrap: wrapOrOptions } : { ...wrapOrOptions };
+    let lockSwitchHook = undefined;
+    let lockRefHandle = undefined;
+    let lockKey = [];
+    let needLock = false;
+    let ignoreLock = false;
     const has = (val, key) => !!val && hasOwnProperty$1.call(val, key);
     const isObj = (obj) => objType$1(obj) === 'Object';
+    const getValue = (obj, path) => {
+        let result = false;
+        if (obj && isObj(obj) && Array.isArray(path) && path.length) {
+            let curObj = obj;
+            for (let i = 0; i < path.length; i++) {
+                const key = path[i];
+                if (typeof curObj !== 'object' || !has(curObj, key)) {
+                    break;
+                }
+                curObj = curObj[key];
+                i === path.length - 1 &&
+                    (result = (typeof curObj === 'boolean') ? curObj : false);
+            }
+        }
+        return result;
+    };
     const setValue = (obj, path, value) => {
         // if vue2 and path[0] not defined, do nothing
         if (contextType === 'vue' && context.$set && !has(obj, path[0]))
@@ -78,69 +110,62 @@ function wp(promise, wrap) {
         // trigger setState when run in react class component
         isStateRect && canSet && context.setState({ [path[0]]: originObj[path[0]] });
     };
-    const getValue = (obj, path) => {
-        // use refHandle if contextState not update sync
-        if (lockRefHandle)
-            return lockRefHandle[0][lockRefHandle[1]];
-        let result = false;
-        if (obj && isObj(obj) && Array.isArray(path)) {
-            let curObj = obj;
-            for (let i = 0; i < path.length; i++) {
-                const key = path[i];
-                if (typeof curObj !== 'object' || !has(curObj, key)) {
-                    break;
-                }
-                curObj = curObj[key];
-                i === path.length - 1 &&
-                    (result = typeof curObj === 'boolean' ? curObj : false);
-            }
-        }
-        return result;
-    };
     const stateLock = (bool) => {
-        if (lockKey.length)
-            return setValue(contextState, lockKey, bool);
+        if (lockKey.length) {
+            // if not reactive instance, save lock key as string, no need to structure nested object
+            isReactiveIns ? setValue(contextState, lockKey, bool) : (lockCtx[lock] = bool);
+            return;
+        }
         if (lockRefHandle)
             lockRefHandle[0][lockRefHandle[1]] = bool;
         if (lockSwitchHook)
             lockSwitchHook(bool);
     };
-    const checkLock = () => getValue(contextState, lockKey);
-    let lockSwitchHook;
-    let lockRefHandle;
-    let lockKey = [];
+    const checkLock = () => {
+        // use refHandle if contextState not update sync
+        if (lockRefHandle)
+            return lockRefHandle[0][lockRefHandle[1]];
+        if (!isReactiveIns && typeof lock === 'string')
+            return contextState[lock];
+        return getValue(contextState, lockKey);
+    };
+    if (lock) {
+        const isRefHandle = (val) => Array.isArray(val) && val.length === 2;
+        if (typeof lock === 'string') {
+            lockKey = lock.split('.');
+        }
+        else if (isRefHandle(lock)) {
+            lockRefHandle = lock;
+        }
+        else if (typeof lock === 'function') {
+            lockSwitchHook = lock;
+            if (isRefHandle(syncRefHandle)) {
+                lockRefHandle = syncRefHandle;
+            }
+        }
+        needLock = lockKey.length > 0 || !!lockRefHandle || !!lockSwitchHook;
+        needLock && (ignoreLock = checkLock());
+    }
     let corePromsie;
+    // if promise is a function, here need to call it in promise.then to use locking check to prevent next call
     if (typeof promise === 'function') {
-        corePromsie = checkLock() ? Promise.reject(new Error('you can\'t recall promise method when it\'s locking')).catch(() => undefined) : wrap ? awaitWrapper(promise()) : promise();
+        corePromsie = ignoreLock ? emptyPromise() : wrap ? awaitWrapper(promise()) : promise();
     }
     else {
         corePromsie = wrap ? awaitWrapper(promise) : promise;
     }
+    const unlock = () => stateLock(false);
     Object.defineProperties(corePromsie, {
-        __lockValue: { get: checkLock },
-        lock: {
-            value: (keyOrHookOrHandle, syncRefHandle) => {
-                const isRefHandle = (val) => Array.isArray(val) && val.length === 2;
-                if (typeof keyOrHookOrHandle === 'string') {
-                    lockKey = keyOrHookOrHandle.split('.');
-                }
-                else if (isRefHandle(keyOrHookOrHandle)) {
-                    lockRefHandle = keyOrHookOrHandle;
-                }
-                else if (typeof keyOrHookOrHandle === 'function') {
-                    lockSwitchHook = keyOrHookOrHandle;
-                    if (isRefHandle(syncRefHandle)) {
-                        lockRefHandle = syncRefHandle;
-                    }
-                }
-                stateLock(true);
-                return corePromsie;
-            }
-        }
+        '__lockValue': { get: checkLock },
+        unlock: { value: unlock }
     });
-    corePromsie.finally(() => stateLock(false));
+    if (needLock && !ignoreLock) {
+        stateLock(true);
+        !manualUnlock && corePromsie.finally(unlock);
+    }
     return corePromsie;
 }
+const wp = Object.defineProperty(wrapPromise, '_checkLockKey', { value: (key) => lockCtx[key] });
 
 const defOpts = {
     credentitals: 'same-origin',
@@ -158,7 +183,7 @@ function createError(name, error, message) {
     message && (error.message = message);
     return error;
 }
-function smartFetchCore(rootInstance, context, config, options) {
+function smartFetchCore(rootInstance, context, config, options = {}) {
     const $root = rootInstance;
     let usingCore = rootInstance.$core;
     let useBaseCfg = rootInstance.$curCfg;
@@ -185,37 +210,51 @@ function smartFetchCore(rootInstance, context, config, options) {
         }
     };
     const createRequest = (config) => {
-        let reqCorePromise;
         const thenQueue = [];
-        if (!config || typeof config.url !== 'string') {
-            reqCorePromise = Promise.reject(new Error('smartfetch: no valid url')).catch(handleError);
-        }
-        else {
-            checkRequestCore(config);
-            reqCorePromise = () => Promise.resolve().then(() => {
-                const promise = ($root.useFetch
-                    ? request(config)
-                    : axiosRequest(config))
-                    .then(codeCheck)
-                    .then(handleResData);
-                const customPro = thenQueue.length
-                    ? thenQueue.reduce((acc, item) => acc.then(item), promise)
-                    : promise.then((data) => [null, data]);
-                return customPro.catch(handleError);
-            });
-        }
-        const reqPromise = wp(reqCorePromise);
-        const proxyPromise = Object.assign(reqPromise, {
+        const sendFetch = () => {
+            if (!config || typeof config.url !== 'string') {
+                throw createError('NoUrl', undefined, 'smartfetch: no valid url');
+            }
+            else {
+                checkRequestCore(config);
+                const reqPromise = () => {
+                    const promise = ($root.useFetch
+                        ? request(config)
+                        : axiosRequest(config))
+                        .then(codeCheck)
+                        .then(handleResData);
+                    const customPro = thenQueue.length
+                        ? thenQueue.reduce((acc, item) => acc.then(item), promise)
+                        : promise.then((data) => [null, data]);
+                    return customPro.catch((e) => {
+                        console.log(e);
+                    });
+                };
+                return wp.call(context, reqPromise, {
+                    lock: opts.lock
+                });
+            }
+        };
+        // if offer lock through options, will lock promise sync
+        const reqCorePromise = (options.lock
+            ? new Promise((resolve) => resolve(sendFetch()))
+            : Promise.resolve().then(sendFetch)).catch(handleError);
+        const proxyPromise = Object.assign(reqCorePromise, {
             done: (onfulfilled) => {
                 thenQueue.push(onfulfilled);
                 return proxyPromise;
             },
             faile: (handler) => {
                 opts.failHandler = handler;
-                return reqPromise;
+                return reqCorePromise;
             },
             useCore: (corekey) => {
                 corekey && switchUseCore(corekey);
+                return proxyPromise;
+            },
+            lock: (...args) => {
+                opts.lock = args[0];
+                args[1] && (opts.syncRefHandle = args[1]);
                 return proxyPromise;
             },
             silence: () => {
@@ -268,6 +307,11 @@ function smartFetchCore(rootInstance, context, config, options) {
         throw new Error(`Request failed with status code ${response.status}`);
     };
     const handleError = (error) => {
+        console.log(error);
+        if (typeof opts.failHandler === 'function')
+            opts.failHandler(error);
+        if (opts.silence)
+            return [error, undefined];
         let msg = '';
         const { statusMsgs, options: { errorHandler, codeErrorHandler }, useFetch } = $root;
         if ((useFetch && error instanceof TypeError) ||
@@ -592,4 +636,4 @@ const rootInstance = new SmartFetch();
 const request = SFRequest(rootInstance);
 
 export default rootInstance;
-export { SmartFetch, request };
+export { SmartFetch, request, wp };

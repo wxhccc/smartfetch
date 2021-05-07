@@ -1,5 +1,6 @@
 import { AxiosInstance, Method } from 'axios';
 import { BaseConfig, FetchCore, RequestConfig, RequestData, SFetch, SmartFetchOptions } from './types';
+export { wp } from '@wxhccc/es-util';
 export declare class SmartFetch {
     private _fetchEnable;
     private _useFetch;
