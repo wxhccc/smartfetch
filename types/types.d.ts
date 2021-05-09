@@ -47,7 +47,7 @@ export declare type FaileHandle = (e: Error) => unknown;
 export interface LockMethod<T> {
     (key: string): PromiseWithMethods<T>;
     (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>;
-    (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>;
+    (switchHook: LockSwitchHook, syncRefHandle?: SyncRefHandle): PromiseWithMethods<T>;
 }
 export interface PromiseWithMethods<T> extends PromiseWithLock<T> {
     done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>;
@@ -63,8 +63,9 @@ export interface FetchOptions extends WpOptions {
     needCodeCheck?: boolean;
     failHandler?: FaileHandle;
 }
+export declare type FetchReturn<T> = PromiseWithMethods<T | undefined | [null, T] | [Error, undefined]>;
 export interface SFetch {
-    <T>(config: RequestConfig, options?: FetchOptions): PromiseWithMethods<T>;
-    <T>(url: string, data?: RequestData, method?: Method, options?: FetchOptions): PromiseWithMethods<T>;
+    <T>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>;
+    <T>(url: string, data?: RequestData, method?: Method, options?: FetchOptions): FetchReturn<T>;
 }
 export {};

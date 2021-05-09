@@ -8,6 +8,44 @@ function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'defau
 
 var axios__default = /*#__PURE__*/_interopDefaultLegacy(axios);
 
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+
+    if (enumerableOnly) {
+      symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+    }
+
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
+}
+
 function _typeof(obj) {
   "@babel/helpers - typeof";
 
@@ -73,40 +111,6 @@ function _defineProperty(obj, key, value) {
   }
 
   return obj;
-}
-
-function ownKeys(object, enumerableOnly) {
-  var keys = Object.keys(object);
-
-  if (Object.getOwnPropertySymbols) {
-    var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
-    keys.push.apply(keys, symbols);
-  }
-
-  return keys;
-}
-
-function _objectSpread2(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i] != null ? arguments[i] : {};
-
-    if (i % 2) {
-      ownKeys(Object(source), true).forEach(function (key) {
-        _defineProperty(target, key, source[key]);
-      });
-    } else if (Object.getOwnPropertyDescriptors) {
-      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-    } else {
-      ownKeys(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
-    }
-  }
-
-  return target;
 }
 
 var _Object$prototype = Object.prototype,
@@ -186,10 +190,10 @@ var emptyPromise = function emptyPromise() {
 
       return ep;
     },
-    catch: function _catch(onrejected) {
+    "catch": function _catch(onrejected) {
       return ep;
     },
-    finally: function _finally() {
+    "finally": function _finally() {
       return ep;
     }
   });
@@ -341,7 +345,7 @@ function wrapPromise(promise, wrapOrOptions) {
 
   if (needLock && !ignoreLock) {
     stateLock(true);
-    !manualUnlock && corePromsie.finally(unlock);
+    !manualUnlock && corePromsie["finally"](unlock);
   }
 
   return corePromsie;
@@ -381,50 +385,107 @@ function smartFetchCore(rootInstance, context, config, options = {}) {
         ...options
     };
     let fetchConfig = {};
-    const axiosRequest = (config) => {
-        const axiosInstanc = usingCore;
-        return axiosInstanc(config).then(axiosResStatusCheck);
-    };
-    const axiosResStatusCheck = (response) => {
-        _response = response;
-        return response.data;
-    };
     const switchUseCore = (corekey) => {
         if (corekey && typeof corekey === 'string' && $root.baseConfigs[corekey]) {
             useBaseCfg = $root.baseConfigs[corekey];
             !$root.useFetch && (usingCore = $root.getAxiosCore(corekey));
         }
     };
+    // axios request
+    const axiosRequest = async (config) => {
+        const axiosRes = await usingCore(config);
+        _response = axiosRes;
+        return axiosRes.data;
+    };
+    // window.fetch request
+    const request = async (config) => {
+        const { baseURL, headers } = useBaseCfg || {};
+        if (!config.url)
+            config.url = '';
+        if (baseURL && (config.url || '').indexOf('http') < 0) {
+            config.url = baseURL + config.url;
+        }
+        headers && (config.headers = { ...config.headers, ...headers });
+        fetchConfig = Object.assign({}, defOpts, config);
+        const resStatusCheck = (response) => {
+            _response = response;
+            const { validateStatus } = $root.options;
+            if (validateStatus ? validateStatus(response.status) : response.ok) {
+                return response;
+            }
+            throw new Error(`Request failed with status code ${response.status}`);
+        };
+        const typeHandle = (response) => {
+            const { responseType } = fetchConfig;
+            const mixFn = responseMixin[responseType];
+            return mixFn && typeof response[mixFn] === 'function'
+                ? response[mixFn]()
+                : undefined;
+        };
+        const res = await $root.$core(config.url, fetchConfig);
+        return typeHandle(resStatusCheck(res));
+    };
+    const checkRequestCore = (config) => {
+        if (!config.useCore || typeof config.useCore !== 'string')
+            return;
+        switchUseCore(config.useCore);
+        delete config.useCore;
+    };
+    const resOkCheck = (resjson) => {
+        let result = false;
+        const { responseCheck } = $root.options;
+        if (typeof responseCheck === 'function') {
+            result = responseCheck(resjson);
+        }
+        else if (typeof responseCheck === 'string') {
+            result = !!resjson[responseCheck];
+        }
+        return result;
+    };
+    const codeCheck = (resjson) => {
+        if (opts.needCodeCheck && !resOkCheck(resjson)) {
+            _resJson = resjson;
+            throw createError('CodeError', undefined, 'code checked failed');
+        }
+        else {
+            return resjson;
+        }
+    };
+    const handleResData = (resjson) => {
+        const { dataKey } = $root.options;
+        return dataKey ? resjson[dataKey] : resjson;
+    };
     const createRequest = (config) => {
         const thenQueue = [];
         const sendFetch = () => {
-            if (!config || typeof config.url !== 'string') {
-                throw createError('NoUrl', undefined, 'smartfetch: no valid url');
-            }
-            else {
-                checkRequestCore(config);
-                const reqPromise = () => {
-                    const promise = ($root.useFetch
+            checkRequestCore(config);
+            const reqPromise = async () => {
+                try {
+                    if (!config || typeof config.url !== 'string') {
+                        throw createError('ConfigError', undefined, 'smartfetch: no valid url');
+                    }
+                    const resJson = await ($root.useFetch
                         ? request(config)
-                        : axiosRequest(config))
-                        .then(codeCheck)
-                        .then(handleResData);
-                    const customPro = thenQueue.length
-                        ? thenQueue.reduce((acc, item) => acc.then(item), promise)
-                        : promise.then((data) => [null, data]);
-                    return customPro.catch((e) => {
-                        console.log(e);
-                    });
-                };
-                return wp.call(context, reqPromise, {
-                    lock: opts.lock
-                });
-            }
+                        : axiosRequest(config));
+                    const data = handleResData(codeCheck(resJson));
+                    if (thenQueue.length) {
+                        const cusData = await thenQueue.reduce((acc, item) => acc.then(item), Promise.resolve(data));
+                        return [null, cusData];
+                    }
+                    return [null, data];
+                }
+                catch (e) {
+                    return handleError(e);
+                }
+            };
+            return wp.call(context, reqPromise, {
+                lock: opts.lock
+            });
         };
         // if offer lock through options, will lock promise sync
-        const reqCorePromise = (options.lock
-            ? new Promise((resolve) => resolve(sendFetch()))
-            : Promise.resolve().then(sendFetch)).catch(handleError);
+        const reqCorePromise = options.lock
+            ? sendFetch()
+            : Promise.resolve().then(sendFetch);
         const proxyPromise = Object.assign(reqCorePromise, {
             done: (onfulfilled) => {
                 thenQueue.push(onfulfilled);
@@ -438,9 +499,9 @@ function smartFetchCore(rootInstance, context, config, options = {}) {
                 corekey && switchUseCore(corekey);
                 return proxyPromise;
             },
-            lock: (...args) => {
-                opts.lock = args[0];
-                args[1] && (opts.syncRefHandle = args[1]);
+            lock: (keyOrHookOrRef, syncRefHandle) => {
+                opts.lock = keyOrHookOrRef;
+                syncRefHandle && (opts.syncRefHandle = syncRefHandle);
                 return proxyPromise;
             },
             silence: () => {
@@ -454,46 +515,7 @@ function smartFetchCore(rootInstance, context, config, options = {}) {
         });
         return proxyPromise;
     };
-    const checkRequestCore = (config) => {
-        if (!config.useCore || typeof config.useCore !== 'string')
-            return;
-        switchUseCore(config.useCore);
-        delete config.useCore;
-    };
-    const request = (config) => {
-        const { baseURL, headers } = useBaseCfg || {};
-        if (!config.url)
-            config.url = '';
-        if (baseURL && (config.url || '').indexOf('http') < 0) {
-            config.url = baseURL + config.url;
-        }
-        headers && (config.headers = { ...config.headers, ...headers });
-        fetchConfig = Object.assign({}, defOpts, config);
-        return $root.$core(config.url, fetchConfig)
-            .then(resStatusCheck)
-            .then(typeHandle);
-    };
-    const handleResData = (resjson) => {
-        const { dataKey } = $root.options;
-        return dataKey ? resjson[dataKey] : resjson;
-    };
-    const typeHandle = (response) => {
-        const { responseType } = fetchConfig;
-        const mixFn = responseMixin[responseType];
-        return mixFn && typeof response[mixFn] === 'function'
-            ? response[mixFn]()
-            : undefined;
-    };
-    const resStatusCheck = (response) => {
-        _response = response;
-        const { validateStatus } = $root.options;
-        if (validateStatus ? validateStatus(response.status) : response.ok) {
-            return response;
-        }
-        throw new Error(`Request failed with status code ${response.status}`);
-    };
     const handleError = (error) => {
-        console.log(error);
         if (typeof opts.failHandler === 'function')
             opts.failHandler(error);
         if (opts.silence)
@@ -523,28 +545,7 @@ function smartFetchCore(rootInstance, context, config, options = {}) {
         }
         return [error, undefined];
     };
-    const resOkCheck = (resjson) => {
-        let result = false;
-        const { responseCheck } = $root.options;
-        if (typeof responseCheck === 'function') {
-            result = responseCheck(resjson);
-        }
-        else if (typeof responseCheck === 'string') {
-            result = !!resjson[responseCheck];
-        }
-        return result;
-    };
-    const codeCheck = (resjson) => {
-        if (opts.needCodeCheck && !resOkCheck(resjson)) {
-            _resJson = resjson;
-            throw createError('CodeError', undefined, 'code checked failed');
-        }
-        else {
-            return resjson;
-        }
-    };
-    const reqPromise = createRequest(config);
-    return reqPromise;
+    return createRequest(config);
 }
 
 const { hasOwnProperty, toString } = Object.prototype;

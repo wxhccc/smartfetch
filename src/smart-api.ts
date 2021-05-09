@@ -1,11 +1,11 @@
-import { AxiosError, AxiosInstance, AxiosResponse, ResponseType } from 'axios'
-import { PromiseWithLock, wp } from '@wxhccc/es-util'
+import { AxiosError, AxiosInstance, ResponseType } from 'axios'
+import { LockSwitchHook, SyncRefHandle, wp } from '@wxhccc/es-util'
 import { SmartFetch } from './index'
 import {
   FaileHandle,
   FetchOptions,
   FetchResponse,
-  PromiseWithMethods,
+  FetchReturn,
   RequestConfig,
   SerializableObject,
   WinFetch
@@ -24,6 +24,11 @@ const responseMixin: Partial<Record<ResponseType, ResponseBodyMixin>> = {
   arraybuffer: 'arrayBuffer'
 }
 
+type Onfulfilled<T = any> =
+  | ((value: any) => T | PromiseLike<T>)
+  | null
+  | undefined
+
 function createError(name: string, error?: Error, message?: string) {
   error = error instanceof Error ? error : new Error()
   error.name = name
@@ -31,7 +36,7 @@ function createError(name: string, error?: Error, message?: string) {
   return error
 }
 
-export default function smartFetchCore<DataType = any>(
+export default function smartFetchCore<DataType = SerializableObject>(
   rootInstance: SmartFetch,
   context: any,
   config: RequestConfig,
@@ -50,99 +55,20 @@ export default function smartFetchCore<DataType = any>(
   }
   let fetchConfig: RequestConfig = {}
 
-  const axiosRequest = (config: RequestConfig) => {
-    const axiosInstanc = usingCore as AxiosInstance
-    return axiosInstanc(config).then(axiosResStatusCheck)
-  }
-  const axiosResStatusCheck = (response: AxiosResponse) => {
-    _response = response
-    return response.data
-  }
-
   const switchUseCore = (corekey: string) => {
     if (corekey && typeof corekey === 'string' && $root.baseConfigs[corekey]) {
       useBaseCfg = $root.baseConfigs[corekey]
       !$root.useFetch && (usingCore = $root.getAxiosCore(corekey))
     }
   }
-
-  const createRequest = (
-    config: RequestConfig
-  ): PromiseWithMethods<DataType | [null, DataType] | [Error, undefined]> => {
-    const thenQueue: any[] = []
-
-    const sendFetch = () => {
-      if (!config || typeof config.url !== 'string') {
-        throw createError('NoUrl', undefined, 'smartfetch: no valid url')
-      } else {
-        checkRequestCore(config)
-        const reqPromise = () => {
-          const promise = ($root.useFetch
-            ? request(config)
-            : axiosRequest(config)
-          )
-            .then(codeCheck)
-            .then(handleResData)
-          const customPro = thenQueue.length
-            ? thenQueue.reduce((acc, item) => acc.then(item), promise)
-            : promise.then((data) => [null, data])
-          return customPro.catch((e: any) => {
-            console.log(e)
-          }) as Promise<DataType | [null, DataType]>
-        }
-        return wp.call(context, reqPromise, {
-          lock: opts.lock
-        })
-      }
-    }
-    // if offer lock through options, will lock promise sync
-    const reqCorePromise = (options.lock
-      ? new Promise((resolve) => resolve(sendFetch()))
-      : Promise.resolve().then(sendFetch)
-    ).catch(handleError) as PromiseWithLock<
-      DataType | [null, DataType] | [Error, undefined]
-    >
-
-    const proxyPromise: PromiseWithMethods<any> = Object.assign(
-      reqCorePromise,
-      {
-        done: <T>(
-          onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined
-        ) => {
-          thenQueue.push(onfulfilled)
-          return proxyPromise
-        },
-        faile: (handler: FaileHandle) => {
-          opts.failHandler = handler
-          return reqCorePromise
-        },
-        useCore: (corekey: string) => {
-          corekey && switchUseCore(corekey)
-          return proxyPromise
-        },
-        lock: (...args: any[]) => {
-          opts.lock = args[0]
-          args[1] && (opts.syncRefHandle = args[1])
-          return proxyPromise
-        },
-        silence: () => {
-          opts.silence = true
-          return proxyPromise
-        },
-        notCheckCode: () => {
-          opts.needCodeCheck = false
-          return proxyPromise
-        }
-      }
-    )
-    return proxyPromise
+  // axios request
+  const axiosRequest = async (config: RequestConfig) => {
+    const axiosRes = await (usingCore as AxiosInstance)(config)
+    _response = axiosRes
+    return axiosRes.data
   }
-  const checkRequestCore = (config: RequestConfig) => {
-    if (!config.useCore || typeof config.useCore !== 'string') return
-    switchUseCore(config.useCore)
-    delete config.useCore
-  }
-  const request = (config: RequestConfig) => {
+  // window.fetch request
+  const request = async (config: RequestConfig) => {
     const { baseURL, headers } = useBaseCfg || {}
     if (!config.url) config.url = ''
     if (baseURL && (config.url || '').indexOf('http') < 0) {
@@ -150,34 +76,130 @@ export default function smartFetchCore<DataType = any>(
     }
     headers && (config.headers = { ...config.headers, ...headers })
     fetchConfig = Object.assign({}, defOpts, config)
-    return ($root.$core as WinFetch)(config.url, fetchConfig)
-      .then(resStatusCheck)
-      .then(typeHandle)
+
+    const resStatusCheck = (response: Response) => {
+      _response = response
+      const { validateStatus } = $root.options
+      if (validateStatus ? validateStatus(response.status) : response.ok) {
+        return response
+      }
+      throw new Error(`Request failed with status code ${response.status}`)
+    }
+
+    const typeHandle = (response: Response) => {
+      const { responseType } = fetchConfig
+      const mixFn = responseMixin[responseType as ResponseType]
+      return mixFn && typeof response[mixFn] === 'function'
+        ? response[mixFn]()
+        : undefined
+    }
+    const res = await ($root.$core as WinFetch)(config.url, fetchConfig)
+    return typeHandle(resStatusCheck(res))
   }
+
+  const checkRequestCore = (config: RequestConfig) => {
+    if (!config.useCore || typeof config.useCore !== 'string') return
+    switchUseCore(config.useCore)
+    delete config.useCore
+  }
+
+  const resOkCheck = (resjson: SerializableObject) => {
+    let result = false
+    const { responseCheck } = $root.options
+    if (typeof responseCheck === 'function') {
+      result = responseCheck(resjson)
+    } else if (typeof responseCheck === 'string') {
+      result = !!resjson[responseCheck]
+    }
+    return result
+  }
+  const codeCheck = (resjson: SerializableObject) => {
+    if (opts.needCodeCheck && !resOkCheck(resjson)) {
+      _resJson = resjson
+      throw createError('CodeError', undefined, 'code checked failed')
+    } else {
+      return resjson
+    }
+  }
+
   const handleResData = (resjson: SerializableObject) => {
     const { dataKey } = $root.options
     return dataKey ? resjson[dataKey] : resjson
   }
 
-  const typeHandle = (response: Response) => {
-    const { responseType } = fetchConfig
-    const mixFn = responseMixin[responseType as ResponseType]
-    return mixFn && typeof response[mixFn] === 'function'
-      ? response[mixFn]()
-      : undefined
-  }
+  const createRequest = (config: RequestConfig) => {
+    const thenQueue: Onfulfilled[] = []
 
-  const resStatusCheck = (response: Response) => {
-    _response = response
-    const { validateStatus } = $root.options
-    if (validateStatus ? validateStatus(response.status) : response.ok) {
-      return response
+    const sendFetch = () => {
+      checkRequestCore(config)
+      const reqPromise = async () => {
+        try {
+          if (!config || typeof config.url !== 'string') {
+            throw createError(
+              'ConfigError',
+              undefined,
+              'smartfetch: no valid url'
+            )
+          }
+          const resJson = await ($root.useFetch
+            ? request(config)
+            : axiosRequest(config))
+          const data = handleResData(codeCheck(resJson))
+          if (thenQueue.length) {
+            const cusData = await thenQueue.reduce(
+              (acc, item) => acc.then(item),
+              Promise.resolve(data)
+            )
+            return [null, cusData]
+          }
+          return [null, data]
+        } catch (e) {
+          return handleError(e)
+        }
+      }
+      return wp.call(context, reqPromise, {
+        lock: opts.lock
+      })
     }
-    throw new Error(`Request failed with status code ${response.status}`)
+    // if offer lock through options, will lock promise sync
+
+    const reqCorePromise = options.lock
+      ? sendFetch()
+      : Promise.resolve().then(sendFetch)
+    const proxyPromise = Object.assign(reqCorePromise, {
+      done: <T>(onfulfilled?: Onfulfilled<T>) => {
+        thenQueue.push(onfulfilled)
+        return proxyPromise
+      },
+      faile: (handler: FaileHandle) => {
+        opts.failHandler = handler
+        return reqCorePromise
+      },
+      useCore: (corekey: string) => {
+        corekey && switchUseCore(corekey)
+        return proxyPromise
+      },
+      lock: (
+        keyOrHookOrRef: string | LockSwitchHook | SyncRefHandle,
+        syncRefHandle?: SyncRefHandle
+      ) => {
+        opts.lock = keyOrHookOrRef
+        syncRefHandle && (opts.syncRefHandle = syncRefHandle)
+        return proxyPromise
+      },
+      silence: () => {
+        opts.silence = true
+        return proxyPromise
+      },
+      notCheckCode: () => {
+        opts.needCodeCheck = false
+        return proxyPromise
+      }
+    })
+    return proxyPromise as FetchReturn<DataType>
   }
 
-  const handleError = (error: Error & AxiosError) => {
-    console.log(error)
+  const handleError = (error: Error & AxiosError): [Error, undefined] => {
     if (typeof opts.failHandler === 'function') opts.failHandler(error)
     if (opts.silence) return [error, undefined]
 
@@ -209,25 +231,5 @@ export default function smartFetchCore<DataType = any>(
     return [error, undefined]
   }
 
-  const resOkCheck = (resjson: SerializableObject) => {
-    let result = false
-    const { responseCheck } = $root.options
-    if (typeof responseCheck === 'function') {
-      result = responseCheck(resjson)
-    } else if (typeof responseCheck === 'string') {
-      result = !!resjson[responseCheck]
-    }
-    return result
-  }
-  const codeCheck = (resjson: SerializableObject) => {
-    if (opts.needCodeCheck && !resOkCheck(resjson)) {
-      _resJson = resjson
-      throw createError('CodeError', undefined, 'code checked failed')
-    } else {
-      return resjson
-    }
-  }
-
-  const reqPromise = createRequest(config)
-  return reqPromise
+  return createRequest(config)
 }
