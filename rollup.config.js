@@ -1,9 +1,9 @@
-import resolve from "@rollup/plugin-node-resolve";
-import { babel } from "@rollup/plugin-babel";
-import commonjs from "@rollup/plugin-commonjs";
-import typescript from "rollup-plugin-typescript2";
-import { terser } from "rollup-plugin-terser";
-import pkg from "./package.json";
+import resolve from '@rollup/plugin-node-resolve'
+import { babel } from '@rollup/plugin-babel'
+import commonjs from '@rollup/plugin-commonjs'
+import typescript from 'rollup-plugin-typescript2'
+import { terser } from 'rollup-plugin-terser'
+import pkg from './package.json'
 
 let tsChecked = true
 
@@ -14,56 +14,57 @@ function createConfig(config, plugins) {
       emitDeclarationOnly: false
     },
     useTsconfigDeclarationDir: true
-  });
+  })
 
   tsChecked && (tsChecked = false)
 
   const output = Object.assign(
     {
       globals: {
-        axios: 'axios'
+        axios: 'axios',
+        vue: 'Vue'
       }
     },
-    "output" in config ? config.output : {}
-  );
+    'output' in config ? config.output : {}
+  )
   return Object.assign(
     {
-      input: "src/index.ts",
+      input: 'src/index.ts'
     },
     config,
     {
       output,
-      external: ['axios'],
-      plugins: [resolve(), commonjs(), tsPlugin].concat(plugins),
+      external: ['axios', 'vue'],
+      plugins: [resolve(), commonjs(), tsPlugin].concat(plugins)
     }
-  );
+  )
 }
 
 function getConfig(env) {
   const babelPlugin = babel({
     babelHelpers: 'bundled',
     exclude: 'node_modules/**'
-  });
+  })
   const esCfg = createConfig({
     output: {
       file: pkg.module,
-      format: 'es',
-    },
-  });
+      format: 'es'
+    }
+  })
   const cjsCfg = createConfig(
     {
       output: {
         file: pkg.main,
         format: 'cjs',
-        exports: 'named',
+        exports: 'named'
       },
       watch: {
-        include: 'src/**',
-      },
+        include: 'src/**'
+      }
     },
     [babelPlugin]
-  );
-  
+  )
+
   if (env === 'development') return [esCfg, cjsCfg]
 
   const umdMinCfg = createConfig(
@@ -72,22 +73,20 @@ function getConfig(env) {
         file: pkg.unpkg,
         name: 'Smartfetch',
         format: 'umd',
-        exports: 'named',
-      },
+        exports: 'named'
+      }
     },
     [babelPlugin, terser()]
-  );
-  return [cjsCfg, esCfg, umdMinCfg];
+  )
+  return [cjsCfg, esCfg, umdMinCfg]
 }
 
-export default getConfig(process.env.NODE_ENV);
-
+export default getConfig(process.env.NODE_ENV)
 
 // import commonjs from '@rollup/plugin-commonjs'
 // import resolve from '@rollup/plugin-node-resolve'
 // import babel from '@rollup/plugin-babel'
 // import { terser } from 'rollup-plugin-terser'
-
 
 // const mergeCfg = (output, plugins=[], others, containQs) => ({
 //   input: 'src/index.js',

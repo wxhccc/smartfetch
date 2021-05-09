@@ -16,18 +16,20 @@ const SubmitBtns = {
     }
   },
   methods: {
-    async onBtn1Click() {
-      smartfetch.fetch.call(this, 'https://asfasf.afsf').lock('loading')
+    onBtn1Click() {
+      smartfetch.fetch.call(this, 'https://www.163.com').lock('loading')
     },
-    async onBtn2Click() {
-      smartfetch.fetch.call(this, 'https://asfasf.afsf').lock('a.loading')
+    onBtn2Click() {
+      smartfetch.fetch
+        .call(this, 'https://api.github.com/repos/ant-design/ant-design')
+        .lock('a.loading')
     }
   }
 }
 
 const flushFetch = (time = 0) =>
   new Promise((resolve) => {
-    setTimeout(resolve, time)
+    window.setTimeout(resolve, time)
   })
 
 describe('test lock method in vue3 component', () => {
@@ -58,7 +60,7 @@ describe('test lock method in vue3 component', () => {
     expect(wrapper.vm.a).toHaveProperty('loading', true)
     expect(btn.text()).toBe('true')
     // after sending back
-    await flushFetch(300)
+    await flushFetch(1300)
     expect(wrapper.vm.a.loading).toBe(false)
     expect(btn.text()).toBe('false')
   })

@@ -1,6 +1,6 @@
 import { AxiosInstance, Method } from 'axios';
 import { BaseConfig, FetchCore, RequestConfig, RequestData, SFetch, SmartFetchOptions } from './types';
-export * from './types';
+export { wp } from '@wxhccc/es-util';
 export declare class SmartFetch {
     private _fetchEnable;
     private _useFetch;
@@ -21,6 +21,7 @@ export declare class SmartFetch {
     private _fetchCoreChoose;
     private _ajaxCoreSwitch;
     private _fetchCoreSetup;
+    getAxiosCore(key: string): FetchCore;
     fetch: SFetch;
     install(appOrVue: any, options: SmartFetchOptions): void;
     modifyBaseConfigs(handler: (baseConfigs: Record<string, BaseConfig>) => never): void;
@@ -34,3 +35,5 @@ export declare const request: {
     }): (url: string, data?: RequestData, method?: Method, extra?: import("./request").RequestExtraArgs | undefined) => string | RequestConfig<string>;
 };
 export default rootInstance;
+export * from './types';
+export * from './vue-plugin';

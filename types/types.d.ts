@@ -1,3 +1,4 @@
+import { PromiseWithLock, WpOptions, SyncRefHandle, LockSwitchHook } from '@wxhccc/es-util';
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 export declare type SerializableObject = {
     [x: string]: SerializableObject | number | string | [] | Date;
@@ -43,24 +44,28 @@ export interface SfRequestConfig {
     baseConfigs: MappedBaseConfigs;
 }
 export declare type FaileHandle = (e: Error) => unknown;
-export declare type SyncRefHandle = [Record<string, boolean>, string];
-export declare type LockSwitchHook = (val: boolean) => unknown;
 export interface LockMethod<T> {
     (key: string): PromiseWithMethods<T>;
     (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>;
-    (switchHook: LockSwitchHook, syncRefHandle?: [Record<string, boolean>, string]): PromiseWithMethods<T>;
+    (switchHook: LockSwitchHook, syncRefHandle?: SyncRefHandle): PromiseWithMethods<T>;
 }
-export interface PromiseWithMethods<T> extends Promise<T> {
+export interface PromiseWithMethods<T> extends PromiseWithLock<T> {
     done: <T>(onfulfilled?: ((value: any) => T | PromiseLike<T>) | null | undefined) => PromiseWithMethods<T>;
+    lock: LockMethod<T>;
     faile: (handler: FaileHandle) => Promise<T>;
     useCore: (corekey: string) => PromiseWithMethods<T>;
-    lock: LockMethod<T>;
     silence: () => PromiseWithMethods<T>;
     notCheckCode: () => PromiseWithMethods<T>;
 }
 export declare type ContextType = 'unknown' | 'vue' | 'react';
+export interface FetchOptions extends WpOptions {
+    silence?: boolean;
+    needCodeCheck?: boolean;
+    failHandler?: FaileHandle;
+}
+export declare type FetchReturn<T> = PromiseWithMethods<T | undefined | [null, T] | [Error, undefined]>;
 export interface SFetch {
-    <T>(config: RequestConfig): PromiseWithMethods<T>;
-    <T>(url: string, data?: RequestData, method?: Method): PromiseWithMethods<T>;
+    <T>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>;
+    <T>(url: string, data?: RequestData, method?: Method, options?: FetchOptions): FetchReturn<T>;
 }
 export {};
