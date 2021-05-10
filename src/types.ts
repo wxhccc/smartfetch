@@ -70,7 +70,7 @@ export interface LockMethod<T> {
   (syncRefHandle: SyncRefHandle): PromiseWithMethods<T>
   (
     switchHook: LockSwitchHook,
-    syncRefHandle?: [Record<string, boolean>, string]
+    syncRefHandle?: SyncRefHandle
   ): PromiseWithMethods<T>
 }
 
@@ -93,12 +93,16 @@ export interface FetchOptions extends WpOptions {
   failHandler?: FaileHandle
 }
 
+export type FetchReturn<T> = PromiseWithMethods<
+  T | undefined | [null, T] | [Error, undefined]
+>
+
 export interface SFetch {
-  <T>(config: RequestConfig, options?: FetchOptions): PromiseWithMethods<T>
+  <T>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>
   <T>(
     url: string,
     data?: RequestData,
     method?: Method,
     options?: FetchOptions
-  ): PromiseWithMethods<T>
+  ): FetchReturn<T>
 }
