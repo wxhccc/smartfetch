@@ -109,26 +109,41 @@ function appendDataToForm(formdata: FormData, data: SerializableObject) {
 }
 
 export interface RequestExtraArgs {
-  returnLink?: boolean
+  useCore?: string
   enctype?: EnctypeType
 }
 
-export interface CreateRequestConfig {
-  (url: string, data?: RequestData, method?: Method, extra?: RequestExtraArgs):
-    | string
-    | RequestConfig<string>
-}
-
 export default function (config: SfRequestConfig) {
-  let useCore = 'default'
   const { useFetch, options, baseConfigs } = config
-  /** get request config data */
-  function createRequestConfig(
+
+  /** get request config object */
+  function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
-    data: RequestData = {},
-    method: Method = 'GET',
+    data?: P,
+    method?: Method,
     extra?: RequestExtraArgs
+  ): RequestConfig<string>
+  /** get request url link */
+  function createRequestConfig<P extends Record<string, any> = RequestData>(
+    url: string,
+    data: P | undefined,
+    method: Extract<Method, 'GET' | 'HEAD'>,
+    returnLink: true
+  ): string
+
+  /** get request config data */
+  function createRequestConfig<P extends Record<string, any> = RequestData>(
+    url: string,
+    data?: P,
+    method: Method = 'GET',
+    returnLinkOrExtra?: true | RequestExtraArgs
   ) {
+    const { useCore, enctype } = {
+      useCore: 'default',
+      enctype: 'json',
+      ...(returnLinkOrExtra !== true && returnLinkOrExtra)
+    } as Required<RequestExtraArgs>
+
     method = urlMethod.includes(method) ? method : 'GET'
     const isNoBody = ['GET', 'HEAD'].includes(method)
     const { baseData } = options
@@ -139,18 +154,18 @@ export default function (config: SfRequestConfig) {
       ...trueBaseData,
       ...(isFormData ? {} : (data as SerializableObject))
     }
-    const { returnLink, enctype } = {
-      returnLink: false,
-      enctype: 'json',
-      ...extra
-    } as Required<RequestExtraArgs>
     // return link url
-    if (returnLink && isNoBody) {
+    if (returnLinkOrExtra === true) {
+      if (!isNoBody) {
+        console.error('cannot return url link when method is not GET or Head')
+        return ''
+      }
       const baseCfg =
         baseConfigs && baseConfigs[useCore] ? baseConfigs[useCore] : undefined
       return returnRequestLink(url, handleData, baseCfg)
     }
-    const result: RequestConfig<keyof typeof baseConfigs> = {
+
+    const result: RequestConfig<string> = {
       url,
       method: (useFetch ? method : method.toLowerCase()) as Method,
       useCore
@@ -173,10 +188,12 @@ export default function (config: SfRequestConfig) {
     }
     // request body methods
     // append baseData to formData if data is FormData
-    trueBaseData && isFormData && appendDataToForm(data as FormData, handleData)
+    trueBaseData &&
+      isFormData &&
+      appendDataToForm((data as unknown) as FormData, handleData)
     if (useFetch) {
       result.body = isFormData
-        ? (data as FormData)
+        ? ((data as unknown) as FormData)
         : enctype === 'json'
         ? JSON.stringify(data)
         : stringify(data as SerializableObject)
@@ -189,31 +206,5 @@ export default function (config: SfRequestConfig) {
     return result
   }
 
-  type HocConfig = {
-    useCore: keyof typeof baseConfigs
-  }
-  type CRCFunction = typeof createRequestConfig
-
-  function configGenerate(
-    ...args: Parameters<CRCFunction>
-  ): ReturnType<CRCFunction>
-  function configGenerate(config: HocConfig): CRCFunction
-  function configGenerate(...args: [HocConfig] | Parameters<CRCFunction>) {
-    useCore = 'default'
-    const firstArg = args[0]
-    if (typeof firstArg === 'string') {
-      return createRequestConfig(...(args as Parameters<CRCFunction>))
-    } else if (
-      firstArg &&
-      typeof firstArg.useCore === 'string' &&
-      baseConfigs[firstArg.useCore]
-    ) {
-      useCore = firstArg.useCore
-      return createRequestConfig
-    } else {
-      return () => undefined
-    }
-  }
-
-  return configGenerate
+  return createRequestConfig
 }

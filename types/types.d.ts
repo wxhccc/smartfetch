@@ -9,7 +9,7 @@ export interface BaseConfig extends AxiosRequestConfig {
 }
 export declare type WinFetch = (input: RequestInfo, init?: RequestInit) => Promise<Response>;
 export declare type FetchCore = AxiosInstance | WinFetch;
-export interface RequestConfig<UseCore = 'default'> extends Omit<AxiosRequestConfig, 'headers'>, Omit<RequestInit, 'method'> {
+export interface RequestConfig<UseCore = string> extends Omit<AxiosRequestConfig, 'headers'>, Omit<RequestInit, 'method'> {
     useCore?: UseCore;
 }
 export declare type BaseConfigWithKey = BaseConfig & {
@@ -63,9 +63,9 @@ export interface FetchOptions extends WpOptions {
     needCodeCheck?: boolean;
     failHandler?: FaileHandle;
 }
-export declare type FetchReturn<T> = PromiseWithMethods<T | undefined | [null, T] | [Error, undefined]>;
+export declare type FetchReturn<T> = PromiseWithMethods<[null, T] | [Error, undefined]>;
 export interface SFetch {
-    <T>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>;
-    <T>(url: string, data?: RequestData, method?: Method, options?: FetchOptions): FetchReturn<T>;
+    <T = any>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>;
+    <T, P extends Record<string, any> = RequestData>(url: string, data?: P, method?: Method, options?: FetchOptions): FetchReturn<T>;
 }
 export {};

@@ -307,17 +307,16 @@ codeErrorHandler: (resJson) => {
 * @url(string)：接口路径，可使用完整路径，也可使用相对于baseUrl的相对路径
 * @data(object/FormData): 请求参数，仅支持plain object. formData  
 * @method(string): 请求方式，支持所有请求方式，例如GET、POST等，全大写，默认`GET`  
-* @extra(object) 额外的参数
-  * @returnLink(boolean)：是否返回完整链接，仅对GET,HEAD方式有效，函数调用后不发起请求，会返回拼接好的携带参数的url地址。常用作下载或导出链接  
+* @returnLinkOrExtra(boolean | object) 是否返回链接字符串 或 额外的参数
+  * @useCore(string)：替换之前的高阶函数方式，切换基础配置
   * @enctype(string)：请求编码方式（content-type设定值），json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，默认为`json`  
 
-## request(config)
-用于设置request函数配置的高阶函数，会返回request函数
+## ~~ request(config)~~
 
-*高阶函数参数：*
+~~用于设置request函数配置的高阶函数，会返回request函数~~
 
-* @config(object) 用于配置request的对象
-  * useCore: 用于发送请求的配置项的key
+~~*高阶函数参数：*~~
+
 
 如何使用
 ```
@@ -329,16 +328,18 @@ this.$fetch(args)
 
 //// 例 2:
 // 返回链接
-const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', { returnLink: true })
+const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', true)
 // linkUrl: http://a.b.com/api/getxxx?a=1&b=2
 
 //// 例 3:
-// 高阶函数方式，request({})调用后会返回修改配置后的request函数本身，用于在定义时指定请求使用的配置项
-const args = request({useCore: 'upload'})('api/getxxx', {a: 1, b: 2}, 'GET')
+const args = request('api/getxxx', {a: 1, b: 2}, 'GET', { useCore: 'upload' })
 this.$fetch(args)
 // 请求会使用key为upload的配置项, 例如'http://a.bcd.com/api/getxxx'
 
 ```
+> ~~高阶函数方式，request({})调用后会返回修改配置后的request函数本身，用于在定义时指定请求使用的配置项
+const args = request({useCore: 'upload'})('api/getxxx', {a: 1, b: 2}, 'GET')~~
+从2.1版本后删除高阶函数写法，因为会干扰函数的重载
 
 ### 推荐模式
 
