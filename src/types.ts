@@ -22,7 +22,7 @@ export type WinFetch = (
 ) => Promise<Response>
 export type FetchCore = AxiosInstance | WinFetch
 
-export interface RequestConfig<UseCore = 'default'>
+export interface RequestConfig<UseCore = string>
   extends Omit<AxiosRequestConfig, 'headers'>,
     Omit<RequestInit, 'method'> {
   useCore?: UseCore
@@ -93,15 +93,13 @@ export interface FetchOptions extends WpOptions {
   failHandler?: FaileHandle
 }
 
-export type FetchReturn<T> = PromiseWithMethods<
-  T | undefined | [null, T] | [Error, undefined]
->
+export type FetchReturn<T> = PromiseWithMethods<[null, T] | [Error, undefined]>
 
 export interface SFetch {
-  <T>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>
-  <T>(
+  <T = any>(config: RequestConfig, options?: FetchOptions): FetchReturn<T>
+  <T, P extends Record<string, any> = RequestData>(
     url: string,
-    data?: RequestData,
+    data?: P,
     method?: Method,
     options?: FetchOptions
   ): FetchReturn<T>

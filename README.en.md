@@ -292,8 +292,8 @@ codeErrorHandler: (resJson) => {
 * @url(string)
 * @data(object/FormData)
 * @method(string)
-* @extra(object)
-  * @returnLink(boolean)
+* @returnLinkOrExtra(boolean | object)
+  * @useCore(string) switch core
   * @enctype(string) json = 'application/json', urlencode: 'application/x-www-form-urlencoded', text: 'text/plain'，default `json`  
 
 ## request(config)
@@ -312,12 +312,12 @@ this.$fetch(args)
 
 //// eg. 2:
 // return link
-const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', { returnLink: true })
+const linkUrl = request('api/getxxx', {a: 1, b: 2}, 'GET', true)
 // linkUrl: http://a.b.com/api/getxxx?a=1&b=2
 
 //// eg. 3:
 
-const args = request({useCore: 'upload'})('api/getxxx', {a: 1, b: 2}, 'GET')
+const args = request('api/getxxx', {a: 1, b: 2}, 'GET', { useCore: 'upload' })
 this.$fetch(args)
 
 

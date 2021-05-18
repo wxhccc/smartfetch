@@ -16,10 +16,13 @@ import { has, objType } from './utils'
 export { wp } from '@wxhccc/es-util'
 
 function fetchContextMethod(instance: SmartFetch) {
-  const fetch: SFetch = function <T = any>(
+  const fetch: SFetch = function <
+    T = any,
+    P extends Record<string, any> = RequestData
+  >(
     this: any,
     configOrUrl: RequestConfig | string,
-    dataOrOptions?: RequestData | FetchOptions,
+    dataOrOptions?: P | FetchOptions,
     method?: Method,
     options?: FetchOptions
   ) {
@@ -119,9 +122,9 @@ export class SmartFetch {
 
   // modify base configs
   public modifyBaseConfigs(
-    handler: (baseConfigs: Record<string, BaseConfig>) => never
+    handler: (baseConfigs: Record<string, BaseConfig>) => void
   ) {
-    if (typeof handler === 'function') handler(this._baseCfgs)
+    if (handler instanceof Function) handler(this._baseCfgs)
   }
   // reset options
   public resetOptions(options: SmartFetchOptions = {}, notAssign?: boolean) {

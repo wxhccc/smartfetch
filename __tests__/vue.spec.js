@@ -33,7 +33,7 @@ const flushFetch = (time = 0) =>
   })
 
 describe('test lock method in vue3 component', () => {
-  it.only('test lock root property of vue instance', async () => {
+  it('test lock root property of vue instance', async () => {
     const wrapper = mount(SubmitBtns)
     /** before button click */
     const btn = wrapper.get('#btn1')
