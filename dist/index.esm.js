@@ -452,10 +452,14 @@ function appendDataToForm(formdata, data) {
     }
 }
 function SFRequest (config) {
-    let useCore = 'default';
     const { useFetch, options, baseConfigs } = config;
     /** get request config data */
-    function createRequestConfig(url, data = {}, method = 'GET', extra) {
+    function createRequestConfig(url, data, method = 'GET', returnLinkOrExtra) {
+        const { useCore, enctype } = {
+            useCore: 'default',
+            enctype: 'json',
+            ...(returnLinkOrExtra !== true && returnLinkOrExtra)
+        };
         method = urlMethod.includes(method) ? method : 'GET';
         const isNoBody = ['GET', 'HEAD'].includes(method);
         const { baseData } = options;
@@ -465,13 +469,12 @@ function SFRequest (config) {
             ...trueBaseData,
             ...(isFormData ? {} : data)
         };
-        const { returnLink, enctype } = {
-            returnLink: false,
-            enctype: 'json',
-            ...extra
-        };
         // return link url
-        if (returnLink && isNoBody) {
+        if (returnLinkOrExtra === true) {
+            if (!isNoBody) {
+                console.error('cannot return url link when method is not GET or Head');
+                return '';
+            }
             const baseCfg = baseConfigs && baseConfigs[useCore] ? baseConfigs[useCore] : undefined;
             return returnRequestLink(url, handleData, baseCfg);
         }
@@ -499,7 +502,9 @@ function SFRequest (config) {
         }
         // request body methods
         // append baseData to formData if data is FormData
-        trueBaseData && isFormData && appendDataToForm(data, handleData);
+        trueBaseData &&
+            isFormData &&
+            appendDataToForm(data, handleData);
         if (useFetch) {
             result.body = isFormData
                 ? data
@@ -515,23 +520,7 @@ function SFRequest (config) {
         }
         return result;
     }
-    function configGenerate(...args) {
-        useCore = 'default';
-        const firstArg = args[0];
-        if (typeof firstArg === 'string') {
-            return createRequestConfig(...args);
-        }
-        else if (firstArg &&
-            typeof firstArg.useCore === 'string' &&
-            baseConfigs[firstArg.useCore]) {
-            useCore = firstArg.useCore;
-            return createRequestConfig;
-        }
-        else {
-            return () => undefined;
-        }
-    }
-    return configGenerate;
+    return createRequestConfig;
 }
 
 function fetchContextMethod(instance) {
@@ -616,7 +605,7 @@ class SmartFetch {
     }
     // modify base configs
     modifyBaseConfigs(handler) {
-        if (typeof handler === 'function')
+        if (handler instanceof Function)
             handler(this._baseCfgs);
     }
     // reset options

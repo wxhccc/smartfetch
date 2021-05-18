@@ -25,9 +25,9 @@ describe('exports test', () => {
 describe('test request method', () => {
   describe('with out baseConfigs set', () => {
     it('test request return link url', () => {
-      expect(
-        request('http://aaa.aa/aaa', { a: 1 }, 'GET', { returnLink: true })
-      ).toBe('http://aaa.aa/aaa?a=1')
+      expect(request('http://aaa.aa/aaa', { a: 1 }, 'GET', true)).toBe(
+        'http://aaa.aa/aaa?a=1'
+      )
     })
     it('test request with GET method return', () => {
       expect(request('http://aaa.aa/aaa', { a: 1 })).toMatchObject({
@@ -60,7 +60,7 @@ describe('test request method', () => {
   describe('with baseConfigs set', () => {
     it('test request return link url whick will concat baseURL', () => {
       smartfetch.resetOptions({ baseConfigs: { baseURL: 'https://aaa.aa' } })
-      expect(request('/aaa', { a: 1 }, 'GET', { returnLink: true })).toBe(
+      expect(request('/aaa', { a: 1 }, 'GET', true)).toBe(
         'https://aaa.aa/aaa?a=1'
       )
       smartfetch.resetOptions({}, true)

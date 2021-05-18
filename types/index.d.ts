@@ -24,15 +24,13 @@ export declare class SmartFetch {
     getAxiosCore(key: string): FetchCore;
     fetch: SFetch;
     install(appOrVue: any, options: SmartFetchOptions): void;
-    modifyBaseConfigs(handler: (baseConfigs: Record<string, BaseConfig>) => never): void;
+    modifyBaseConfigs(handler: (baseConfigs: Record<string, BaseConfig>) => void): void;
     resetOptions(options?: SmartFetchOptions, notAssign?: boolean): void;
 }
 declare const rootInstance: SmartFetch;
 export declare const request: {
-    (url: string, data?: RequestData | undefined, method?: Method | undefined, extra?: import("./request").RequestExtraArgs | undefined): string | RequestConfig<string>;
-    (config: {
-        useCore: string;
-    }): (url: string, data?: RequestData, method?: Method, extra?: import("./request").RequestExtraArgs | undefined) => string | RequestConfig<string>;
+    <P extends Record<string, any> = RequestData>(url: string, data?: P | undefined, method?: Method | undefined, extra?: import("./request").RequestExtraArgs | undefined): RequestConfig<string>;
+    <P_1 extends Record<string, any> = RequestData>(url: string, data: P_1 | undefined, method: "GET" | "HEAD", returnLink: true): string;
 };
 export default rootInstance;
 export * from './types';
