@@ -26,14 +26,17 @@ function fetchContextMethod(instance: SmartFetch) {
     method?: Method,
     options?: FetchOptions
   ) {
-    const config =
-      typeof configOrUrl === 'string'
-        ? (request(
-            configOrUrl,
-            dataOrOptions as RequestData,
-            method
-          ) as BaseConfig)
-        : configOrUrl || {}
+    let config: RequestConfig
+    if (typeof configOrUrl === 'string') {
+      config = request(
+        configOrUrl,
+        dataOrOptions as RequestData,
+        method
+      ) as BaseConfig
+    } else {
+      config = configOrUrl || {}
+      options = dataOrOptions
+    }
     return smartFetchCore<T>(instance, this, config, options)
   }
   return fetch

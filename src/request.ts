@@ -114,8 +114,6 @@ export interface RequestExtraArgs {
 }
 
 export default function (config: SfRequestConfig) {
-  const { useFetch, options, baseConfigs } = config
-
   /** get request config object */
   function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
@@ -138,6 +136,7 @@ export default function (config: SfRequestConfig) {
     method: Method = 'GET',
     returnLinkOrExtra?: true | RequestExtraArgs
   ) {
+    const { useFetch, options, baseConfigs } = config
     const { useCore, enctype } = {
       useCore: 'default',
       enctype: 'json',
