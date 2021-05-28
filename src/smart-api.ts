@@ -114,7 +114,7 @@ export default function smartFetchCore<DataType = SerializableObject>(
     return result
   }
   const codeCheck = (resjson: SerializableObject) => {
-    if (opts.needCodeCheck && !resOkCheck(resjson)) {
+    if (!resOkCheck(resjson)) {
       _resJson = resjson
       throw createError('CodeError', undefined, 'code checked failed')
     } else {
@@ -144,7 +144,9 @@ export default function smartFetchCore<DataType = SerializableObject>(
           const resJson = await ($root.useFetch
             ? request(config)
             : axiosRequest(config))
-          const data = handleResData(codeCheck(resJson))
+          const data = opts.needCodeCheck
+            ? handleResData(codeCheck(resJson))
+            : resJson
           if (thenQueue.length) {
             const cusData = await thenQueue.reduce(
               (acc, item) => acc.then(item),
