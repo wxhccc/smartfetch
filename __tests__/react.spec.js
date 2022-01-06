@@ -15,14 +15,14 @@ class SubmitBtns extends React.Component {
       loading: false,
       a: {}
     }
-    this.$fetch = smartfetch.fetch.bind(this)
+  }
+  setLoading = (bool) => {
+    this.setState({ loading: bool })
   }
   onBtn1Click = () => {
-    this.$fetch('https://sdfasfsdfas.sdfasdfa').lock('loading')
-    console.log(this.state)
-  }
-  onBtn2Click = () => {
-    this.$fetch('https://sdfasfsdfas.sdfasdfa').lock('a.loading')
+    smartfetch.fetch('https://sdfasfsdfas.sdfasdfa', undefined, 'GET', {
+      lock: this.setLoading
+    })
     console.log(this.state)
   }
   render() {
@@ -30,9 +30,6 @@ class SubmitBtns extends React.Component {
       <div>
         <button id="btn1" onClick={this.onBtn1Click}>
           {this.state.loading ? 'true' : 'false'}
-        </button>
-        <button id="btn2" onClick={this.onBtn2Click}>
-          {this.state.a.loading ? 'true' : 'false'}
         </button>
       </div>
     )
@@ -60,24 +57,6 @@ describe('test lock method in class style react component', () => {
     // after sending back
     await flushFetch(300)
     expect(wrapper.state('loading')).toBe(false)
-    expect(btn().text()).toBe('false')
-  })
-
-  it("test lock nested object's property(whether may no exists) of vue instance", async () => {
-    const wrapper = shallow(<SubmitBtns />)
-    /** before button click */
-    const btn = () => wrapper.find('#btn2')
-    expect(btn().text()).toBe('false')
-    expect(wrapper.state('a')).not.toHaveProperty('loading')
-    // button click and fetch sending
-    wrapper.instance().onBtn2Click()
-    await flushFetch(0)
-    wrapper.update()
-    expect(wrapper.state('a')).toHaveProperty('loading', true)
-    expect(btn().text()).toBe('true')
-    // after sending back
-    await flushFetch(300)
-    expect(wrapper.state('a')).toHaveProperty('loading', false)
     expect(btn().text()).toBe('false')
   })
 })

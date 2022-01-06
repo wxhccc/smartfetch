@@ -5,39 +5,37 @@ import typescript from 'rollup-plugin-typescript2'
 import { terser } from 'rollup-plugin-terser'
 import pkg from './package.json'
 
+const banner = `/*!
+  * ${pkg.name} v${pkg.version}
+  * (c) ${new Date().getFullYear()} wxhccc
+  * @license MIT
+  */`
+
 let tsChecked = true
 
-function createConfig(config, plugins) {
-  const tsPlugin = typescript({
+function createConfig(config, plugins = [], input, tsOptions) {
+  const tsOpts = tsOptions || {
     tsconfigOverride: {
       declaration: tsChecked,
       emitDeclarationOnly: false
     },
     useTsconfigDeclarationDir: true
-  })
+  }
+  const tsPlugin = typescript(tsOpts)
 
   tsChecked && (tsChecked = false)
-
-  const output = Object.assign(
-    {
-      globals: {
-        axios: 'axios',
-        vue: 'Vue'
-      }
-    },
-    'output' in config ? config.output : {}
-  )
-  return Object.assign(
-    {
-      input: 'src/index.ts'
-    },
-    config,
-    {
-      output,
-      external: ['axios', 'vue'],
-      plugins: [resolve(), commonjs(), tsPlugin].concat(plugins)
-    }
-  )
+  return {
+    input: input || 'src/index.ts',
+    external: ['axios', 'vue'],
+    ...config,
+    output: Array.isArray(config.output)
+      ? config.output.map((cfg) => Object.assign(cfg, { banner }))
+      : {
+          ...config.output,
+          banner
+        },
+    plugins: [resolve(), commonjs(), tsPlugin].concat(plugins)
+  }
 }
 
 function getConfig(env) {
@@ -65,7 +63,27 @@ function getConfig(env) {
     [babelPlugin]
   )
 
-  if (env === 'development') return [esCfg, cjsCfg]
+  const vuePluginCfg = createConfig(
+    {
+      input: 'src/vue-plugin.ts',
+      external: ['axios', 'vue', './index'],
+      output: [
+        {
+          file: 'dist/vue-plugin.js',
+          format: 'es',
+          exports: 'named'
+        },
+        {
+          file: 'dist/vue-plugin.cjs.js',
+          format: 'cjs',
+          exports: 'named'
+        }
+      ]
+    },
+    [babelPlugin]
+  )
+
+  if (env === 'development') return [esCfg, cjsCfg, vuePluginCfg]
 
   const umdMinCfg = createConfig(
     {
@@ -78,41 +96,7 @@ function getConfig(env) {
     },
     [babelPlugin, terser()]
   )
-  return [cjsCfg, esCfg, umdMinCfg]
+  return [cjsCfg, esCfg, vuePluginCfg, umdMinCfg]
 }
 
 export default getConfig(process.env.NODE_ENV)
-
-// import commonjs from '@rollup/plugin-commonjs'
-// import resolve from '@rollup/plugin-node-resolve'
-// import babel from '@rollup/plugin-babel'
-// import { terser } from 'rollup-plugin-terser'
-
-// const mergeCfg = (output, plugins=[], others, containQs) => ({
-//   input: 'src/index.js',
-//   output: {
-//     name: 'Smartfetch',
-//     exports: 'named',
-//     globals: { axios: 'axios' },
-//     ...output
-//   },
-//   plugins: [babelPlugin, commonjs(), nodePlugin].concat(plugins),
-//   external: ['axios'].concat(containQs ? [] : ['qs']),
-//   ...others
-// })
-
-// function getConfig (env) {
-//   const cjsCfg = mergeCfg(
-//     {
-//       file: 'lib/smartfetch.common.js',
-//       format: 'cjs'
-//     }, [], {
-//       watch: {
-//         include: 'src/**'
-//       }
-//     }
-//   )
-//   const esCfg = mergeCfg({ file: 'lib/smartfetch.esm.js', format: 'es' })
-//   const umdMinCfg = mergeCfg({ file: 'lib/index.js', format: 'umd' }, [terser()], {}, true)
-//   return env === 'development' ? cjsCfg : [cjsCfg, esCfg, umdMinCfg]
-// }
