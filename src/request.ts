@@ -4,9 +4,9 @@ import {
   RequestConfig,
   RequestData,
   SerializableObject,
-  SfRequestConfig
+  SmartFetchOptions
 } from './types'
-import { objType } from './utils'
+import { buildUrl } from './utils'
 
 const urlMethod: Method[] = [
   'GET',
@@ -18,61 +18,13 @@ const urlMethod: Method[] = [
   'PATCH'
 ]
 
+/** 数据的编码方式，拼接在地址上时仅支持urlencode，通过body发送时各方式均支持 */
 type EnctypeType = 'json' | 'urlencode' | 'text' | 'none'
 
 const enctypeType: Partial<Record<EnctypeType, string>> = {
   json: 'application/json',
   urlencode: 'application/x-www-form-urlencoded',
   text: 'text/plain'
-}
-
-function stringify(params: SerializableObject) {
-  const parts: string[] = []
-  const encode = (val: string | number) =>
-    encodeURIComponent(val)
-      .replace(/%3A/gi, ':')
-      .replace(/%24/g, '$')
-      .replace(/%2C/gi, ',')
-      .replace(/%20/g, '+')
-      .replace(/%5B/gi, '[')
-      .replace(/%5D/gi, ']')
-
-  Object.keys(params).forEach((key) => {
-    const val = params[key]
-    if (val === null || typeof val === 'undefined') return
-    const arrVal = Array.isArray(val) ? val : [val]
-    if (Array.isArray(val)) key = key + '[]'
-
-    arrVal.forEach((v) => {
-      if (v instanceof Date) {
-        v = v.toISOString()
-      } else if (objType(v) === 'Object') {
-        v = JSON.stringify(v)
-      }
-      parts.push(encode(key) + '=' + encode(v as string | number))
-    })
-  })
-  return parts.join('&')
-}
-
-function buildUrl(url: string, params: SerializableObject | URLSearchParams) {
-  if (!params) return url
-
-  let serializedParams = ''
-  if (params instanceof URLSearchParams) {
-    serializedParams = params.toString()
-  } else {
-    serializedParams = stringify(params)
-  }
-
-  if (serializedParams) {
-    const hashmarkIndex = url.indexOf('#')
-    if (hashmarkIndex !== -1) {
-      url = url.slice(0, hashmarkIndex)
-    }
-    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams
-  }
-  return url
 }
 
 function returnRequestLink(
@@ -88,87 +40,85 @@ function returnRequestLink(
   return baseURL + paramsUrl
 }
 
-function appendDataToForm(formdata: FormData, data: SerializableObject) {
-  if (!data || !(formdata instanceof FormData)) return
-  for (const i in data) {
-    if (formdata.has(i)) continue
-    const item = data[i]
-    if (['Number', 'String', 'Date'].indexOf(objType(item)) > -1) {
-      formdata.append(
-        i,
-        objType(item) === 'Date' ? (item as Date).toISOString() : String(item)
-      )
-    } else {
-      const stringifyData = stringify(item as SerializableObject)
-      const slitParams = stringifyData.split('&').map((i) => i.split('='))
-      slitParams.forEach(
-        ([key, val]) => key && val && formdata.append(key, val)
-      )
-    }
-  }
+interface RequestContext {
+  /** 是否使用global.fetch发送请求 */
+  useFetch: boolean
+  /** 所有基础配置的key-value对象 */
+  baseCfgs: Record<string, BaseConfig>
+  /** 当前实例的配置参数 */
+  $opts: SmartFetchOptions
 }
 
 export interface RequestExtraArgs {
+  /** 使用那个key对应的基础配置 */
   useCore?: string
+  /** 数据的编码方式 */
   enctype?: EnctypeType
+  /** 非get/head方式希望在地址上传递参数可以使用，也可以直接用config对象形式 */
+  params?: any
 }
 
-export default function (config: SfRequestConfig) {
-  const { useFetch, options, baseConfigs } = config
+interface RequestExtraArgsWithReturnLink extends RequestExtraArgs {
+  /** 是否只返回链接地址 */
+  returnLink?: boolean
+}
 
+export default function (context: RequestContext) {
+  /** get request url link */
+  function createRequestConfig<P extends Record<string, any> = RequestData>(
+    url: string,
+    data: P | undefined,
+    method: Extract<Method, 'GET' | 'HEAD'>,
+    returnLinkOrExtra: true | (RequestExtraArgs & { returnLink: true })
+  ): string
   /** get request config object */
   function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
     data?: P,
     method?: Method,
     extra?: RequestExtraArgs
-  ): RequestConfig<string>
-  /** get request url link */
-  function createRequestConfig<P extends Record<string, any> = RequestData>(
-    url: string,
-    data: P | undefined,
-    method: Extract<Method, 'GET' | 'HEAD'>,
-    returnLink: true
-  ): string
+  ): RequestConfig
 
   /** get request config data */
   function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
     data?: P,
     method: Method = 'GET',
-    returnLinkOrExtra?: true | RequestExtraArgs
+    returnLinkOrExtra?: true | RequestExtraArgsWithReturnLink
   ) {
-    const { useCore, enctype } = {
+    const { useFetch, baseCfgs, $opts } = context
+    const { useCore, returnLink, enctype, params } = {
       useCore: 'default',
       enctype: 'json',
-      ...(returnLinkOrExtra !== true && returnLinkOrExtra)
-    } as Required<RequestExtraArgs>
+      ...(returnLinkOrExtra === true ? { returnLink: true } : returnLinkOrExtra)
+    } as Required<RequestExtraArgsWithReturnLink>
 
     method = urlMethod.includes(method) ? method : 'GET'
     const isNoBody = ['GET', 'HEAD'].includes(method)
-    const { baseData } = options
-    const trueBaseData =
-      typeof baseData === 'function' ? baseData(useCore) : baseData
-    const isFormData = data instanceof FormData
-    const handleData = {
-      ...trueBaseData,
-      ...(isFormData ? {} : (data as SerializableObject))
-    }
+
     // return link url
-    if (returnLinkOrExtra === true) {
+    if (returnLink === true) {
       if (!isNoBody) {
         console.error('cannot return url link when method is not GET or Head')
         return ''
       }
       const baseCfg =
-        baseConfigs && baseConfigs[useCore] ? baseConfigs[useCore] : undefined
+        baseCfgs && baseCfgs[useCore] ? baseCfgs[useCore] : undefined
+      const { baseData } = $opts
+
+      const isFormData = data instanceof FormData
+      const handleData = {
+        ...(baseData instanceof Function ? baseData(useCore) : {}),
+        ...(isFormData ? {} : (data as SerializableObject))
+      }
       return returnRequestLink(url, handleData, baseCfg)
     }
 
-    const result: RequestConfig<string> = {
+    const result: RequestConfig = {
       url,
       method: (useFetch ? method : method.toLowerCase()) as Method,
-      useCore
+      ...(isNoBody ? { params: data } : { data }),
+      ...(params ? { params } : {})
     }
     if (enctype !== 'none')
       result.headers = {
@@ -176,32 +126,8 @@ export default function (config: SfRequestConfig) {
           ? enctypeType[enctype]
           : enctypeType['json']) as string
       }
-    if (useFetch && enctype !== 'json') result.responseType = 'blob'
-
-    if (!Object.keys(handleData).length) return result
-    // query methods
-    if (isNoBody) {
-      useFetch
-        ? (result.url += `?${stringify(handleData)}`)
-        : (result.params = data)
-      return result
-    }
-    // request body methods
-    // append baseData to formData if data is FormData
-    trueBaseData &&
-      isFormData &&
-      appendDataToForm((data as unknown) as FormData, handleData)
-    if (useFetch) {
-      result.body = isFormData
-        ? ((data as unknown) as FormData)
-        : enctype === 'json'
-        ? JSON.stringify(data)
-        : stringify(data as SerializableObject)
-    } else {
-      result.data =
-        isFormData || enctype === 'json'
-          ? data
-          : stringify(data as SerializableObject)
+    if (useFetch && enctype !== 'json') {
+      result.responseType = 'blob'
     }
     return result
   }

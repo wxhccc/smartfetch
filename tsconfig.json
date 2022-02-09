@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "declaration": true,
-    "declarationDir": "types",
+    "declarationDir": "dist",
     "noEmit": true,
 
     "target": "esnext",
