@@ -78,7 +78,12 @@ export default function smartFetchCore<DataType = SerializableObject>(
     silence: false,
     ...options
   }
-  const { lock, paramsFilterNullable, switchDataNull } = opts
+  const {
+    lock,
+    paramsFilterNullable,
+    switchDataNull,
+    ignoreStatusHandle
+  } = opts
 
   const [lockSetter, lockGetter] = Array.isArray(lock)
     ? [typeof lock[0] === 'function' ? lock[0] : () => undefined, lock[1]]
@@ -230,7 +235,7 @@ export default function smartFetchCore<DataType = SerializableObject>(
     } else if (error instanceof RangeError || error.response) {
       error.response && (_response = error.response)
       const { status } = _response as Response
-      if (statusHandler instanceof Function) {
+      if (!ignoreStatusHandle && statusHandler instanceof Function) {
         if (!hangOnPromise) {
           const ret = statusHandler(status, error, config)
           // 如果状态检查函数返回的是promise对象，则设置等待状态，其他的请求需等待第一个promise返回结果

@@ -92,6 +92,8 @@ export interface FetchOptions
   needCodeCheck?: boolean
   /** 请求失败的自定义处理逻辑 */
   failHandler?: FaileHandle
+  /** 本次请求忽视状态检查的等待，主要用于在状态处理逻辑内发起请求 */
+  ignoreStatusHandle?: boolean
 }
 
 export type FetchReturn<T> = Promise<[null, T] | [Error, undefined]>
