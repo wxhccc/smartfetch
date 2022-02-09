@@ -52,15 +52,25 @@ interface RequestContext {
 export interface RequestExtraArgs {
   /** 使用那个key对应的基础配置 */
   useCore?: string
-  /** 是否只返回链接地址 */
-  returnLink?: boolean
   /** 数据的编码方式 */
   enctype?: EnctypeType
   /** 非get/head方式希望在地址上传递参数可以使用，也可以直接用config对象形式 */
   params?: any
 }
 
+interface RequestExtraArgsWithReturnLink extends RequestExtraArgs {
+  /** 是否只返回链接地址 */
+  returnLink?: boolean
+}
+
 export default function (context: RequestContext) {
+  /** get request url link */
+  function createRequestConfig<P extends Record<string, any> = RequestData>(
+    url: string,
+    data: P | undefined,
+    method: Extract<Method, 'GET' | 'HEAD'>,
+    returnLinkOrExtra: true | (RequestExtraArgs & { returnLink: true })
+  ): string
   /** get request config object */
   function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
@@ -68,29 +78,20 @@ export default function (context: RequestContext) {
     method?: Method,
     extra?: RequestExtraArgs
   ): RequestConfig
-  /** get request url link */
-  function createRequestConfig<P extends Record<string, any> = RequestData>(
-    url: string,
-    data: P | undefined,
-    method: Extract<Method, 'GET' | 'HEAD'>,
-    returnLinkOrExtra:
-      | true
-      | (Omit<RequestExtraArgs, 'returnLink'> & { returnLink: true })
-  ): string
 
   /** get request config data */
   function createRequestConfig<P extends Record<string, any> = RequestData>(
     url: string,
     data?: P,
     method: Method = 'GET',
-    returnLinkOrExtra?: true | RequestExtraArgs
+    returnLinkOrExtra?: true | RequestExtraArgsWithReturnLink
   ) {
     const { useFetch, baseCfgs, $opts } = context
     const { useCore, returnLink, enctype, params } = {
       useCore: 'default',
       enctype: 'json',
       ...(returnLinkOrExtra === true ? { returnLink: true } : returnLinkOrExtra)
-    } as Required<RequestExtraArgs>
+    } as Required<RequestExtraArgsWithReturnLink>
 
     method = urlMethod.includes(method) ? method : 'GET'
     const isNoBody = ['GET', 'HEAD'].includes(method)

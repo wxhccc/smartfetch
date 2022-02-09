@@ -78,10 +78,12 @@ export type FaileHandle = (e: Error) => unknown
 
 export type LockSetter = (bool: boolean) => void
 
+export type LockSwitch = LockSetter | [LockSetter, () => boolean]
+
 export interface FetchOptions
   extends Pick<SmartFetchOptions, 'paramsFilterNullable' | 'switchDataNull'> {
   /** 锁定变量，如果是函数则仅在请求开始和结束时调用，如果是[setter, getter]格式的数组，则会阻止锁定变量控制的请求未完成前重复触发 */
-  lock?: LockSetter | [LockSetter, () => boolean]
+  lock?: LockSwitch
   /** 当前请求使用的配置项对应的key，默认default */
   useCore?: string
   /** 当前请求是否为静默模式，即不提示错误 */

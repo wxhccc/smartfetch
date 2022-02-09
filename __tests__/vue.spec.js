@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import smartfetch from '../'
-import vueFetch from '../dist/vue-plugin.esm'
+import vueFetch from '../dist/vue-plugin'
 
 window.alert = jest.fn()
 
@@ -61,7 +61,7 @@ describe('test lock method in vue3 component', () => {
     expect(wrapper.vm.loading).toBe(false)
     expect(btn.text()).toBe('false')
   })
-  it('test vueFetch method export by vue-plugin', async () => {
+  it('test vueFetch method export by vue-plugin, test string lock', async () => {
     const wrapper = mount(SubmitBtns)
     /** before button click */
     const btn = wrapper.get('#btn2')
@@ -75,17 +75,20 @@ describe('test lock method in vue3 component', () => {
     await flushFetch(3000)
     expect(wrapper.vm.loading2).toBe(false)
     expect(btn.text()).toBe('false')
+  })
+  it('test vueFetch method export by vue-plugin, test ref lock', async () => {
+    const wrapper = mount(SubmitBtns)
 
-    const btn3 = wrapper.get('#btn3')
-    expect(btn3.text()).toBe('false')
+    const btn = wrapper.get('#btn3')
+    expect(btn.text()).toBe('false')
     expect(wrapper.vm.loading3).toBe(false)
     // button click and fetch sending
-    await btn3.trigger('click')
+    await btn.trigger('click')
     expect(wrapper.vm.loading3).toBe(true)
-    expect(btn3.text()).toBe('true')
+    expect(btn.text()).toBe('true')
     // after sending back
     await flushFetch(500)
     expect(wrapper.vm.loading3).toBe(false)
-    expect(btn3.text()).toBe('false')
+    expect(btn.text()).toBe('false')
   })
 })

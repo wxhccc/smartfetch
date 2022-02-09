@@ -231,7 +231,7 @@ export default function smartFetchCore<DataType = SerializableObject>(
       error.response && (_response = error.response)
       const { status } = _response as Response
       if (statusHandler instanceof Function) {
-        if (!statusState) {
+        if (!hangOnPromise) {
           const ret = statusHandler(status, error, config)
           // 如果状态检查函数返回的是promise对象，则设置等待状态，其他的请求需等待第一个promise返回结果
           if (ret instanceof Promise) {
@@ -247,12 +247,14 @@ export default function smartFetchCore<DataType = SerializableObject>(
             }
           }
         }
-        const result = await hangOnPromise
-        statusState = undefined
-        hangOnPromise = null
-        if (result === 'sucess') {
-          mergeBaseCfgHeaders()
-          return createRequest()
+        if (hangOnPromise) {
+          const result = await hangOnPromise
+          statusState = undefined
+          hangOnPromise = null
+          if (result === 'sucess') {
+            mergeBaseCfgHeaders()
+            return createRequest()
+          }
         }
       }
       msg = (status && statusWarn[status]) || '请求失败'
