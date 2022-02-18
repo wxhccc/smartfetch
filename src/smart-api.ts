@@ -68,14 +68,22 @@ export default function smartFetchCore<DataType = SerializableObject>(
   options: FetchOptions = {}
 ) {
   const { useFetch, core, useCore, coreCfg, $opts } = context
-  const { responseCodeCheck: resCodeCheck, validateStatus, dataKey, baseData } =
-    $opts || {}
+  const {
+    responseCodeCheck: resCodeCheck,
+    validateStatus,
+    dataKey,
+    baseData,
+    switchDataNull: optSwitchDataNull,
+    paramsFilterNullable: optParamsFilterNullable
+  } = $opts || {}
   let _response: FetchResponse | null = null
   let _resJson: SerializableObject | null = null
 
   const opts: FetchOptions = {
     needCodeCheck: !!resCodeCheck,
     silence: false,
+    switchDataNull: optSwitchDataNull,
+    paramsFilterNullable: optParamsFilterNullable,
     ...options
   }
   const {
