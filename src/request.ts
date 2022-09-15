@@ -1,12 +1,11 @@
-import { Method } from 'axios'
 import {
-  BaseConfig,
+  BaseConfigs,
+  Method,
   RequestConfig,
   RequestData,
-  SerializableObject,
-  SmartFetchOptions
+  SmartInstanceContext
 } from './types'
-import { buildUrl } from './utils'
+import { appendDataToForm, buildUrl, objType, resolveFunctional } from './utils'
 
 const urlMethod: Method[] = [
   'GET',
@@ -19,107 +18,84 @@ const urlMethod: Method[] = [
 ]
 
 /** 数据的编码方式，拼接在地址上时仅支持urlencode，通过body发送时各方式均支持 */
-type EnctypeType = 'json' | 'urlencode' | 'text' | 'none'
+export type EnctypeType = 'json' | 'urlencode' | 'text' | 'none'
 
 const enctypeType: Partial<Record<EnctypeType, string>> = {
   json: 'application/json',
   urlencode: 'application/x-www-form-urlencoded',
   text: 'text/plain'
 }
-
-function returnRequestLink(
-  url: string,
-  data: Record<string, any>,
-  baseCfg?: BaseConfig
-) {
-  const paramsUrl = buildUrl(url, data)
-  if (url.indexOf('http') >= 0) {
-    return paramsUrl
-  }
-  const baseURL = baseCfg && baseCfg.baseURL ? baseCfg.baseURL : ''
-  return baseURL + paramsUrl
-}
-
-interface RequestContext {
-  /** 是否使用global.fetch发送请求 */
-  useFetch: boolean
-  /** 所有基础配置的key-value对象 */
-  baseCfgs: Record<string, BaseConfig>
-  /** 当前实例的配置参数 */
-  $opts: SmartFetchOptions
-}
-
-export interface RequestExtraArgs {
+export interface RequestExtraArgs<C extends string = string> {
   /** 使用那个key对应的基础配置 */
-  useCore?: string
+  useConfig?: C
   /** 数据的编码方式 */
   enctype?: EnctypeType
-  /** 非get/head方式希望在地址上传递参数可以使用，也可以直接用config对象形式 */
-  params?: any
 }
 
-interface RequestExtraArgsWithReturnLink extends RequestExtraArgs {
-  /** 是否只返回链接地址 */
-  returnLink?: boolean
-}
+export default function <T = BaseConfigs, CK extends string = string>(
+  context: SmartInstanceContext<T>
+) {
+  /** 合并配置中的公共数据 */
+  const mergeConfigData = <T extends RequestConfig = RequestConfig>(
+    config: T,
+    useConfig = 'default' as CK
+  ) => {
+    const { options, mappedBaseCfgs } = context
+    const { baseData, headers: baseHeaders } = {
+      ...options,
+      ...mappedBaseCfgs[useConfig]
+    }
+    const { options: _opts, ...cfgConfig } = mappedBaseCfgs[useConfig] || {}
+    const { headers, ...rest } = config
+    const newConfig = { ...cfgConfig, ...rest } as T
 
-export default function (context: RequestContext) {
-  /** get request url link */
-  function createRequestConfig<P extends Record<string, any> = RequestData>(
-    url: string,
-    data: P | undefined,
-    method: Extract<Method, 'GET' | 'HEAD'>,
-    returnLinkOrExtra: true | (RequestExtraArgs & { returnLink: true })
-  ): string
-  /** get request config object */
-  function createRequestConfig<P extends Record<string, any> = RequestData>(
-    url: string,
-    data?: P,
-    method?: Method,
-    extra?: RequestExtraArgs
-  ): RequestConfig
+    if (headers || baseHeaders) {
+      const bHeaders = resolveFunctional(baseHeaders, useConfig)
+      newConfig.headers = { ...bHeaders, ...headers }
+    }
+    if (baseData) {
+      const { params, data } = config
+      const bParams = resolveFunctional(baseData, useConfig, 'params')
+      const bData = resolveFunctional(baseData, useConfig, 'data')
+      if (bParams) {
+        newConfig.params = { ...bParams, ...params }
+      }
+      if (bData && objType(data) === 'Object') {
+        if (data instanceof FormData) {
+          appendDataToForm(newConfig.data, bData)
+        } else {
+          newConfig.data = { ...bData, ...data }
+        }
+      }
+    }
 
+    return newConfig
+  }
   /** get request config data */
-  function createRequestConfig<P extends Record<string, any> = RequestData>(
+  const createRequestConfig = <
+    T extends RequestConfig = RequestConfig,
+    P extends Record<string, any> = RequestData
+  >(
     url: string,
-    data?: P,
+    data?: string | P,
     method: Method = 'GET',
-    returnLinkOrExtra?: true | RequestExtraArgsWithReturnLink
-  ) {
-    const { useFetch, baseCfgs, $opts } = context
-    const { useCore, returnLink, enctype, params } = {
-      useCore: 'default',
+    extra?: RequestExtraArgs<CK>
+  ) => {
+    const { useFetch } = context
+    const { enctype } = {
+      useConfig: 'default',
       enctype: 'json',
-      ...(returnLinkOrExtra === true ? { returnLink: true } : returnLinkOrExtra)
-    } as Required<RequestExtraArgsWithReturnLink>
+      ...extra
+    } as Required<RequestExtraArgs>
 
     method = urlMethod.includes(method) ? method : 'GET'
     const isNoBody = ['GET', 'HEAD'].includes(method)
 
-    // return link url
-    if (returnLink === true) {
-      if (!isNoBody) {
-        console.error('cannot return url link when method is not GET or Head')
-        return ''
-      }
-      const baseCfg =
-        baseCfgs && baseCfgs[useCore] ? baseCfgs[useCore] : undefined
-      const { baseData } = $opts
-
-      const isFormData = data instanceof FormData
-      const handleData = {
-        ...(baseData instanceof Function ? baseData(useCore) : {}),
-        ...(isFormData ? {} : (data as SerializableObject))
-      }
-      return returnRequestLink(url, handleData, baseCfg)
-    }
-
-    const result: RequestConfig = {
+    const result = {
       url,
       method: (useFetch ? method : method.toLowerCase()) as Method,
-      ...(isNoBody ? { params: data } : { data }),
-      ...(params ? { params } : {})
-    }
+      ...(isNoBody ? { params: data } : { data })
+    } as T
     if (enctype !== 'none')
       result.headers = {
         'Content-Type': (enctypeType[enctype]
@@ -132,5 +108,22 @@ export default function (context: RequestContext) {
     return result
   }
 
-  return createRequestConfig
+  /** get request url link */
+  const returnRequestLink = <P extends Record<string, any> = RequestData>(
+    url: string,
+    params: P | undefined,
+    useConfig = 'default' as CK
+  ) => {
+    const { baseURL = '', params: handleData } = mergeConfigData<RequestConfig>(
+      { params },
+      useConfig
+    )
+    const paramsUrl = buildUrl(url, handleData)
+    if (url.startsWith('http')) {
+      return paramsUrl
+    }
+    return baseURL + paramsUrl
+  }
+
+  return { mergeConfigData, createRequestConfig, returnRequestLink }
 }

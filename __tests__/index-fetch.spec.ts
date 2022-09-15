@@ -1,6 +1,9 @@
-/* eslint-env node, jest */
-import axios from 'axios'
-import smartfetch, { request, smartFetchCreator } from '../'
+import smartfetch, {
+  winFetch,
+  createRequestConfig,
+  returnRequestLink,
+  smartFetchCreator
+} from '../src/index-fetch'
 
 window.alert = jest.fn()
 
@@ -16,16 +19,16 @@ describe('exports test', () => {
   })
 })
 
-// 测试request函数是否正常
+// 测试request模块内函数是否正常
 describe('test request method', () => {
   describe('with out baseConfigs set', () => {
     it('test request return link url', () => {
-      expect(request('http://aaa.aa/aaa', { a: 1 }, 'GET', true)).toBe(
+      expect(returnRequestLink('http://aaa.aa/aaa', { a: 1 })).toBe(
         'http://aaa.aa/aaa?a=1'
       )
     })
     it('test request with GET method return', () => {
-      expect(request('http://aaa.aa/aaa', { a: 1 })).toMatchObject({
+      expect(createRequestConfig('http://aaa.aa/aaa', { a: 1 })).toMatchObject({
         method: 'GET',
         url: 'http://aaa.aa/aaa',
         params: { a: 1 }
@@ -33,7 +36,9 @@ describe('test request method', () => {
     })
 
     it('test request with POST method return(json)', () => {
-      expect(request('http://aaa.aa/aaa', { a: 1 }, 'POST')).toMatchObject({
+      expect(
+        createRequestConfig('http://aaa.aa/aaa', { a: 1 }, 'POST')
+      ).toMatchObject({
         url: 'http://aaa.aa/aaa',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,7 +48,9 @@ describe('test request method', () => {
 
     it('test request with POST method return(urlencode)', () => {
       expect(
-        request('http://aaa.aa/aaa', { a: 1 }, 'POST', { enctype: 'urlencode' })
+        createRequestConfig('http://aaa.aa/aaa', { a: 1 }, 'POST', {
+          enctype: 'urlencode'
+        })
       ).toMatchObject({
         url: 'http://aaa.aa/aaa',
         method: 'POST',
@@ -51,76 +58,54 @@ describe('test request method', () => {
         data: { a: 1 }
       })
     })
-
-    it('test request with POST method but has params', () => {
-      expect(
-        request('http://aaa.aa/aaa', { a: 1 }, 'POST', { params: { b: 1 } })
-      ).toMatchObject({
-        url: 'http://aaa.aa/aaa',
-        method: 'POST',
-        data: { a: 1 },
-        params: { b: 1 }
-      })
-    })
   })
 
   describe('with baseConfigs set', () => {
     it('test request return link url whick will concat baseURL', () => {
       smartfetch.resetOptions({ baseConfigs: { baseURL: 'https://aaa.aa' } })
-      expect(request('/aaa', { a: 1 }, 'GET', true)).toBe(
-        'https://aaa.aa/aaa?a=1'
-      )
+      expect(returnRequestLink('/aaa', { a: 1 })).toBe('https://aaa.aa/aaa?a=1')
       smartfetch.resetOptions({}, true)
     })
   })
 })
 
-// 测试smartfetch是否正常工作
+// // 测试smartfetch是否正常工作
 describe('test root smartfetch instance', () => {
   describe('Method: fetch', () => {
     it('will return a promise object', () => {
-      expect(smartfetch.fetch()).toBeInstanceOf(Promise)
+      expect(winFetch({})).toBeInstanceOf(Promise)
     })
     it('will return [Error, undefined] if somthing wrong had happend', async () => {
-      const [error, res] = await smartfetch.fetch('http://fasfasfsfsdfa/dsafsf')
+      const [error, res] = await winFetch('http://fasfasfsfsdfa/dsafsf')
       expect(error).toBeInstanceOf(Error)
       expect(res).toBe(undefined)
     })
     it('will return [null, data] if fetch success(without code check and custom done handlers)', async () => {
-      const [error, data] = await smartfetch.fetch({
+      const [error, data] = await winFetch({
         url: 'http://www.163.com',
-        responseType: 'text'
+        responseType: 'blob'
       })
       expect(error).toBe(null)
       expect(data).toBeTruthy()
-    })
-
-    it('fetch method use axios core(default global.fetch if supported)', async () => {
-      smartfetch.resetOptions({ forceAxios: true })
-      const [, data] = await smartfetch.fetch(testApi)
-      expect(data).toBeTruthy()
-      smartfetch.resetOptions({}, true)
     })
   })
 
   describe('Method: lock (test in global environment)', () => {
     it('test offer a function to handle', async () => {
       const setLock = jest.fn()
-      await smartfetch.fetch({ url: testApi }, { lock: setLock })
+      await winFetch({ url: testApi }, { lock: setLock })
       expect(setLock).toHaveBeenNthCalledWith(1, true)
       expect(setLock).toHaveBeenNthCalledWith(2, false)
     })
 
     it('test whether lock can stop muilt fetch at same time', () => {
-      let locking = false
-      const setLock = (bool) => (locking = bool)
-      const lockSwitch = [setLock, () => locking]
+      const state = { locking: false }
       return Promise.all([
-        smartfetch.fetch({ url: testApi }, { lock: lockSwitch }),
-        smartfetch.fetch({ url: testApi }, { lock: lockSwitch })
+        winFetch({ url: testApi }, { lock: [state, 'locking'] }),
+        winFetch({ url: testApi }, { lock: [state, 'locking'] })
       ]).then(([res1, res2]) => {
         expect(res1).toBeTruthy()
-        expect(res2).toBeFalsy()
+        expect(res2[1]).toBeFalsy()
       })
     })
   })
@@ -129,17 +114,10 @@ describe('test root smartfetch instance', () => {
     it('test reset options can work', () => {
       expect(smartfetch.getOptions()).toStrictEqual({})
       const newOptions = {
-        forceAxios: true,
         baseConfigs: { baseURL: 'https://www.basfasfaege.dfege' }
       }
       smartfetch.resetOptions(newOptions)
       expect(smartfetch.getOptions()).toStrictEqual(newOptions)
-      smartfetch.resetOptions({}, true)
-    })
-    it('test reset will update instance inner state', () => {
-      expect(smartfetch.$core()).not.toHaveProperty('prototype')
-      smartfetch.resetOptions({ forceAxios: true })
-      expect(smartfetch.$core()).toBe(axios)
       smartfetch.resetOptions({}, true)
     })
   })

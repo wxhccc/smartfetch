@@ -9,6 +9,13 @@ export const objType = (val: unknown) => {
   return typeKeys ? typeKeys[1] : ''
 }
 
+export const resolveFunctional = <T extends SerializableObject>(
+  data?: T | ((...args: any[]) => T),
+  ...args: any[]
+) => {
+  return typeof data === 'function' ? data(...args) : data
+}
+
 export function stringify(params: SerializableObject) {
   const parts: string[] = []
   const encode = (val: string | number) =>
@@ -79,4 +86,31 @@ export function appendDataToForm(formdata: FormData, data: SerializableObject) {
       )
     }
   }
+}
+
+type HangOnStatus = 'sucess' | 'fail' | 'waiting' | undefined
+// 请求的状态码错误处理结果
+export const createHangOnState = () => {
+  const state: { status: HangOnStatus } = { status: undefined }
+  let trigger: (value: 'sucess' | 'fail') => void
+
+  const hangOnBefore = () =>
+    new Promise<'fail' | 'sucess'>((resolve) => {
+      trigger = resolve
+    })
+
+  const switchStatus = (status?: HangOnStatus) => {
+    state.status = status
+    if (status === 'sucess' || status === 'fail') {
+      trigger(status)
+    }
+  }
+  return { state, hangOnBefore, switchStatus }
+}
+
+export const createError = (name: string, error?: Error, message?: string) => {
+  error = error instanceof Error ? error : new Error()
+  error.name = name
+  message && (error.message = message)
+  return error
 }

@@ -26,7 +26,7 @@ function createConfig(config, plugins = [], input, tsOptions) {
   tsChecked && (tsChecked = false)
   return {
     input: input || 'src/index.ts',
-    external: ['axios', 'vue'],
+    external: ['axios', '@wxhccc/es-util', './index-fetch'],
     ...config,
     output: Array.isArray(config.output)
       ? config.output.map((cfg) => Object.assign(cfg, { banner }))
@@ -55,35 +55,33 @@ function getConfig(env) {
         file: pkg.main,
         format: 'cjs',
         exports: 'named'
-      },
-      watch: {
-        include: 'src/**'
       }
     },
     [babelPlugin]
   )
-
-  const vuePluginCfg = createConfig(
+  const fetchEsCfg = createConfig(
     {
-      input: 'src/vue-plugin.ts',
-      external: ['axios', 'vue', './index'],
-      output: [
-        {
-          file: 'dist/vue-plugin.js',
-          format: 'es',
-          exports: 'named'
-        },
-        {
-          file: 'dist/vue-plugin.cjs.js',
-          format: 'cjs',
-          exports: 'named'
-        }
-      ]
+      output: {
+        file: 'dist/index-fetch.js',
+        format: 'es'
+      }
     },
-    [babelPlugin]
+    [],
+    'src/index-fetch.ts'
+  )
+  const fetchCjsCfg = createConfig(
+    {
+      output: {
+        file: 'dist/index-fetch.cjs.js',
+        format: 'cjs',
+        exports: 'named'
+      }
+    },
+    [babelPlugin],
+    'src/index-fetch.ts'
   )
 
-  if (env === 'development') return [esCfg, cjsCfg, vuePluginCfg]
+  if (env === 'development') return [esCfg, cjsCfg, fetchEsCfg, fetchCjsCfg]
 
   const umdMinCfg = createConfig(
     {
@@ -96,7 +94,19 @@ function getConfig(env) {
     },
     [babelPlugin, terser()]
   )
-  return [cjsCfg, esCfg, vuePluginCfg, umdMinCfg]
+  const umdFetchMinCfg = createConfig(
+    {
+      output: {
+        file: 'dist/index-fetch.min.js',
+        name: 'SmartfetchWin',
+        format: 'umd',
+        exports: 'named'
+      }
+    },
+    [babelPlugin, terser()],
+    'src/index-fetch.ts'
+  )
+  return [cjsCfg, esCfg, fetchEsCfg, fetchCjsCfg, umdFetchMinCfg, umdMinCfg]
 }
 
 export default getConfig(process.env.NODE_ENV)
