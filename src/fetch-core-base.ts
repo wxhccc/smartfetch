@@ -5,12 +5,12 @@ import {
   RequestConfig,
   SerializableObject
 } from './types'
-import { createError, createHangOnState } from './utils'
+import { createError, createHangOnState, isFn } from './utils'
 import winFetch from './win-fetch'
 
-type FetchApi<T> = (
+type FetchApi<T, RC = RequestConfig> = (
   context: FetchRequestContext,
-  config: RequestConfig
+  config: RC
 ) => Promise<T>
 
 const hangOnState = createHangOnState()
@@ -63,7 +63,7 @@ export const smartFetchCoreCreator = <
     // 检查业务代码是否正常
     const resOkCheck = (resjson: SerializableObject) => {
       let result = false
-      if (resCodeCheck instanceof Function) {
+      if (isFn(resCodeCheck)) {
         result = resCodeCheck(resjson)
       } else if (typeof resCodeCheck === 'string') {
         result = !!resjson[resCodeCheck]
@@ -160,12 +160,12 @@ export const smartFetchCoreCreator = <
         return error
       }
 
-      if (error.name === 'CodeError' && codeErrorHandler instanceof Function) {
+      if (error.name === 'CodeError' && isFn(codeErrorHandler)) {
         codeErrorHandler(resData as SerializableObject)
-      } else if (errorHandler instanceof Function) {
+      } else if (isFn(errorHandler)) {
         errorHandler(msg, error, context.__response || undefined)
       } else {
-        typeof window.alert === 'function' ? alert(msg) : console.error(error)
+        isFn(window.alert) ? alert(msg) : console.error(error)
       }
       return error
     }

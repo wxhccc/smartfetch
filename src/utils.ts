@@ -9,6 +9,11 @@ export const objType = (val: unknown) => {
   return typeKeys ? typeKeys[1] : ''
 }
 
+export const isFn = <T>(
+  val: T
+): val is T extends (...args: any[]) => any ? T : never =>
+  typeof val === 'function'
+
 export const resolveFunctional = <T extends SerializableObject>(
   data?: T | ((...args: any[]) => T),
   ...args: any[]

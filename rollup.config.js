@@ -87,7 +87,7 @@ function getConfig(env) {
     {
       output: {
         file: pkg.unpkg,
-        name: 'Smartfetch',
+        name: 'SmartFetch',
         format: 'umd',
         exports: 'named'
       }
@@ -98,7 +98,7 @@ function getConfig(env) {
     {
       output: {
         file: 'dist/index-fetch.min.js',
-        name: 'SmartfetchWin',
+        name: 'SmartFetchWin',
         format: 'umd',
         exports: 'named'
       }

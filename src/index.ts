@@ -1,14 +1,13 @@
-import {
-  smartFetchCreator as winSmartFetchCreator,
-  SmartFetchRootOptions
-} from './index-fetch'
+import { smartFetchCreator as winSmartFetchCreator } from './index-fetch'
 import smartFetchAxiosCore from './fetch-core-axios'
-import { AxiosRequestConfig, FullBaseConfig } from './types-axios'
+import { AxiosRequestConfig, SmartFetchMixedRootOptions } from './types-axios'
 
 export * from './index-fetch'
 
-export function smartFetchCreator(options?: SmartFetchRootOptions) {
-  const instance = winSmartFetchCreator<FullBaseConfig>(options)
+export * from './types-axios'
+
+export function smartFetchCreator(options?: SmartFetchMixedRootOptions) {
+  const instance = winSmartFetchCreator<SmartFetchMixedRootOptions>(options)
 
   const { coreFetchCreator } = instance
 
@@ -27,7 +26,8 @@ export const {
   returnRequestLink,
   modifyBaseConfigs,
   fetch: winFetch,
-  axiosFetch
+  axiosFetch,
+  resetOptions
 } = instance
 
 export default instance

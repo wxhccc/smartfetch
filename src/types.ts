@@ -53,7 +53,7 @@ export interface RequestConfig {
   responseType?: BodyResponseType
 }
 
-export type BaseConfig<T = RequestConfig> = Omit<T, 'headers'> & {
+export interface BaseConfig extends Omit<RequestConfig, 'headers'> {
   /** 全局附加headers数据，也可以用函数动态返回 */
   headers?: HeadersData | ((configKey: string) => HeadersData)
   /** 当前配置项自定义参数对象，优先级高于基础参数 */
@@ -69,26 +69,27 @@ export type BaseConfigWithKey<T = BaseConfig> = T & { key: string }
 
 export type BaseConfigs<T = BaseConfig> = T | BaseConfigWithKey<T>[]
 
-export type BaseData = SerializableObject | (() => SerializableObject)
+export type BaseData =
+  | SerializableObject
+  | ((configKey: string, type: 'params' | 'data') => SerializableObject)
 
 export interface ErrorHandler<R = Response> {
   (message?: string, error?: Error, response?: R): void
 }
-export interface StatusErrorHandler<RC extends RequestConfig = RequestConfig> {
+export interface StatusErrorHandler<RC = RequestConfig> {
   (status: number, error?: Error, config?: RC): void | Promise<void>
 }
 export interface CodeErrorHandler {
   (responseJson: SerializableObject): void
 }
+export type ResponseCodeCheck = (responseJson: SerializableObject) => boolean
 export interface BaseConfigOptions {
   /** 基础数据，会添加到所有请求的数据中，对于同时有params和data数据的请求，会同时添加到对应的数据中，如需分开控制，可用函数的第二个参数控制 */
-  baseData?:
-    | SerializableObject
-    | ((configKey: string, type: 'params' | 'data') => SerializableObject)
+  baseData?: BaseData
   /** 请求的response状态码判断函数，默认会使用fetch和axios的自带逻辑判断 */
   validateStatus?: (status: number) => boolean
   /** 业务code检查逻辑，可以使用字符串，为字符串时会判断返回数据中对应的属性是否是falsy，不是则表示有业务code错误，也可以用函数来自定义判定逻辑 */
-  responseCodeCheck?: string | ((responseJson: SerializableObject) => boolean)
+  responseCodeCheck?: string | ResponseCodeCheck
   /** 业务code验证通过后，可以通过dataKey直接获取对应的数据 */
   dataKey?: string
   /** 状态码错误提示文案对象，key为状态码，value为对应提示，eg: { 500: '服务器维护中...' } */
@@ -104,14 +105,13 @@ export interface BaseConfigOptions {
   /** 是否将返回数据中data里的null转换为undefined */
   switchDataNull?: boolean
 }
-export interface SmartFetchRootOptions<T = BaseConfig>
-  extends BaseConfigOptions {
+export interface SmartFetchRootOptions extends BaseConfigOptions {
   /** 基础配置项，可以是单个配置对象，也可以是配置对象数组 */
-  baseConfigs?: BaseConfigs<T>
+  baseConfigs?: BaseConfigs
 }
-export interface SmartInstanceContext<T = BaseConfigs> {
+export interface SmartInstanceContext {
   /** 基础参数对象 */
-  options: SmartFetchRootOptions<T>
+  options: SmartFetchRootOptions
   /** 配置项的map格式 */
   mappedBaseCfgs: MappedBaseConfigs
   /** 是否使用window.fetch，默认是，使用axios时为false */

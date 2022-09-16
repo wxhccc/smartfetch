@@ -11,6 +11,7 @@ import {
   RequestConfig,
   RequestData,
   SFetch,
+  SFetchWithOptions,
   SmartFetchRootOptions
 } from './types'
 import { objType } from './utils'
@@ -19,12 +20,15 @@ export * from './fetch-core-base'
 
 export { wp } from '@wxhccc/es-util'
 
-export const commonSmartFetchCreator = <T = BaseConfigs>(
-  options?: SmartFetchRootOptions<T>
+export const commonSmartFetchCreator = <
+  RO = SmartFetchRootOptions,
+  CK extends string = string
+>(
+  options?: RO
 ) => {
   const baseConfigsMap: MappedBaseConfigs = Object.create(null)
 
-  let $options = {} as SmartFetchRootOptions<T>
+  let $options = {} as RO
 
   const getOptions = () => Object.freeze($options)
 
@@ -50,13 +54,10 @@ export const commonSmartFetchCreator = <T = BaseConfigs>(
    * @param notAssign 是否不合并，不合并会替换
    * @returns
    */
-  const resetOptions = (
-    options: SmartFetchRootOptions<T> = {},
-    notAssign?: boolean
-  ) => {
+  const resetOptions = (options: RO = {} as RO, notAssign?: boolean) => {
     if (!options && objType(options) !== 'Object') return
     $options = notAssign ? options : { ...$options, ...options }
-    const { baseConfigs } = options
+    const { baseConfigs } = options as SmartFetchRootOptions
     /* if baseConfig has set and axios will be used , make a instance of axios to be core */
     baseConfigs && switchConfigsToMap(baseConfigs)
   }
@@ -71,10 +72,10 @@ export const commonSmartFetchCreator = <T = BaseConfigs>(
   }
 
   const { mergeConfigData, createRequestConfig, returnRequestLink } =
-    SFRequest<T>({
+    SFRequest<CK>({
       useFetch: true,
       mappedBaseCfgs: baseConfigsMap,
-      options: $options
+      options: $options as SmartFetchRootOptions
     })
 
   const coreFetchCreator =
@@ -121,10 +122,8 @@ export const commonSmartFetchCreator = <T = BaseConfigs>(
   }
 }
 
-export const smartFetchCreator = <T = BaseConfigs>(
-  options?: SmartFetchRootOptions<T>
-) => {
-  const instance = commonSmartFetchCreator<T>(options)
+export const smartFetchCreator = <RO = SmartFetchRootOptions>(options?: RO) => {
+  const instance = commonSmartFetchCreator(options)
 
   const { coreFetchCreator } = instance
 
@@ -142,9 +141,21 @@ export const {
   createRequestConfig,
   returnRequestLink,
   modifyBaseConfigs,
-  fetch: winFetch
+  fetch: winFetch,
+  resetOptions
 } = instance
 
 export default instance
+
+export const fetchWrap =
+  (fetchMethod: SFetch<RequestConfig>) =>
+  <T>(configCreator: (...args: unknown[]) => RequestConfig) => {
+    const creatorArgsLength = configCreator.length
+    return (...args: [...Parameters<typeof configCreator>, FetchOptions]) => {
+      const reqConfig = configCreator(...args.slice(0, creatorArgsLength - 1))
+      const options = args[creatorArgsLength] as FetchOptions
+      return fetchMethod<T>(reqConfig, options)
+    }
+  }
 
 export * from './types'

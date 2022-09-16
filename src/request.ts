@@ -1,8 +1,9 @@
 import {
-  BaseConfigs,
+  BaseConfig,
   Method,
   RequestConfig,
   RequestData,
+  SerializableObject,
   SmartInstanceContext
 } from './types'
 import { appendDataToForm, buildUrl, objType, resolveFunctional } from './utils'
@@ -32,20 +33,19 @@ export interface RequestExtraArgs<C extends string = string> {
   enctype?: EnctypeType
 }
 
-export default function <T = BaseConfigs, CK extends string = string>(
-  context: SmartInstanceContext<T>
+export default function <CK extends string = string>(
+  context: SmartInstanceContext
 ) {
   /** 合并配置中的公共数据 */
   const mergeConfigData = <T extends RequestConfig = RequestConfig>(
     config: T,
-    useConfig = 'default' as CK
+    useConfig = 'default'
   ) => {
     const { options, mappedBaseCfgs } = context
-    const { baseData, headers: baseHeaders } = {
-      ...options,
-      ...mappedBaseCfgs[useConfig]
-    }
-    const { options: _opts, ...cfgConfig } = mappedBaseCfgs[useConfig] || {}
+    const curCfg = (mappedBaseCfgs[useConfig] || {}) as BaseConfig
+    const { options: cfgOptions, headers: baseHeaders, ...cfgConfig } = curCfg
+    const { baseData } = { ...options, ...cfgOptions }
+
     const { headers, ...rest } = config
     const newConfig = { ...cfgConfig, ...rest } as T
 
