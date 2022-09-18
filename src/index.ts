@@ -1,4 +1,4 @@
-import { smartFetchCreator as winSmartFetchCreator } from './index-fetch'
+import { fetchApiWrapper, smartFetchCreator as winSmartFetchCreator } from './index-fetch'
 import smartFetchAxiosCore from './fetch-core-axios'
 import { AxiosRequestConfig, SmartFetchMixedRootOptions } from './types-axios'
 
@@ -29,5 +29,7 @@ export const {
   axiosFetch,
   resetOptions
 } = instance
+
+export const defineAxiosApi = fetchApiWrapper(axiosFetch)
 
 export default instance

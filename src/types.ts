@@ -129,7 +129,7 @@ export interface FetchRequestContext {
   options: BaseConfigOptions
   /** 请求返回的响应体，请求完成后会被设置 */
   __response?: Response
-  mergeConfigData: <T extends RequestConfig = RequestConfig>(
+  mergeConfigData: <T = RequestConfig>(
     config: T,
     useConfig?: string
   ) => T
@@ -152,11 +152,13 @@ export interface FetchOptions
 
 export type FetchReturn<T> = Promise<[null, T | undefined] | [Error, undefined]>
 
-export type FetchCore = <DataType = any>(
-  context: FetchRequestContext,
-  reqConfig: RequestConfig,
-  options?: FetchOptions
-) => FetchReturn<SerializableObject | DataType | undefined>
+export interface FetchCore<DataType = any, RC = RequestConfig> {
+  (
+    context: FetchRequestContext,
+    reqConfig: RC,
+    options?: FetchOptions
+  ): FetchReturn<SerializableObject | DataType | undefined>
+} 
 
 export interface SFetch<RC = RequestConfig> {
   <T = any>(config: RC, options?: FetchOptions): FetchReturn<T>

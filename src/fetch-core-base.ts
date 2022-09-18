@@ -8,7 +8,7 @@ import {
 import { createError, createHangOnState, isFn } from './utils'
 import winFetch from './win-fetch'
 
-type FetchApi<T, RC = RequestConfig> = (
+export type FetchApi<T, RC = RequestConfig> = (
   context: FetchRequestContext,
   config: RC
 ) => Promise<T>
@@ -17,13 +17,14 @@ const hangOnState = createHangOnState()
 let hangOnPromise: Promise<'sucess' | 'fail'> | undefined
 
 export const smartFetchCoreCreator = <
-  T extends SerializableObject = SerializableObject
+  T extends SerializableObject = SerializableObject,
+  RC = RequestConfig
 >(
-  fetchCore: FetchApi<T>
+  fetchCore: FetchApi<T, RC>
 ) => {
   return <DataType = any>(
     context: FetchRequestContext,
-    reqConfig: RequestConfig,
+    reqConfig: RC,
     options: FetchOptions = {}
   ) => {
     const {
@@ -51,7 +52,7 @@ export const smartFetchCoreCreator = <
       opts
 
     const getMergeReqConfig = () => {
-      const config = mergeConfigData(reqConfig, useConfig)
+      const config = mergeConfigData(reqConfig, useConfig) as RequestConfig
       if (paramsFilterNullable && config.params) {
         config.params = filterNullable(config.params)
       }

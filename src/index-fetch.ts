@@ -79,34 +79,34 @@ export const commonSmartFetchCreator = <
     })
 
   const coreFetchCreator =
-    <RC = RequestConfig>(fetchCore: FetchCore): SFetch<RC> =>
+    <RC = RequestConfig, DataType = any>(fetchCore: FetchCore<DataType, RC>, useFetch = false): SFetch<RC> =>
     <T = any, P extends Record<string, any> = RequestData>(
       configOrUrl: RC | string,
       dataOrOptions?: P | FetchOptions,
       method?: Method,
       options?: FetchOptions
     ) => {
-      let config: RequestConfig
+      let config: RC
       if (typeof configOrUrl === 'string') {
         config = createRequestConfig(
           configOrUrl,
           dataOrOptions as RequestData,
           method
-        ) as RequestConfig
+        ) as RC
       } else {
-        config = configOrUrl || {}
+        config = configOrUrl || {} as RC
         options = dataOrOptions
       }
       const { useConfig = 'default' } = options || {}
       const { options: cfgOptions } = baseConfigsMap[useConfig] || {}
       const context: FetchRequestContext = {
-        useFetch: true,
+        useFetch,
         useConfig,
         config: baseConfigsMap[useConfig],
         options: { ...$options, ...cfgOptions },
         mergeConfigData
       }
-      return fetchCore<T>(context, config, options)
+      return fetchCore(context, config, options)
     }
 
   options && resetOptions(options)
@@ -127,7 +127,7 @@ export const smartFetchCreator = <RO = SmartFetchRootOptions>(options?: RO) => {
 
   const { coreFetchCreator } = instance
 
-  const coreFetch = coreFetchCreator(smartFetchCore)
+  const coreFetch = coreFetchCreator(smartFetchCore, true)
 
   return {
     ...instance,
@@ -147,9 +147,9 @@ export const {
 
 export default instance
 
-export const fetchWrap =
-  (fetchMethod: SFetch<RequestConfig>) =>
-  <T>(configCreator: (...args: unknown[]) => RequestConfig) => {
+export const fetchApiWrapper =
+  <RC = RequestConfig>(fetchMethod: SFetch<RC>) =>
+  <T>(configCreator: (...args: unknown[]) => RC) => {
     const creatorArgsLength = configCreator.length
     return (...args: [...Parameters<typeof configCreator>, FetchOptions]) => {
       const reqConfig = configCreator(...args.slice(0, creatorArgsLength - 1))
@@ -157,5 +157,7 @@ export const fetchWrap =
       return fetchMethod<T>(reqConfig, options)
     }
   }
+
+export const defineFetchApi = fetchApiWrapper(winFetch)
 
 export * from './types'

@@ -37,7 +37,7 @@ export default function <CK extends string = string>(
   context: SmartInstanceContext
 ) {
   /** 合并配置中的公共数据 */
-  const mergeConfigData = <T extends RequestConfig = RequestConfig>(
+  const mergeConfigData = <T = RequestConfig>(
     config: T,
     useConfig = 'default'
   ) => {
@@ -46,15 +46,15 @@ export default function <CK extends string = string>(
     const { options: cfgOptions, headers: baseHeaders, ...cfgConfig } = curCfg
     const { baseData } = { ...options, ...cfgOptions }
 
-    const { headers, ...rest } = config
-    const newConfig = { ...cfgConfig, ...rest } as T
+    const { headers, ...rest } = config as RequestConfig
+    const newConfig = { ...cfgConfig, ...rest } as RequestConfig
 
     if (headers || baseHeaders) {
       const bHeaders = resolveFunctional(baseHeaders, useConfig)
       newConfig.headers = { ...bHeaders, ...headers }
     }
     if (baseData) {
-      const { params, data } = config
+      const { params, data } = config as RequestConfig
       const bParams = resolveFunctional(baseData, useConfig, 'params')
       const bData = resolveFunctional(baseData, useConfig, 'data')
       if (bParams) {
@@ -69,7 +69,7 @@ export default function <CK extends string = string>(
       }
     }
 
-    return newConfig
+    return newConfig as T
   }
   /** get request config data */
   const createRequestConfig = <

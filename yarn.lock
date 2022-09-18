@@ -1676,10 +1676,10 @@
   resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-2.0.2.tgz#0b5edd683366153d5bc5a91edc62f292118710eb"
   integrity sha512-E2P4oXSaWDqTZNbmKZFVLrNN/siVN78YkEqs7pHryWerrlZR9bBFLWdJwRoguX45Ru6HxIflzKl4vQvwRMwm5g==
 
-"@wxhccc/es-util@^2.0.2":
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/@wxhccc/es-util/-/es-util-2.0.2.tgz#7f24703b7a3fd1f37cca27bba5f3124078a332ea"
-  integrity sha512-kT5lefs/fzaj5BUdsIjYy90MLrZ1A4c5ecOhybhCkx1WdtM7YApbMAhk/3neh0U2XPF+9FynNjE3PNbieo54bw==
+"@wxhccc/es-util@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@wxhccc/es-util/-/es-util-2.1.0.tgz#c9b964759fee64161e15957a4f9581f2245e698d"
+  integrity sha512-v0qR4ARAURJGCQCrPi8ffsYhHv/1gwXstp3rFCkOWra2dEnisbg4x0SBtZ3bnsXgAlnPHoTS1ZkvBUEu2mP5Gg==
 
 abab@^2.0.6:
   version "2.0.6"

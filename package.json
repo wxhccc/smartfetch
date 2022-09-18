@@ -62,7 +62,7 @@
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.18.0",
     "@vue/test-utils": "^2.0.2",
-    "@wxhccc/es-util": "^2.0.2",
+    "@wxhccc/es-util": "^2.1.0",
     "axios": "^0.27.2",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
     "eslint": "^7.22.0",
@@ -82,7 +82,7 @@
     "vue": "^3.2.39"
   },
   "peerDependencies": {
-    "@wxhccc/es-util": "^2.0.2"
+    "@wxhccc/es-util": "^2.1.0"
   },
   "files": [
     "dist"
