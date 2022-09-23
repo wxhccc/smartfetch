@@ -1,4 +1,4 @@
-import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import {
   RequestConfig,
   BaseConfig,
@@ -8,7 +8,7 @@ import {
   BaseConfigs
 } from './types'
 
-export type { AxiosRequestConfig }
+export type { AxiosRequestConfig, AxiosError }
 
 export type FullRequestConfig = RequestConfig | AxiosRequestConfig
 

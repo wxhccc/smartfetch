@@ -1,4 +1,4 @@
-import { WpOptions } from '@wxhccc/es-util'
+import type { BoolRef, WpOptions } from '@wxhccc/es-util'
 
 export type Method =
   | 'get'
@@ -23,6 +23,8 @@ export type Method =
   | 'UNLINK'
 
 export type SerializableValue =
+  | null
+  | undefined
   | number
   | string
   | Date
@@ -48,7 +50,6 @@ export interface RequestConfig {
   params?: any
   data?: any
   timeout?: number
-  timeoutErrorMessage?: string
   withCredentials?: boolean
   responseType?: BodyResponseType
 }
@@ -114,11 +115,18 @@ export interface SmartInstanceContext {
   options: SmartFetchRootOptions
   /** 配置项的map格式 */
   mappedBaseCfgs: MappedBaseConfigs
-  /** 是否使用window.fetch，默认是，使用axios时为false */
-  useFetch: boolean
 }
 
+export type HangOnStatus = 'sucess' | 'fail' | 'waiting' | undefined
+
+export interface HangOnState {
+  status: HangOnStatus
+  hangOnPromise?: Promise<'sucess' | 'fail'>
+  hangOnBefore: () => Promise<'sucess' | 'fail'>
+  switchStatus: (status?: HangOnStatus) => void
+}
 export interface FetchRequestContext {
+  hangOnState: HangOnState
   /** 是否使用的window.fetch */
   useFetch: boolean
   /** 当前使用的请求配置项的key */
@@ -129,17 +137,21 @@ export interface FetchRequestContext {
   options: BaseConfigOptions
   /** 请求返回的响应体，请求完成后会被设置 */
   __response?: Response
-  mergeConfigData: <T = RequestConfig>(
-    config: T,
-    useConfig?: string
-  ) => T
+  /** fetch请求的配置对象 */
+  __fetchConfig?: RequestInit
+  mergeConfigData: <T = RequestConfig>(config: T, useConfig?: string) => T
 }
 
 export type FaileHandle = (e: Error) => unknown
+
+type FetchOptionLock =
+  | WpOptions<BoolRef>['lock']
+  | WpOptions<{ value: boolean }>['lock']
+  | WpOptions<{ current: boolean }>['lock']
 export interface FetchOptions
   extends Pick<BaseConfigOptions, 'paramsFilterNullable' | 'switchDataNull'> {
   /** 锁定变量，如果是函数则仅在请求开始和结束时调用，如果是[setter, getter]格式的数组，则会阻止锁定变量控制的请求未完成前重复触发 */
-  lock?: WpOptions['lock']
+  lock?: FetchOptionLock
   /** 当前请求使用的配置项对应的key，默认default */
   useConfig?: string
   /** 当前请求是否为静默模式，即不使用默认配置提示错误，仍可自行处理错误 */
@@ -150,24 +162,30 @@ export interface FetchOptions
   ignoreStatusHandle?: boolean
 }
 
-export type FetchReturn<T> = Promise<[null, T | undefined] | [Error, undefined]>
+export type FetchReturn<T, E extends Error = Error> = Promise<
+  [null, T | undefined] | [E, undefined]
+>
 
-export interface FetchCore<DataType = any, RC = RequestConfig> {
+export interface FetchCore<
+  DataType = any,
+  RC = RequestConfig,
+  E extends Error = Error
+> {
   (
     context: FetchRequestContext,
     reqConfig: RC,
     options?: FetchOptions
-  ): FetchReturn<SerializableObject | DataType | undefined>
-} 
+  ): FetchReturn<SerializableObject | DataType | undefined, E>
+}
 
-export interface SFetch<RC = RequestConfig> {
-  <T = any>(config: RC, options?: FetchOptions): FetchReturn<T>
+export interface SFetch<RC = RequestConfig, E extends Error = Error> {
+  <T = any>(config: RC, options?: FetchOptions): FetchReturn<T, E>
   <T = any, P extends Record<string, any> = RequestData>(
     url: string,
     data?: string | P,
     method?: Method,
     options?: FetchOptions
-  ): FetchReturn<T>
+  ): FetchReturn<T, E>
 }
 
 export type SFetchWithOptions = <T = any>(

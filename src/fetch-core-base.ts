@@ -1,11 +1,12 @@
 import { filterNullable, switchNullToUndefined, wp } from '@wxhccc/es-util'
+import { CODE_ERROR, STATUS_ERROR, TIMEOUT_ERROR } from './const'
 import {
   FetchOptions,
   FetchRequestContext,
   RequestConfig,
   SerializableObject
 } from './types'
-import { createError, createHangOnState, isFn } from './utils'
+import { createError, isFetchTimeout, isFn } from './utils'
 import winFetch from './win-fetch'
 
 export type FetchApi<T, RC = RequestConfig> = (
@@ -13,14 +14,23 @@ export type FetchApi<T, RC = RequestConfig> = (
   config: RC
 ) => Promise<T>
 
-const hangOnState = createHangOnState()
-let hangOnPromise: Promise<'sucess' | 'fail'> | undefined
+type Ref<T> = { value: T }
+
+interface ErrorHandlerUtils {
+  handleStatusError: (status: number) => undefined | Promise<any>
+}
+
+export type CoreErrorHandler<E extends Error = Error> = [
+  (error: E, useFetch?: boolean) => boolean,
+  (msgRef: Ref<string>, error: E, context: FetchRequestContext, utils: ErrorHandlerUtils) => any
+]
 
 export const smartFetchCoreCreator = <
   T extends SerializableObject = SerializableObject,
   RC = RequestConfig
 >(
-  fetchCore: FetchApi<T, RC>
+  fetchCore: FetchApi<T, RC>,
+  errorHandlers?: CoreErrorHandler[]
 ) => {
   return <DataType = any>(
     context: FetchRequestContext,
@@ -28,6 +38,7 @@ export const smartFetchCoreCreator = <
     options: FetchOptions = {}
   ) => {
     const {
+      hangOnState,
       useFetch,
       useConfig,
       options: cfgOptions,
@@ -75,7 +86,7 @@ export const smartFetchCoreCreator = <
     const codeCheck = (resjson: SerializableObject) => {
       if (!resOkCheck(resjson)) {
         resData = resjson
-        throw createError('CodeError', undefined, 'code checked failed')
+        throw createError('CodeError', 'code checked failed')
       } else {
         return resjson
       }
@@ -87,10 +98,10 @@ export const smartFetchCoreCreator = <
 
     const createRequest = async (): Promise<T | DataType | undefined> => {
       if (!handleConfig || typeof handleConfig.url !== 'string') {
-        throw createError('ConfigError', undefined, 'smartfetch: no valid url')
+        throw createError('ConfigError', 'smartfetch: no valid url')
       }
       try {
-        const resJson = await fetchCore(context, reqConfig)
+        const resJson = await fetchCore(context, handleConfig as RC)
         if (!resJson) {
           return
         }
@@ -109,32 +120,28 @@ export const smartFetchCoreCreator = <
     }
 
     const handleError = async (error: Error & { response?: Response }) => {
-      let msg = ''
+      const sysMsg: Ref<string> = { value: '' }
       const {
         statusHandler,
         errorHandler,
         codeErrorHandler,
         statusWarn = {}
       } = cfgOptions || {}
-      if (
-        (useFetch && error instanceof TypeError) ||
-        error.message === 'Network Error'
-      ) {
-        msg = '服务器未响应'
-      } else if (error instanceof SyntaxError) {
-        msg = '数据解析失败'
-      } else if (error instanceof RangeError || error.response) {
-        error.response && (context.__response = error.response)
-        const { status } = context.__response || ({} as Response)
-        if (!ignoreStatusHandle && typeof statusHandler === 'function') {
-          const { state, hangOnBefore, switchStatus } = hangOnState
-          if (!hangOnPromise) {
+
+      const handleStatusError = async (status: number) => {
+        if (!ignoreStatusHandle && isFn(statusHandler)) {
+          const {
+            status: queueStatus,
+            hangOnBefore,
+            switchStatus
+          } = hangOnState
+          if (!hangOnState.hangOnPromise) {
             const ret = statusHandler(status, error, handleConfig)
             // 如果状态检查函数返回的是promise对象，则设置等待状态，其他的请求需等待第一个promise返回结果
             if (ret instanceof Promise) {
-              if (!state.status) {
+              if (!queueStatus) {
                 switchStatus('waiting')
-                hangOnPromise = hangOnBefore()
+                hangOnState.hangOnPromise = hangOnBefore()
                 try {
                   await ret
                   switchStatus('sucess')
@@ -144,29 +151,64 @@ export const smartFetchCoreCreator = <
               }
             }
           }
-          if (hangOnPromise) {
-            const result = await hangOnPromise
+          if (hangOnState.hangOnPromise) {
+            const result = await hangOnState.hangOnPromise
             switchStatus()
-            hangOnPromise = undefined
             if (result === 'sucess') {
               handleConfig = getMergeReqConfig()
               return createRequest()
             }
           }
         }
-        msg = (status && statusWarn[status]) || '请求失败'
+        return
+      }
+      console.dir(error)
+      const errorHandlerQueue: CoreErrorHandler[] = [
+        [
+          () => useFetch && error instanceof TypeError,
+          (msg) => { msg.value = '服务器未响应' }
+        ],
+        [
+          () => useFetch && error instanceof SyntaxError,
+          (msg) => { msg.value = '数据解析失败' }
+        ],
+        [
+          () => useFetch && isFetchTimeout(error, context.__fetchConfig),
+          (msg) => { msg.value = '请求超时' }
+        ],
+        [
+          () => useFetch && error.name === STATUS_ERROR,
+          async (msg) => {
+            const { status } = context.__response || ({} as Response)
+            const result = await handleStatusError(status)
+            if (result) {
+              return result
+            }
+            msg.value = statusWarn[status] || '请求失败'
+          }
+        ],
+        ...(Array.isArray(errorHandlers) ? errorHandlers : [])
+      ]
+      const utils = { handleStatusError }
+
+      const [, handler] = errorHandlerQueue.find((item) => item[0](error, useFetch)) || []
+
+      const result = handler ? await handler(sysMsg, error, context, utils) : undefined
+  
+      if (result) {
+        return result
       }
 
       if (opts.silence) {
         return error
       }
 
-      if (error.name === 'CodeError' && isFn(codeErrorHandler)) {
+      if (error.name === CODE_ERROR && isFn(codeErrorHandler)) {
         codeErrorHandler(resData as SerializableObject)
       } else if (isFn(errorHandler)) {
-        errorHandler(msg, error, context.__response || undefined)
+        errorHandler(sysMsg.value, error, context.__response)
       } else {
-        isFn(window.alert) ? alert(msg) : console.error(error)
+        isFn(window.alert) ? alert(sysMsg.value) : console.error(error)
       }
       return error
     }

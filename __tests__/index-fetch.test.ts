@@ -1,3 +1,4 @@
+import { vi, describe, it, expect } from 'vitest'
 import smartfetch, {
   winFetch,
   createRequestConfig,
@@ -5,9 +6,9 @@ import smartfetch, {
   smartFetchCreator
 } from '../src/index-fetch'
 
-window.alert = jest.fn()
+window.alert = vi.fn()
 
-const testApi = 'https://api.github.com/repos/ant-design/ant-design'
+const testApi = 'https://httpbin.org/json'
 
 // 测试导出项是否正确
 describe('exports test', () => {
@@ -41,7 +42,7 @@ describe('test request method', () => {
       ).toMatchObject({
         url: 'http://aaa.aa/aaa',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'content-type': 'application/json' },
         data: { a: 1 }
       })
     })
@@ -54,7 +55,7 @@ describe('test request method', () => {
       ).toMatchObject({
         url: 'http://aaa.aa/aaa',
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
         data: { a: 1 }
       })
     })
@@ -71,7 +72,7 @@ describe('test request method', () => {
 
 // // 测试smartfetch是否正常工作
 describe('test root smartfetch instance', () => {
-  describe('Method: fetch', () => {
+  describe('Method: winFetch', () => {
     it('will return a promise object', () => {
       expect(winFetch({})).toBeInstanceOf(Promise)
     })
@@ -82,8 +83,7 @@ describe('test root smartfetch instance', () => {
     })
     it('will return [null, data] if fetch success(without code check and custom done handlers)', async () => {
       const [error, data] = await winFetch({
-        url: 'http://www.163.com',
-        responseType: 'blob'
+        url: testApi
       })
       expect(error).toBe(null)
       expect(data).toBeTruthy()
@@ -92,7 +92,7 @@ describe('test root smartfetch instance', () => {
 
   describe('Method: lock (test in global environment)', () => {
     it('test offer a function to handle', async () => {
-      const setLock = jest.fn()
+      const setLock = vi.fn()
       await winFetch({ url: testApi }, { lock: setLock })
       expect(setLock).toHaveBeenNthCalledWith(1, true)
       expect(setLock).toHaveBeenNthCalledWith(2, false)

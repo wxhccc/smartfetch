@@ -1,22 +1,25 @@
+import { vi, describe, it, expect } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { winFetch, axiosFetch } from '../src'
 
-window.alert = jest.fn()
+window.alert = vi.fn()
+
+const testApi = 'https://httpbin.org/get'
 
 const SubmitBtns = defineComponent({
   setup() {
     const loading = ref(false)
     const loading2 = ref(false)
-    const onBtn1Click = () => {
-      const setLoading = (bool: boolean) => (loading.value = bool)
-      winFetch('https://www.163.com', undefined, 'GET', { lock: setLoading })
+    const onBtn1Click = async () => {
+      const setLoading = (bool: boolean) => { loading.value = bool }
+      await winFetch(testApi, undefined, 'GET', { lock: setLoading })
     }
-    const onBtn2Click = () => {
-      axiosFetch(
-        { url: 'https://api.github.com/repos/ant-design/ant-design' },
+    const onBtn2Click = async () => {
+      await axiosFetch<Record<string, any>>(
+        { url: testApi },
         {
-          lock: [loading2 as unknown as Record<string, boolean>, 'value']
+          lock: [loading2, 'value']
         }
       )
     }
@@ -37,7 +40,7 @@ const flushFetch = (time = 0) =>
   })
 
 describe('test lock method in vue3 component', () => {
-  it('test lock property of vue instance by method', async () => {
+  it('test lock property of vue instance by method with winFetch', async () => {
     const wrapper = mount(SubmitBtns)
     /** before button click */
     const btn = wrapper.get('#btn1')
@@ -48,12 +51,12 @@ describe('test lock method in vue3 component', () => {
     expect(wrapper.vm.loading).toBe(true)
     expect(btn.text()).toBe('true')
     // after sending back
-    await flushFetch(300)
+    await flushFetch(2000)
     expect(wrapper.vm.loading).toBe(false)
     expect(btn.text()).toBe('false')
   })
 
-  it('test vueFetch method export by vue-plugin, test ref lock', async () => {
+  it('test lock property of vue instance by Ref with axiosFetch', async () => {
     const wrapper = mount(SubmitBtns)
 
     const btn = wrapper.get('#btn2')
@@ -64,7 +67,7 @@ describe('test lock method in vue3 component', () => {
     expect(wrapper.vm.loading2).toBe(true)
     expect(btn.text()).toBe('true')
     // after sending back
-    await flushFetch(1000)
+    await flushFetch(2000)
     expect(wrapper.vm.loading2).toBe(false)
     expect(btn.text()).toBe('false')
   })

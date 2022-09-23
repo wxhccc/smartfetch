@@ -12,9 +12,10 @@ import {
   RequestData,
   SFetch,
   SFetchWithOptions,
-  SmartFetchRootOptions
+  SmartFetchRootOptions,
+  SmartInstanceContext
 } from './types'
-import { objType } from './utils'
+import { createHangOnState, objType } from './utils'
 
 export * from './fetch-core-base'
 
@@ -26,9 +27,10 @@ export const commonSmartFetchCreator = <
 >(
   options?: RO
 ) => {
-  const baseConfigsMap: MappedBaseConfigs = Object.create(null)
-
+  let baseConfigsMap: MappedBaseConfigs = Object.create(null)
   let $options = {} as RO
+
+  const hangOnState = createHangOnState()
 
   const getOptions = () => Object.freeze($options)
 
@@ -41,12 +43,13 @@ export const commonSmartFetchCreator = <
       Array.isArray(baseConfigs) && baseConfigs.length
         ? baseConfigs
         : [{ key: 'default', ...baseConfigs }]
-    configs.forEach((item) => {
-      const { key, ...rest } = item
+    baseConfigsMap = configs.reduce((acc, cur) => {
+      const { key, ...rest } = cur
       if (key) {
-        baseConfigsMap[key] = rest
+        acc[key] = rest
       }
-    })
+      return acc
+    }, {} as MappedBaseConfigs)
   }
   /**
    * reset options
@@ -71,42 +74,48 @@ export const commonSmartFetchCreator = <
     }
   }
 
+  const context: SmartInstanceContext = {
+    get mappedBaseCfgs () {
+      return baseConfigsMap
+    },
+    get options() {
+      return $options as SmartFetchRootOptions
+    }
+  }
+
   const { mergeConfigData, createRequestConfig, returnRequestLink } =
-    SFRequest<CK>({
-      useFetch: true,
-      mappedBaseCfgs: baseConfigsMap,
-      options: $options as SmartFetchRootOptions
-    })
+    SFRequest<CK>(context)
 
   const coreFetchCreator =
-    <RC = RequestConfig, DataType = any>(fetchCore: FetchCore<DataType, RC>, useFetch = false): SFetch<RC> =>
-    <T = any, P extends Record<string, any> = RequestData>(
+    <RC = RequestConfig, E extends Error = Error, DataType = any>(fetchCore: FetchCore<DataType, RC, E>, useFetch = false): SFetch<RC, E> =>
+    <P extends Record<string, any> = RequestData>(
       configOrUrl: RC | string,
       dataOrOptions?: P | FetchOptions,
       method?: Method,
       options?: FetchOptions
     ) => {
-      let config: RC
+      let reqConfig: RC
       if (typeof configOrUrl === 'string') {
-        config = createRequestConfig(
+        reqConfig = createRequestConfig(
           configOrUrl,
           dataOrOptions as RequestData,
           method
         ) as RC
       } else {
-        config = configOrUrl || {} as RC
+        reqConfig = configOrUrl || {} as RC
         options = dataOrOptions
       }
       const { useConfig = 'default' } = options || {}
       const { options: cfgOptions } = baseConfigsMap[useConfig] || {}
-      const context: FetchRequestContext = {
+      const reqCtx: FetchRequestContext = {
+        hangOnState,
         useFetch,
         useConfig,
         config: baseConfigsMap[useConfig],
         options: { ...$options, ...cfgOptions },
         mergeConfigData
       }
-      return fetchCore(context, config, options)
+      return fetchCore(reqCtx, reqConfig, options)
     }
 
   options && resetOptions(options)

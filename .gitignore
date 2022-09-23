@@ -2,6 +2,7 @@
 npm-debug.log*
 node_modules/
 dist/
+.husky
 types/
 .npm
 .eslintcache
@@ -13,3 +14,4 @@ types/
 !.yarn/sdks
 !.yarn/versions
 .pnp.*
+coverage

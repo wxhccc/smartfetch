@@ -1,4 +1,5 @@
-import { SerializableObject } from './types'
+import { TIMEOUT_ERROR } from './const'
+import { FetchRequestContext, HangOnState, HangOnStatus, SerializableObject } from './types'
 
 const { hasOwnProperty, toString } = Object.prototype
 
@@ -93,29 +94,43 @@ export function appendDataToForm(formdata: FormData, data: SerializableObject) {
   }
 }
 
-type HangOnStatus = 'sucess' | 'fail' | 'waiting' | undefined
 // 请求的状态码错误处理结果
 export const createHangOnState = () => {
-  const state: { status: HangOnStatus } = { status: undefined }
   let trigger: (value: 'sucess' | 'fail') => void
+  let hangOnPromise: Promise<'sucess' | 'fail'> | undefined
 
   const hangOnBefore = () =>
     new Promise<'fail' | 'sucess'>((resolve) => {
       trigger = resolve
     })
-
   const switchStatus = (status?: HangOnStatus) => {
-    state.status = status
+    result.status = status
     if (status === 'sucess' || status === 'fail') {
       trigger(status)
+    } else if (!status) {
+      hangOnPromise = undefined
     }
   }
-  return { state, hangOnBefore, switchStatus }
+  const result: HangOnState = {
+    status: undefined,
+    hangOnPromise: undefined,
+    hangOnBefore,
+    switchStatus
+  }
+  return result
 }
 
-export const createError = (name: string, error?: Error, message?: string) => {
-  error = error instanceof Error ? error : new Error()
+export const createError = (name: string, message?: string, error?: Error) => {
+  error = error instanceof Error ? error : new Error(message)
   error.name = name
-  message && (error.message = message)
   return error
+}
+
+export const isFetchTimeout = (error: Error | DOMException, reqInit?: RequestInit) => {
+  if (error.name === TIMEOUT_ERROR) {
+    return true
+  } else if (error instanceof DOMException && error.name === 'AbortError' && reqInit?.signal?.reason?.name.startsWith(TIMEOUT_ERROR)) {
+    return true
+  }
+  return false
 }

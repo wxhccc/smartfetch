@@ -1,7 +1,6 @@
 import { fetchApiWrapper, smartFetchCreator as winSmartFetchCreator } from './index-fetch'
 import smartFetchAxiosCore from './fetch-core-axios'
-import { AxiosRequestConfig, SmartFetchMixedRootOptions } from './types-axios'
-
+import { AxiosRequestConfig, SmartFetchMixedRootOptions, AxiosError } from './types-axios'
 export * from './index-fetch'
 
 export * from './types-axios'
@@ -11,7 +10,7 @@ export function smartFetchCreator(options?: SmartFetchMixedRootOptions) {
 
   const { coreFetchCreator } = instance
 
-  const axiosFetch = coreFetchCreator<AxiosRequestConfig>(smartFetchAxiosCore)
+  const axiosFetch = coreFetchCreator<AxiosRequestConfig, AxiosError>(smartFetchAxiosCore as any)
 
   return {
     ...instance,

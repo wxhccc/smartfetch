@@ -1,5 +1,6 @@
+import { CT_JSON, STATUS_ERROR, TIMEOUT_ERROR } from './const'
 import { RequestConfig, FetchRequestContext, SerializableObject } from './types'
-import { buildUrl, stringify } from './utils'
+import { buildUrl, createError, stringify } from './utils'
 
 /** window.fetch的封装 */
 export default async function winFetch<T>(
@@ -13,11 +14,11 @@ export default async function winFetch<T>(
     params,
     data,
     timeout,
-    timeoutErrorMessage,
     responseType,
     withCredentials,
     ...rest
   } = {
+    headers: { 'content-type': CT_JSON, ...config.headers },
     responseType: 'json' as NonNullable<RequestConfig['responseType']>,
     ...config
   }
@@ -37,11 +38,12 @@ export default async function winFetch<T>(
   const enctype = headers['Content-Type'] || headers['content-type']
   const { method = 'GET' } = fetchConfig
   const isNoBody = ['get', 'head'].includes(method.toLowerCase())
+  console.log(1111, config, data)
   if (!isNoBody && data) {
     fetchConfig.body =
-      data instanceof FormData
+      FormData && data instanceof FormData
         ? (data as FormData)
-        : enctype === 'application/json'
+        : enctype === CT_JSON
         ? JSON.stringify(data)
         : typeof data === 'string'
         ? data
@@ -52,33 +54,45 @@ export default async function winFetch<T>(
     if (validateStatus ? validateStatus(response.status) : response.ok) {
       return response
     }
-    throw new Error(`Request failed with status code ${response.status}`)
+    throw createError(
+      STATUS_ERROR,
+      `Request failed with status code ${response.status}`
+    )
   }
 
-  const typeHandle = (response: Response): Promise<T> => {
+  const typeHandle = async (response: Response): Promise<T> => {
     return response[responseType]()
   }
-  let timeoutId = 0
-  const signal: RequestInit = {}
+  let timeoutPromise: Promise<void> | null = null
+
   if (timeout && timeout > 0) {
-    const controller =
-      typeof window.AbortController !== 'undefined'
-        ? new AbortController()
-        : null
-    controller && (signal.signal = controller.signal)
-    timeoutId = window.setTimeout(() => {
-      if (controller) {
-        controller.abort(timeoutErrorMessage)
-      } else {
-        throw new Error(timeoutErrorMessage)
-      }
-    }, timeout)
+    if (typeof window.AbortSignal !== 'undefined' && 'timeout' in AbortSignal) {
+      fetchConfig.signal = (AbortSignal as any).timeout(timeout)
+    } else {
+      const controller =
+        typeof window.AbortController !== 'undefined'
+          ? new AbortController()
+          : null
+      controller && (fetchConfig.signal = controller.signal)
+      timeoutPromise = new Promise((_r, reject) => {
+        window.setTimeout(() => {
+          if (controller) {
+            controller.abort(new DOMException('请求超时', TIMEOUT_ERROR))
+          } else {
+            reject(createError(TIMEOUT_ERROR, '请求超时'))
+          }
+        }, timeout)
+      })
+    }
   }
-  const response = await (window || global).fetch(reqUrl, {
-    ...fetchConfig,
-    ...signal
-  })
-  window.clearTimeout(timeoutId)
+  context.__fetchConfig = fetchConfig
+  let response: Response
+  const fetchPromise = (window || global).fetch(reqUrl, fetchConfig)
+  if (timeoutPromise) {
+    ;[response] = await Promise.all([fetchPromise, timeoutPromise])
+  } else {
+    response = await fetchPromise
+  }
   context.__response = response.clone()
   return typeHandle(resStatusCheck(response))
 }
