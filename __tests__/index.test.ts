@@ -205,12 +205,22 @@ describe('test root smartfetch instance', () => {
         smartfetch.resetOptions({}, true)
       })
 
-      it.only('test validateStatus', async () => {
+      it('test validateStatus', async () => {
         const config = createRequestConfig(statusTestApi(300), undefined, 'GET', { enctype: 'text', useFetch: true })
         const [error1] = await winFetch(config)
         expect(error1?.name).toBe('StatusError')
         resetOptions({ validateStatus: (status) => status >= 200 && status < 400 })
         const [error2] = await winFetch(config)
+        expect(error2).toBeFalsy()
+        smartfetch.resetOptions({}, true)
+      })
+
+      it.only('test responseCodeCheck && dataKey', async () => {
+        const config = { }
+        const [error1] = await winFetch(testApi)
+        expect(error1?.name).toBe('StatusError')
+        resetOptions({ validateStatus: (status) => status >= 200 && status < 400 })
+        const [error2] = await winFetch(testApi)
         expect(error2).toBeFalsy()
         smartfetch.resetOptions({}, true)
       })
