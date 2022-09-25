@@ -1,4 +1,5 @@
-import { SerializableObject } from './types'
+import { TIMEOUT_ERROR } from './const'
+import { FetchRequestContext, HangOnState, HangOnStatus, SerializableObject } from './types'
 
 const { hasOwnProperty, toString } = Object.prototype
 
@@ -7,6 +8,18 @@ export const has = (val: unknown, key: string) => hasOwnProperty.call(val, key)
 export const objType = (val: unknown) => {
   const typeKeys = toString.call(val).match(/^\[object (.*)\]$/)
   return typeKeys ? typeKeys[1] : ''
+}
+
+export const isFn = <T>(
+  val: T
+): val is T extends (...args: any[]) => any ? T : never =>
+  typeof val === 'function'
+
+export const resolveFunctional = <T extends SerializableObject>(
+  data?: T | ((...args: any[]) => T),
+  ...args: any[]
+) => {
+  return typeof data === 'function' ? data(...args) : data
 }
 
 export function stringify(params: SerializableObject) {
@@ -79,4 +92,45 @@ export function appendDataToForm(formdata: FormData, data: SerializableObject) {
       )
     }
   }
+}
+
+// 请求的状态码错误处理结果
+export const createHangOnState = () => {
+  let trigger: (value: 'sucess' | 'fail') => void
+  let hangOnPromise: Promise<'sucess' | 'fail'> | undefined
+
+  const hangOnBefore = () =>
+    new Promise<'fail' | 'sucess'>((resolve) => {
+      trigger = resolve
+    })
+  const switchStatus = (status?: HangOnStatus) => {
+    result.status = status
+    if (status === 'sucess' || status === 'fail') {
+      trigger(status)
+    } else if (!status) {
+      hangOnPromise = undefined
+    }
+  }
+  const result: HangOnState = {
+    status: undefined,
+    hangOnPromise: undefined,
+    hangOnBefore,
+    switchStatus
+  }
+  return result
+}
+
+export const createError = (name: string, message?: string, error?: Error) => {
+  error = error instanceof Error ? error : new Error(message)
+  error.name = name
+  return error
+}
+
+export const isFetchTimeout = (error: Error | DOMException, reqInit?: RequestInit) => {
+  if (error.name === TIMEOUT_ERROR) {
+    return true
+  } else if (error instanceof DOMException && error.name === 'AbortError' && reqInit?.signal?.reason?.name.startsWith(TIMEOUT_ERROR)) {
+    return true
+  }
+  return false
 }

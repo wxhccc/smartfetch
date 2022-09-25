@@ -1,18 +1,37 @@
 {
   "name": "@wxhccc/smartfetch",
-  "version": "3.1.1",
-  "description": "an easy use api plugin for vue and react",
+  "version": "4.0.0",
+  "description": "an easy use api request plugin",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./fetch": {
+      "import": {
+        "types": "./dist/index-fetch.d.ts",
+        "default": "./dist/index-fetch.js"
+      },
+      "require": {
+        "types": "./dist/index-fetch.d.ts",
+        "default": "./dist/index-fetch.cjs.js"
+      }
+    },
+    "./dist/*": "./dist/*"
+  },
   "main": "dist/index.cjs.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "unpkg": "dist/index.min.js",
-  "sideEffects": false,
   "scripts": {
     "start": "npm run dev",
     "dev": "rollup -w -c --environment NODE_ENV:development",
     "build": "rollup -c",
     "pub": "npm run build && npm publish",
-    "test": "jest",
+    "test": "vitest --ui",
+    "coverage": "vitest run --coverage",
     "prepare": "husky install"
   },
   "repository": {
@@ -40,37 +59,34 @@
     "@rollup/plugin-commonjs": "^17.1.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.2.0",
-    "@types/jest": "^26.0.22",
-    "@types/react": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.18.0",
-    "@vue/test-utils": "^2.0.0-rc.6",
-    "axios": "^0.21.1",
+    "@vitest/coverage-c8": "^0.23.4",
+    "@vitest/ui": "^0.23.4",
+    "@vue/test-utils": "^2.0.2",
+    "@wxhccc/es-util": "^2.1.0",
+    "axios": "^0.27.2",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
-    "enzyme": "^3.11.0",
-    "enzyme-adapter-react-16": "^1.15.6",
     "eslint": "^7.22.0",
     "eslint-config-prettier": "^8.2.0",
     "eslint-plugin-prettier": "^3.4.0",
+    "happy-dom": "^6.0.4",
     "husky": ">=6",
-    "jest": "^26.6.3",
-    "jest-fetch-mock": "^3.0.3",
+    "jsdom": "^20.0.0",
     "lint-staged": "^10.5.4",
     "prettier": "^2.2.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "rollup": "^2.42.0",
+    "rollup": "^2.79.0",
     "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.30.0",
-    "typescript": "^4.2.3",
-    "vue": "^3.0.11"
+    "rollup-plugin-typescript2": "^0.34.0",
+    "typescript": "^4.8.3",
+    "vitest": "^0.23.4",
+    "vue": "^3.2.39"
   },
-  "dependencies": {
-    "@wxhccc/es-util": "^1.5.2"
+  "peerDependencies": {
+    "@wxhccc/es-util": "^2.1.0"
   },
   "files": [
-    "dist",
-    "types"
+    "dist"
   ],
   "gitHooks": {
     "pre-commit": "lint-staged"
@@ -81,8 +97,5 @@
       "prettier --parser=typescript --write"
     ],
     "*.{js,css,md}": "prettier --write"
-  },
-  "peerDependencies": {
-    "axios": "^0.21.1"
   }
 }

@@ -16,7 +16,7 @@
     "esModuleInterop": true,
     "noImplicitThis": true,
     "lib": ["esnext", "dom"],
-    "types": ["jest", "node"]
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
 }

@@ -24,14 +24,19 @@ function createConfig(config, plugins = [], input, tsOptions) {
   const tsPlugin = typescript(tsOpts)
 
   tsChecked && (tsChecked = false)
+  const globals = {
+    axios: 'axios',
+    '@wxhccc/es-util': 'EsUtil'
+  }
   return {
     input: input || 'src/index.ts',
-    external: ['axios', 'vue'],
+    external: ['axios', '@wxhccc/es-util', './index-fetch'],
     ...config,
     output: Array.isArray(config.output)
-      ? config.output.map((cfg) => Object.assign(cfg, { banner }))
+      ? config.output.map((cfg) => Object.assign(cfg, { globals, banner }))
       : {
           ...config.output,
+          globals,
           banner
         },
     plugins: [resolve(), commonjs(), tsPlugin].concat(plugins)
@@ -55,48 +60,59 @@ function getConfig(env) {
         file: pkg.main,
         format: 'cjs',
         exports: 'named'
-      },
-      watch: {
-        include: 'src/**'
       }
     },
     [babelPlugin]
   )
-
-  const vuePluginCfg = createConfig(
+  const fetchEsCfg = createConfig(
     {
-      input: 'src/vue-plugin.ts',
-      external: ['axios', 'vue', './index'],
-      output: [
-        {
-          file: 'dist/vue-plugin.js',
-          format: 'es',
-          exports: 'named'
-        },
-        {
-          file: 'dist/vue-plugin.cjs.js',
-          format: 'cjs',
-          exports: 'named'
-        }
-      ]
+      output: {
+        file: 'dist/index-fetch.js',
+        format: 'es'
+      }
     },
-    [babelPlugin]
+    [],
+    'src/index-fetch.ts'
+  )
+  const fetchCjsCfg = createConfig(
+    {
+      output: {
+        file: 'dist/index-fetch.cjs.js',
+        format: 'cjs',
+        exports: 'named'
+      }
+    },
+    [babelPlugin],
+    'src/index-fetch.ts'
   )
 
-  if (env === 'development') return [esCfg, cjsCfg, vuePluginCfg]
+  if (env === 'development') return [esCfg, cjsCfg, fetchEsCfg, fetchCjsCfg]
 
   const umdMinCfg = createConfig(
     {
       output: {
         file: pkg.unpkg,
-        name: 'Smartfetch',
+        name: 'SmartFetch',
+        format: 'umd',
+        exports: 'named'
+      },
+      external: ['axios', '@wxhccc/es-util']
+    },
+    [babelPlugin, terser()]
+  )
+  const umdFetchMinCfg = createConfig(
+    {
+      output: {
+        file: 'dist/index-fetch.min.js',
+        name: 'SmartFetchWin',
         format: 'umd',
         exports: 'named'
       }
     },
-    [babelPlugin, terser()]
+    [babelPlugin, terser()],
+    'src/index-fetch.ts'
   )
-  return [cjsCfg, esCfg, vuePluginCfg, umdMinCfg]
+  return [cjsCfg, esCfg, fetchEsCfg, fetchCjsCfg, umdFetchMinCfg, umdMinCfg]
 }
 
 export default getConfig(process.env.NODE_ENV)
