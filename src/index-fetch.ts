@@ -14,7 +14,7 @@ import {
   SmartFetchRootOptions,
   SmartInstanceContext
 } from './types'
-import { createHangOnState, objType } from './utils'
+import { createHangOnState, isArr, objType } from './utils'
 
 export * from './fetch-core-base'
 
@@ -39,7 +39,7 @@ const commonSmartFetchCreator = <
    */
   const switchConfigsToMap = (baseConfigs: BaseConfigs) => {
     const configs: BaseConfigWithKey[] =
-      Array.isArray(baseConfigs) && baseConfigs.length
+      isArr(baseConfigs) && baseConfigs.length
         ? baseConfigs
         : [{ key: 'default', ...baseConfigs }]
     baseConfigsMap = configs.reduce((acc, cur) => {
@@ -164,7 +164,9 @@ export const fetchApiWrapper =
   <RC = RequestConfig>(fetchMethod: SFetch<RC>) =>
   <CC extends ConfigCreator<RC> = ConfigCreator<RC>>(configCreator: CC) => {
     const creatorArgsLength = configCreator.length
-    return <T = any>(...args: [...Parameters<typeof configCreator>, FetchOptions]) => {
+    return <T = any>(
+      ...args: [...Parameters<typeof configCreator>, FetchOptions]
+    ) => {
       const reqConfig = configCreator(...args.slice(0, creatorArgsLength))
       const options = args[creatorArgsLength] as FetchOptions
       return fetchMethod<T>(reqConfig, options)

@@ -1,6 +1,6 @@
-import { CT_JSON, STATUS_ERROR, TIMEOUT_ERROR } from './const'
+import { CT_JSON, CT_URLENCODE, STATUS_ERROR, TIMEOUT_ERROR } from './const'
 import { RequestConfig, FetchRequestContext, SerializableObject } from './types'
-import { buildUrl, createError, stringify } from './utils'
+import { buildUrl, createError, isFormData, stringify } from './utils'
 
 /** window.fetch的封装 */
 export default async function winFetch<T>(
@@ -40,13 +40,13 @@ export default async function winFetch<T>(
   const isNoBody = ['get', 'head'].includes(method.toLowerCase())
   if (!isNoBody && data) {
     fetchConfig.body =
-      FormData && data instanceof FormData
+      isFormData(data)
         ? (data as FormData)
         : enctype === CT_JSON
         ? JSON.stringify(data)
-        : typeof data === 'string'
-        ? data
-        : stringify(data as SerializableObject)
+        : enctype === CT_URLENCODE
+        ? stringify(data as SerializableObject)
+        : data
   }
 
   const resStatusCheck = (response: Response) => {
@@ -62,7 +62,8 @@ export default async function winFetch<T>(
   const typeHandle = async (response: Response): Promise<T> => {
     return response[responseType]()
   }
-  let timeoutPromise: Promise<void> | null = null
+  let timeoutPromise: Promise<Response> | null = null
+  let timer = 0
 
   if (timeout && timeout > 0) {
     if (typeof window.AbortSignal !== 'undefined' && 'timeout' in AbortSignal) {
@@ -74,21 +75,21 @@ export default async function winFetch<T>(
           : null
       controller && (fetchConfig.signal = controller.signal)
       timeoutPromise = new Promise((_r, reject) => {
-        window.setTimeout(() => {
+        timer = window.setTimeout(() => {
           if (controller) {
             controller.abort(new DOMException('请求超时', TIMEOUT_ERROR))
-          } else {
-            reject(createError(TIMEOUT_ERROR, '请求超时'))
           }
+          reject(createError(TIMEOUT_ERROR, '请求超时'))
         }, timeout)
       })
     }
   }
   context.__fetchConfig = fetchConfig
   let response: Response
-  const fetchPromise = (window || global).fetch(reqUrl, fetchConfig)
+  const fetchPromise = window.fetch(reqUrl, fetchConfig)
   if (timeoutPromise) {
-    ;[response] = await Promise.all([fetchPromise, timeoutPromise])
+    response = await Promise.race([fetchPromise, timeoutPromise])
+    window.clearTimeout(timer)
   } else {
     response = await fetchPromise
   }

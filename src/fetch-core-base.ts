@@ -6,7 +6,7 @@ import {
   RequestConfig,
   SerializableObject
 } from './types'
-import { createError, isFetchTimeout, isFn } from './utils'
+import { createError, isArr, isFetchTimeout, isFn } from './utils'
 import winFetch from './win-fetch'
 
 export type FetchApi<T, RC = RequestConfig> = (
@@ -186,7 +186,7 @@ export const smartFetchCoreCreator = <
             msg.value = statusWarn[status] || '请求失败'
           }
         ],
-        ...(Array.isArray(errorHandlers) ? errorHandlers : [])
+        ...(isArr(errorHandlers) ? errorHandlers : [])
       ]
       const utils = { handleStatusError }
 

@@ -1,4 +1,4 @@
-import { CT_JSON, CT_URLENCODE } from './const'
+import { CT_FORMDATA, CT_JSON, CT_URLENCODE } from './const'
 import {
   BaseConfig,
   Method,
@@ -6,7 +6,7 @@ import {
   RequestData,
   SmartInstanceContext
 } from './types'
-import { appendDataToForm, buildUrl, objType, resolveFunctional } from './utils'
+import { appendDataToForm, buildUrl, isFormData, objType, resolveFunctional } from './utils'
 
 const urlMethod: Method[] = [
   'GET',
@@ -19,21 +19,19 @@ const urlMethod: Method[] = [
 ]
 
 /** 数据的编码方式，拼接在地址上时仅支持urlencode，通过body发送时各方式均支持 */
-export type EnctypeType = 'json' | 'urlencode' | 'text' | 'none'
+export type EnctypeType = 'json' | 'urlencode' | 'none'
 
 const enctypeType: Record<EnctypeType, string> = {
   json: CT_JSON,
   urlencode: CT_URLENCODE,
-  text: 'text/plain',
   none: ''
 }
+
 export interface RequestExtraArgs<C extends string = string> {
   /** 使用那个key对应的基础配置 */
   useConfig?: C
   /** 数据的编码方式 */
   enctype?: EnctypeType
-  /** 是否为window.fetch生成配置，默认会自动判断后传入 */
-  useFetch?: boolean
 }
 
 export default function <CK extends string = string>(
@@ -68,7 +66,7 @@ export default function <CK extends string = string>(
         newConfig.params = { ...bParams, ...params }
       }
       if (bData) {
-        if (FormData && data instanceof FormData) {
+        if (isFormData(data)) {
           appendDataToForm(newConfig.data, bData)
         } else {
           newConfig.data = { ...bData, ...(objType(data) === 'Object' ? data : {}) }
@@ -78,7 +76,7 @@ export default function <CK extends string = string>(
 
     return newConfig as T
   }
-  /** get request config data */
+  /** 仅适合简单结构数据的转化，复杂数据请直接使用config对象 */
   const createRequestConfig = <
     T extends RequestConfig = RequestConfig,
     P extends Record<string, any> = RequestData
@@ -88,9 +86,10 @@ export default function <CK extends string = string>(
     method: Method = 'GET',
     extra?: RequestExtraArgs<CK>
   ) => {
-    const { enctype, useFetch } = {
+    const defEnctype: EnctypeType = data && isFormData(data) ? 'none' : 'json'
+    const { enctype } = {
       useConfig: 'default',
-      enctype: 'json',
+      enctype: defEnctype,
       ...extra
     } as Required<RequestExtraArgs>
     const upMethod = method.toUpperCase() as Method
@@ -105,9 +104,6 @@ export default function <CK extends string = string>(
     if (enctype !== 'none'){
       const contentType = enctypeType[enctype] || enctypeType['json']
       result.headers = { 'content-type': contentType }
-    }
-    if (useFetch && enctype !== 'json') {
-      result.responseType = 'blob'
     }
     return result
   }

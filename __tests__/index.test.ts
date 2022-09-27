@@ -64,6 +64,21 @@ describe('test root smartfetch instance', () => {
         expect(data1.json).toEqual({ a: 1 })
         expect(data2.json).toEqual({ a: 1 })
       })
+
+      it('test post method with FormData data', async () => {
+        const data = new FormData()
+        data.append('a', '1')
+        const [, data1] = await winFetch(postTestApi, data, 'POST')
+        expect(data1.data).toBe('[object FormData]')
+      })
+      it('test FormData data with baseData', async () => {
+        resetOptions({ baseData: { a: 1 } })
+        const data = new FormData()
+        data.append('a', '1')
+        const [, data1] = await winFetch(postTestApi, data, 'POST')
+        expect(data1.data).toBe('[object FormData]')
+        resetOptions({}, true)
+      })
       it('test post method with params and data at same time', async () => {
         const config = {
           url: postTestApi,
@@ -98,6 +113,16 @@ describe('test root smartfetch instance', () => {
         expect(error1).toBeInstanceOf(Error)
         expect(error1?.name).toBe('AbortError')
         expect(error2).toBeInstanceOf(Error)
+      })
+      it('test timeout longer then request', async () => {
+        const config = {
+          url: 'https://httpbin.org/get',
+          timeout: 3000
+        }
+        const [error1] = await winFetch(config)
+        const [error2] = await axiosFetch(config)
+        expect(error1).toBeFalsy()
+        expect(error2).toBeFalsy()
       })
 
       it('test response with bad status', async () => {
@@ -249,18 +274,18 @@ describe('test root smartfetch instance', () => {
       })
 
       it('test validateStatus', async () => {
-        const config = createRequestConfig(
-          statusTestApi(300),
-          undefined,
-          'GET',
-          { enctype: 'text', useFetch: true }
-        )
-        const [error1] = await winFetch(config)
+        const [error1] = await winFetch({
+          url: statusTestApi(300),
+          responseType: 'blob'
+        })
         expect(error1?.name).toBe('StatusError')
         resetOptions({
           validateStatus: (status) => status >= 200 && status < 400
         })
-        const [error2] = await winFetch(config)
+        const [error2] = await winFetch({
+          url: statusTestApi(300),
+          responseType: 'blob'
+        })
         expect(error2).toBeFalsy()
         smartfetch.resetOptions({}, true)
       })
