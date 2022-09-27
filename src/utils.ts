@@ -10,6 +10,10 @@ export const objType = (val: unknown) => {
   return typeKeys ? typeKeys[1] : ''
 }
 
+export const isArr = Array.isArray
+
+export const isFormData = (val: unknown): val is FormData => typeof FormData !== 'undefined' && val instanceof FormData 
+
 export const isFn = <T>(
   val: T
 ): val is T extends (...args: any[]) => any ? T : never =>
@@ -36,8 +40,8 @@ export function stringify(params: SerializableObject) {
   Object.keys(params || {}).forEach((key) => {
     const val = params[key]
     if (val === null || typeof val === 'undefined') return
-    const arrVal = Array.isArray(val) ? val : [val]
-    if (Array.isArray(val)) key = key + '[]'
+    const arrVal = isArr(val) ? val : [val]
+    if (isArr(val)) key = key + '[]'
 
     arrVal.forEach((v) => {
       if (v instanceof Date) {
@@ -75,7 +79,7 @@ export function buildUrl(
 }
 
 export function appendDataToForm(formdata: FormData, data: SerializableObject) {
-  if (!data || !(formdata instanceof FormData)) return
+  if (!data || !(isFormData(formdata))) return
   for (const i in data) {
     if (formdata.has(i)) continue
     const item = data[i]
