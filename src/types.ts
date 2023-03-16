@@ -75,10 +75,10 @@ export type BaseData =
   | ((configKey: string, type: 'params' | 'data') => SerializableObject)
 
 export interface ErrorHandler<R = Response> {
-  (message?: string, error?: Error, response?: R): void
+  (message?: string, error?: Error, response?: R, resBody?: unknown): void
 }
 export interface StatusErrorHandler<RC = RequestConfig> {
-  (status: number, error?: Error, config?: RC): void | Promise<void>
+  (status: number, error?: Error, config?: RC, resBody?: unknown): void | Promise<void>
 }
 export interface CodeErrorHandler {
   (responseJson: SerializableObject): void
