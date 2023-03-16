@@ -1,6 +1,6 @@
 {
   "name": "@wxhccc/smartfetch",
-  "version": "4.0.1",
+  "version": "4.1.1",
   "description": "an easy use api request plugin",
   "type": "module",
   "sideEffects": false,
