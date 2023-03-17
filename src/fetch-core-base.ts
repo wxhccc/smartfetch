@@ -100,18 +100,19 @@ export const smartFetchCoreCreator = <
       if (!handleConfig || typeof handleConfig.url !== 'string') {
         throw createError('ConfigError', 'smartfetch: no valid url')
       }
+      let resBody
       try {
-        const resJson = await fetchCore(context, handleConfig as RC)
-        if (!resJson) {
+        resBody = await fetchCore(context, handleConfig as RC)
+        if (!resBody) {
           return
         }
         const data = opts.needCodeCheck
-          ? (handleResData(codeCheck(resJson as T)) as DataType)
-          : resJson
+          ? (handleResData(codeCheck(resBody as T)) as DataType)
+          : resBody
         const handleData = switchDataNull ? switchNullToUndefined(data) : data
         return handleData
       } catch (err) {
-        const result = await handleError(err as Error)
+        const result = await handleError(err as Error, resBody)
         if (result instanceof Error) {
           throw result
         }
@@ -119,7 +120,7 @@ export const smartFetchCoreCreator = <
       }
     }
 
-    const handleError = async (error: Error & { response?: Response }) => {
+    const handleError = async (error: Error & { response?: Response }, resBody?: unknown) => {
       const sysMsg: Ref<string> = { value: '' }
       const {
         statusHandler,
@@ -136,7 +137,7 @@ export const smartFetchCoreCreator = <
             switchStatus
           } = hangOnState
           if (!hangOnState.hangOnPromise) {
-            const ret = statusHandler(status, error, handleConfig)
+            const ret = statusHandler(status, error, handleConfig, resBody)
             // 如果状态检查函数返回的是promise对象，则设置等待状态，其他的请求需等待第一个promise返回结果
             if (ret instanceof Promise) {
               if (!queueStatus) {
@@ -205,7 +206,7 @@ export const smartFetchCoreCreator = <
       if (error.name === CODE_ERROR && isFn(codeErrorHandler)) {
         codeErrorHandler(resData as SerializableObject)
       } else if (isFn(errorHandler)) {
-        errorHandler(sysMsg.value, error, context.__response)
+        errorHandler(sysMsg.value, error, context.__response, resBody)
       } else {
         isFn(window.alert) ? alert(sysMsg.value) : console.error(error)
       }
