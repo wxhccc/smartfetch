@@ -18,9 +18,9 @@ export default async function winFetch<T>(
     withCredentials,
     ...rest
   } = {
-    headers: { 'content-type': CT_JSON, ...config.headers },
     responseType: 'json' as NonNullable<RequestConfig['responseType']>,
-    ...config
+    ...config,
+    headers: { 'content-type': CT_JSON, ...config.headers }
   }
 
   let reqUrl = buildUrl(url, params)

@@ -216,4 +216,3 @@ export const smartFetchCoreCreator = <
 }
 
 export default smartFetchCoreCreator(winFetch)
-

@@ -385,6 +385,14 @@ describe('test root smartfetch instance', () => {
           smartfetch.resetOptions({}, true)
         })
 
+        it('test only one base config with function headers', async () => {
+          resetOptions({ baseConfigs: { baseURL: baseUrl, headers: () => ({ a: 1 }) } })
+          const [, data] = await winFetch('/get')
+          expect(data.url).toBe(baseUrl + '/get')
+          expect(data.headers).toMatchObject({ A: '1' })
+          smartfetch.resetOptions({}, true)
+        })
+
         it('test multi configs and switch config', async () => {
           resetOptions({
             baseConfigs: [
